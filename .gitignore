@@ -1,0 +1,127 @@
+# ───────────── Build-Ergebnisse ─────────────
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Oo]ut/
+[Ll]og/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# ───────────── Visual Studio ─────────────
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+*.suo
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+ipch/
+*.aps
+*.ncb
+*.opendb
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# ───────────── .NET / NuGet ─────────────
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+.nuget/
+
+# ───────────── Test- & Coverage-Ergebnisse ─────────────
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# ───────────── ClickOnce / Publish ─────────────
+publish/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.publishproj
+PublishScripts/
+
+# ───────────── WPF-spezifisch ─────────────
+# Automatisch generierte XAML-Code-Behind / Baml
+*.g.cs
+*.g.i.cs
+*.baml
+*.lref
+GeneratedInternalTypeHelper.g.cs
+
+# ───────────── ReSharper / StyleCop ─────────────
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+StyleCopReport.xml
+
+# ───────────── Sonstige ─────────────
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# ───────────── Umgebung / Geheimnisse ─────────────
+*.pfx
+*.pem
+*.key
+appsettings.*.json
+!appsettings.json
+secrets.json
+.env
+.env.*
+!.env.example
+
+# ───────────── Betriebssystem ─────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
