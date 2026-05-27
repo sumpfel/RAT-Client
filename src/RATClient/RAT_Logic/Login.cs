@@ -6,7 +6,31 @@ using System.Threading.Tasks;
 
 namespace RAT_Logic
 {
-    internal class Login
+    public enum LoginType
     {
+        SSH,
+        Telnet,
+        FTP
+    }
+
+    public class Login
+    {
+        public int Port;
+
+        public LoginType Type;
+
+        public string Password;
+
+        public string Username;
+
+        public int ID;
+
+        public Login(string Username, string Password, int Port, LoginType type)
+        {
+            this.Username = Username;
+            this.Password = Password;
+            this.Port = Port;
+            this.Type = type;
+        }
     }
 }

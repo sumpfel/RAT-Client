@@ -6,7 +6,19 @@ using System.Threading.Tasks;
 
 namespace RAT_Logic
 {
-    internal class SnmpSettings
+    public class SnmpSettings
     {
+        public string ReadCommunity;
+
+        public string WriteCommunity;
+
+        public int ID;
+
+        public SnmpSettings(string readCommunity, string writeCommunity, int iD)
+        {
+            ReadCommunity = readCommunity;
+            WriteCommunity = writeCommunity;
+            ID = iD;
+        }
     }
 }
