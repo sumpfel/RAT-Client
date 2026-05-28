@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace RAT_Logic
 {
-    internal class NetworkObectInterface
+    public class NetworkObectInterface
     {
+        string Name;
+        int MaxSpeed;
+        NetworkConnection Connection;
+        IP IpSettings;
     }
 }
