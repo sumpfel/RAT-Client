@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace RAT_Data
 {
-    public class AccountSettings
+    public class Account
     {
-        public string UserName { get; set; }
+        public User? User { get; set; }
 
-        public string Password { get; set; }
 
-        public void Login()
+        public void Login(string username, string password)
         {
             // TODO
             throw new NotImplementedException();
@@ -20,8 +19,7 @@ namespace RAT_Data
 
         public void Logout()
         {
-            // TODO
-            throw new NotImplementedException();
+            this.User = null;
         }
 
         public void Register()
