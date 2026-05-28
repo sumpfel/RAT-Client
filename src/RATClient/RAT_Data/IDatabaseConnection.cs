@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RAT_Logic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,5 +20,30 @@ namespace RAT_Data
             get;
             set;
         }
+
+        User User { get; set; }
+
+        //Graph
+        public Task<NetworkObjectGraph> GetNetworkGraph();
+
+        //NetworkObject
+        public Task<NetworkObject> AddNetworkObject(NetworkObject networkObject);
+        public Task EditNetworkObject(NetworkObject networkObject);
+        public Task DeleteNetworkObject(NetworkObject networkObject);
+
+        //UserDeviceLogins (ssh, telnet, etc)
+        public Task<List<Login>> GetUserDeviceLogin();
+        public Task<Login> AddUserDeviceLogin(Login login);
+        public Task EditUserDeviceLogin(Login login);
+        public Task DeletetUserDeviceLogin(Login login);
+
+        //User
+        public Task<List<User>> GetAllUsers();
+        public Task<User> AddUser(User user);
+        public Task EditUser(User user);
+        public Task DeleteUser(User user);
+
+        //TODO: UserSettings
+        //TODO: AccessRights
     }
 }

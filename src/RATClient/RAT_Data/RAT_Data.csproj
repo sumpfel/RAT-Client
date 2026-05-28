@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RAT_Logic\RAT_Logic.csproj" />
+  </ItemGroup>
+
 </Project>
