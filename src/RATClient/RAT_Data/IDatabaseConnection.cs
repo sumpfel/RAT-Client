@@ -39,11 +39,14 @@ namespace RAT_Data
 
         //User
         public Task<List<User>> GetAllUsers();
+        public Task<User> Login();
         public Task<User> AddUser(User user);
         public Task EditUser(User user);
         public Task DeleteUser(User user);
 
-        //TODO: UserSettings
+        //UserSettings
+        public Task EditUserSettings(UserSettings userSettings);
         //TODO: AccessRights
+        //public Task<>
     }
 }
