@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RAT_Logic
 {
-    internal class NetworkObjectGraph
+    public class NetworkObjectGraph
     {
     }
 }
