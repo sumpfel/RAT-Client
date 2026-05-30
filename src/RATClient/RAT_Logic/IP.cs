@@ -8,10 +8,10 @@ namespace RAT_Logic
 {
     public class IP
     {
-        string IPv4;
-        string IPv6;
-        string IPv4SubnetMask;
-        int IPv6PrefixLength;
-        string IPv4Gateway;
+        public string IPv4;
+        public string IPv6;
+        public string IPv4SubnetMask;
+        public int IPv6PrefixLength;
+        public string IPv4Gateway;
     }
 }
