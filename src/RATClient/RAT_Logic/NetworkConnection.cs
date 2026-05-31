@@ -14,22 +14,22 @@ namespace RAT_Logic
 
     public class NetworkConnection
     {
-        private NetworkObectInterface[] networkObectInterfaces;
+        private NetworkObjectInterface[] networkObectInterfaces;
         public int Speed;
         public NetworkObjectType Type;
         public string Note;
         public string Name;
 
-        NetworkConnection(NetworkObectInterface networkObectInterface1, NetworkObectInterface networkObectInterface2, int speed, NetworkObjectType type, string note, string name)
+        NetworkConnection(NetworkObjectInterface networkObectInterface1, NetworkObjectInterface networkObectInterface2, int speed, NetworkObjectType type, string note, string name)
         {
-            this.networkObectInterfaces = new NetworkObectInterface[2] {networkObectInterface1, networkObectInterface2};
+            this.networkObectInterfaces = new NetworkObjectInterface[2] {networkObectInterface1, networkObectInterface2};
             Speed = speed;
             Type = type;
             Note = note;
             Name = name;
         }
 
-        public NetworkObectInterface GetConnectedInterface(NetworkObectInterface networkObectInterface)
+        public NetworkObjectInterface GetConnectedInterface(NetworkObjectInterface networkObectInterface)
         {
             if (networkObectInterface == networkObectInterfaces[0])
             {

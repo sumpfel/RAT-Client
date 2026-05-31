@@ -8,5 +8,6 @@ namespace RAT_Logic
 {
     public class NetworkObjectGraph
     {
+        public List<NetworkObject> networkObjects;
     }
 }

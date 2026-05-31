@@ -12,6 +12,8 @@ namespace RAT_Logic
 
         public string WriteCommunity;
 
+        public int Port = 161;
+
         public int ID;
 
         public SnmpSettings(string readCommunity, string writeCommunity, int iD)
