@@ -9,13 +9,13 @@ namespace RAT_Data
 {
     public interface IDatabaseConnection
     {
-        string ip
+        string Ip
         {
             get;
             set;
         }
 
-        string port
+        int Port
         {
             get;
             set;
