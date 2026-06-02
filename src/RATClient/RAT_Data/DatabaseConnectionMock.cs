@@ -38,72 +38,52 @@ namespace RAT_Data
             Port = port;
         }
 
+        //Graph
+        public async Task<NetworkObjectGraph> GetNetworkGraph()
+        {
 
-        public Task<NetworkObject> AddNetworkObject(NetworkObject networkObject)
+            // TODO: actual Data not empty
+            return Task.FromResult(new NetworkObjectGraph());
+        }
+
+        //NetworkObject
+        public async Task<NetworkObject> AddNetworkObject(NetworkObject networkObject)
+        {
+            networkObject.
+            return Task.FromResult(networkObject);
+        }
+        public Task EditNetworkObject(NetworkObject networkObject)
         {
             throw new NotImplementedException();
         }
-
-        public Task<User> AddUser(User user)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Login> AddUserDeviceLogin(Login login)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task DeleteNetworkObject(NetworkObject networkObject)
         {
             throw new NotImplementedException();
         }
 
+        //UserDeviceLogins (ssh, telnet, etc)
+        public Task<List<Login>> GetUserDeviceLogin(NetworkObject networkObject)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<Login> AddUserDeviceLogin(Login login, NetworkObject networkObject)
+        {
+            throw new NotImplementedException();
+        }
+        public Task EditUserDeviceLogin(Login login)
+        {
+            throw new NotImplementedException();
+        }
         public Task DeletetUserDeviceLogin(Login login)
         {
             throw new NotImplementedException();
         }
 
-        public Task DeleteUser(User user)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task EditNetworkObject(NetworkObject networkObject)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task EditUser(User user)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task EditUserDeviceLogin(Login login)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task EditUserSettings(UserSettings userSettings)
-        {
-            throw new NotImplementedException();
-        }
-
+        //User
         public Task<List<User>> GetAllUsers()
         {
             throw new NotImplementedException();
         }
-
-        public Task<NetworkObjectGraph> GetNetworkGraph()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<Login>> GetUserDeviceLogin()
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<User> Login()
         {
             string userName = "RAT";
@@ -116,6 +96,27 @@ namespace RAT_Data
             {
                 throw new AccessViolationException("Wrong User or Password to connecto to the server.");
             }
+        }
+        public Task<User> AddUser(User user)
+        {
+            throw new NotImplementedException();
+        }
+        public Task EditUser(User user)
+        {
+            throw new NotImplementedException();
+        }
+        public Task DeleteUser(User user)
+        {
+            throw new NotImplementedException();
+        }
+
+        
+
+        
+        //UserSettings
+        public Task EditUserSettings(UserSettings userSettings)
+        {
+            throw new NotImplementedException();
         }
     }
 }
