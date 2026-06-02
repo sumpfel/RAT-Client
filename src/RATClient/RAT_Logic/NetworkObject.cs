@@ -95,6 +95,19 @@ namespace RAT_Logic
             }
         }
 
+        public List<string> ListDirSFTP(string remotePath)
+        {
+            List<string> files_ = new List<string>();
+
+            if (sftpClient == null) { throw new EntryPointNotFoundException("Open a sftp connection first!"); }
+            var files = sftpClient.ListDirectory("/remote/path");
+            foreach (var file in files)
+            {
+                files_.Add(file.FullName);
+            }
+            return files_;
+        }
+
         public void OpenSCP(Login login)
         {
             if (scpClient != null) { return; }
@@ -207,14 +220,14 @@ namespace RAT_Logic
 
             foreach (NetworkInterface interf in interfaces)
             {
+                
                 if (interf.OperationalStatus == OperationalStatus.Up)
                 {
-                    var unicastIPAddresses = interf.GetIPProperties().UnicastAddresses;
-
-                    foreach (var kp in unicastIPAddresses)
-                    {
-                        interfaces_list.Add(new Dictionary<string, string>() { ["ip"] = $"{kp.Address.ToString()}", ["mask"] = $"{kp.IPv4Mask.ToString()}", ["name"] = $"{interf.Name}" });
-                    }
+                    interfaces_list.Add(new Dictionary<string, string>() { ["name"] = $"{interf.Name}", ["status"] = "UP" });
+                }
+                else
+                {
+                    interfaces_list.Add(new Dictionary<string, string>() { ["name"] = $"{interf.Name}", ["status"] = "DOWN" });
                 }
             }
 
