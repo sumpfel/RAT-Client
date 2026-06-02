@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MvvmCross" Version="10.1.2" />
+    <ProjectReference Include="..\RAT_Logic\RAT_Logic.csproj" />
   </ItemGroup>
 
 </Project>

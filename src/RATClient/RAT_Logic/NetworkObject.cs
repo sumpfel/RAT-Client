@@ -30,6 +30,7 @@ namespace RAT_Logic
         public string Name;
 
         public int ID;
+
         // ssh tutorial: https://deepwiki.com/sshnet/SSH.NET/2-getting-started
         private SshClient? sshClient = null;
         private SftpClient? sftpClient = null;

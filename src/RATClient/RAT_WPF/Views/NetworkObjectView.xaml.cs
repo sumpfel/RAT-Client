@@ -1,5 +1,4 @@
-﻿using RAT_WPF.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,14 +16,21 @@ using System.Windows.Shapes;
 namespace RAT_WPF.Views
 {
     /// <summary>
-    /// Interaction logic for TopologyView.xaml
+    /// Interaction logic for NetworkObjectView.xaml
     /// </summary>
-    public partial class TopologyView : UserControl
+    public partial class NetworkObjectView : UserControl
     {
-
-        public TopologyView()
+        public NetworkObjectView()
         {
             InitializeComponent();
+        }
+
+        private void Grid_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                DragDrop.DoDragDrop(grid, new DataObject(DataFormats.Serializable, grid), DragDropEffects.Move);
+            }
         }
     }
 }

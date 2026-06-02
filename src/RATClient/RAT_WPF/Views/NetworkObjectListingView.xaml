@@ -1,0 +1,23 @@
+﻿<UserControl x:Class="RAT_WPF.Views.NetworkObjectListingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:RAT_WPF.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="410" d:DesignWidth="160">
+    <Grid>
+        <ListView ItemsSource="{Binding NetworkObjects}">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <EventSetter Event="MouseMove" Handler="ListviewNetworkObject_MouseMove"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Type}"/>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>

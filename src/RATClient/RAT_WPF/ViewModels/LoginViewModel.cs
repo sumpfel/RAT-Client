@@ -163,7 +163,6 @@ namespace RAT_WPF.ViewModels
 					{
 						UsernameOk = false;
 					}
-					// TODO: Change Color of TextBox
 
 					if (UsernameOk)
 					{

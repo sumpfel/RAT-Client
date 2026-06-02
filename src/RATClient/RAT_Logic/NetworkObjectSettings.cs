@@ -36,6 +36,8 @@ namespace RAT_Logic
             }
 
             // TODO: Add Login to Database
+
+
         }
 
         public void RemoveLogin(Login login)
