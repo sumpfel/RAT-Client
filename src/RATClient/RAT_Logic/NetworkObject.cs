@@ -9,11 +9,13 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
+using System.Management;
 
 namespace RAT_Logic
 {
     public enum NetworkObjectType 
-    { 
+    {
+        PC,
         Router,
         Switch,
         Server,
@@ -94,6 +96,19 @@ namespace RAT_Logic
             }
         }
 
+        public List<string> ListDirSFTP(string remotePath)
+        {
+            List<string> files_ = new List<string>();
+
+            if (sftpClient == null) { throw new EntryPointNotFoundException("Open a sftp connection first!"); }
+            var files = sftpClient.ListDirectory("/remote/path");
+            foreach (var file in files)
+            {
+                files_.Add(file.FullName);
+            }
+            return files_;
+        }
+
         public void OpenSCP(Login login)
         {
             if (scpClient != null) { return; }
@@ -153,6 +168,71 @@ namespace RAT_Logic
                            new List<Variable> { new Variable(new ObjectIdentifier(objectIdentifier))},
                            60000);
             return result;
+        }
+
+        public static Dictionary<string, string> GetOwnDeviceInfos()
+        {
+            Dictionary<string, string> stats = new Dictionary<string, string>();
+            //name
+            stats.Add("name", Environment.MachineName);
+            //OS
+            stats.Add("os", System.Runtime.InteropServices.RuntimeInformation.OSDescription);
+
+            //RAM
+            var ramSearcher = new ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
+
+            ulong totalRamBytes = 0;
+
+            foreach (ManagementObject obj in ramSearcher.Get())
+            {
+                totalRamBytes = (ulong)obj["TotalPhysicalMemory"];
+            }
+
+            stats.Add("ram", (totalRamBytes / 1024.0 / 1024 / 1024).ToString());
+
+            //CPU
+            var cpuSearcher = new ManagementObjectSearcher("SELECT Name FROM Win32_Processor");
+
+            string cpuName = "";
+
+            foreach (ManagementObject obj in cpuSearcher.Get())
+            {
+                cpuName = obj["Name"]?.ToString() ?? "";
+            }
+
+            stats.Add("cpu", cpuName);
+
+            //GPU
+            var gpuSearcher = new ManagementObjectSearcher("SELECT Name FROM Win32_VideoController");
+            string gpuNmaes = "";
+            foreach (ManagementObject obj in gpuSearcher.Get())
+            {
+                gpuNmaes += obj["Name"]?.ToString()+" " ?? "";
+            }
+
+            stats.Add("gpu", gpuNmaes);
+            return stats;
+        }
+
+        public static List<Dictionary<string,string>> GetOwnDeviceInterfaces()
+        {
+            List<Dictionary<string, string>> interfaces_list = new List<Dictionary<string, string>>();
+            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (NetworkInterface interf in interfaces)
+            {
+                
+                if (interf.OperationalStatus == OperationalStatus.Up)
+                {
+                    interfaces_list.Add(new Dictionary<string, string>() { ["name"] = $"{interf.Name}", ["status"] = "UP" });
+                }
+                else
+                {
+                    interfaces_list.Add(new Dictionary<string, string>() { ["name"] = $"{interf.Name}", ["status"] = "DOWN" });
+                }
+            }
+
+            return interfaces_list;
         }
 
         private NetworkObjectInterface? GetInterfaceInSameNetworkAsHost()

@@ -32,8 +32,8 @@ namespace RAT_Data
         public Task DeleteNetworkObject(NetworkObject networkObject);
 
         //UserDeviceLogins (ssh, telnet, etc)
-        public Task<List<Login>> GetUserDeviceLogin();
-        public Task<Login> AddUserDeviceLogin(Login login);
+        public Task<List<Login>> GetUserDeviceLogin(NetworkObject networkObject);
+        public Task<Login> AddUserDeviceLogin(Login login, NetworkObject networkObject);
         public Task EditUserDeviceLogin(Login login);
         public Task DeletetUserDeviceLogin(Login login);
 

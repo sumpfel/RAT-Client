@@ -1,0 +1,81 @@
+﻿<Window x:Class="RAT_WPF.NetworkObjectSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RAT_WPF"
+        mc:Ignorable="d"
+        Title="NetworkObjectSettingsWindow" Height="400" Width="500">
+    <Grid>
+        <TabControl>
+            <TabItem x:Name="overview" Header="overview">
+                <StackPanel>
+                    <Label x:Name="name" Content="name: " />
+                    <Label x:Name="os" Content="os: " />
+                    <Label x:Name="cpu" Content="cpu: " />
+                    <Label x:Name="gpu" Content="gpu: " />
+                    <Label x:Name="ram" Content="ram: " />
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="logins">
+                <StackPanel x:Name="LoginsStackPanel">
+                    <Button Content="add login" Click="Button_Click"></Button>
+                    
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="interfaces">
+                <StackPanel x:Name="InterfacesStackPanel">
+                    
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="shell">
+                <TabControl>
+                    <TabItem Header="ssh">
+                        <TextBox Text="please create an ssh login first"/>
+                    </TabItem>
+                    <TabItem Header="+">
+                        <TextBox Text="please create a login first"/>
+                    </TabItem>
+                </TabControl>
+            </TabItem>
+            <TabItem Header="SFTP">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="local path:" Margin="2"></Label>
+                        <TextBox x:Name="SftpLocalPath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="remote path:" Margin="2"></Label>
+                        <TextBox x:Name="SftpRemotePath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Button Content="download" Margin="2" Click="Button_Click_1"></Button>
+                        <Button Content="upload" Margin="2" Click="Button_Click_2"></Button>
+                        <Button Content="list remote dir" Margin="2" Click="Button_Click_3"></Button>
+                    </StackPanel>
+                    <TextBlock x:Name="SftpDirList" Margin="2" TextWrapping="Wrap" Text=""></TextBlock>
+                </StackPanel>
+                
+            </TabItem>
+            <TabItem Header="SCP">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="local path:" Margin="2"></Label>
+                        <TextBox x:Name="ScpLocalPath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="remote path:" Margin="2"></Label>
+                        <TextBox x:Name="ScpRemotePath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Button Content="download" Margin="2" Click="Button_Click_4"></Button>
+                        <Button Content="upload" Margin="2" Click="Button_Click_5"></Button>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="AccessControl">
+                <TextBox Text="this is completely useless without a database -_-"/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

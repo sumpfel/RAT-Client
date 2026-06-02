@@ -10,7 +10,8 @@ namespace RAT_Logic
     {
         SSH,
         Telnet,
-        FTP
+        SFTP,
+        SCP
     }
 
     public class Login
