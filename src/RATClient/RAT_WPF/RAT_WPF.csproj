@@ -12,4 +12,8 @@
     <PackageReference Include="MvvmCross" Version="10.1.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RAT_Logic\RAT_Logic.csproj" />
+  </ItemGroup>
+
 </Project>
