@@ -11,8 +11,8 @@
             <Label Content="port: "></Label>
             <Label Content="user: "></Label>
             <Label Content="potocoll: "></Label>
-            <Button Content="connect" Margin="2"></Button>
-            <Button Content="edit" Margin="2"></Button>
+            <Button Content="connect" Margin="2" Click="Button_Click"></Button>
+            <Button Content="edit" Margin="2" Click="Button_Click_1"></Button>
             <Button Content="delete" Margin="2"></Button>
         </StackPanel>
     </Grid>

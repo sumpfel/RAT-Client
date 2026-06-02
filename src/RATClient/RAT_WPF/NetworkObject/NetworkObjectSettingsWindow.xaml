@@ -38,6 +38,41 @@
                     </TabItem>
                 </TabControl>
             </TabItem>
+            <TabItem Header="SFTP">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="local path:" Margin="2"></Label>
+                        <TextBox x:Name="SftpLocalPath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="remote path:" Margin="2"></Label>
+                        <TextBox x:Name="SftpRemotePath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Button Content="download" Margin="2" Click="Button_Click_1"></Button>
+                        <Button Content="upload" Margin="2" Click="Button_Click_2"></Button>
+                        <Button Content="list remote dir" Margin="2" Click="Button_Click_3"></Button>
+                    </StackPanel>
+                    <TextBlock x:Name="SftpDirList" Margin="2" TextWrapping="Wrap" Text=""></TextBlock>
+                </StackPanel>
+                
+            </TabItem>
+            <TabItem Header="SCP">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="local path:" Margin="2"></Label>
+                        <TextBox x:Name="ScpLocalPath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Label Content="remote path:" Margin="2"></Label>
+                        <TextBox x:Name="ScpRemotePath" Text="" Margin="2" Width="300"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="2">
+                        <Button Content="download" Margin="2" Click="Button_Click_4"></Button>
+                        <Button Content="upload" Margin="2" Click="Button_Click_5"></Button>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
             <TabItem Header="AccessControl">
                 <TextBox Text="this is completely useless without a database -_-"/>
             </TabItem>
