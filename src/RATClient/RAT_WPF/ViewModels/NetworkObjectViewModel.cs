@@ -9,7 +9,7 @@ namespace RAT_WPF.ViewModels
 {
     public class NetworkObjectViewModel : ViewModelBase
     {
-        private readonly NetworkObject _networkObject;
+        private readonly RAT_Logic.NetworkObject _networkObject;
 
         public String Type => _networkObject.Type.ToString();
 
