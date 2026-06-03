@@ -11,6 +11,8 @@ namespace RAT_WPF.ViewModels
 {
     public class CanvasViewModel : ViewModelBase
     {
+        public List<NetworkObjectViewModel> _networkObjects { get; set; }
+
         public CanvasViewModel()
         {
         }

@@ -1,4 +1,5 @@
-﻿using RAT_WPF.ViewModels;
+﻿using RAT_WPF.Commands;
+using RAT_WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,18 +42,10 @@ namespace RAT_WPF.Views
 
         private void NetworkObject_Drop(object sender, DragEventArgs e)
         {
-            if (NetworkObjectDropCommand?.CanExecute(null) ?? false)
-            {
-                NetworkObjectDropCommand?.Execute(null);
-            }
-        }
-
-        private void NetworkObject_DragOver(object sender, DragEventArgs e)
-        {
             object data = e.Data.GetData(DataFormats.Serializable);
 
             if (data is NetworkObjectViewModel networkObject)
-            {   
+            {
                 NetworkObjectView view = new NetworkObjectView()
                 {
                     DataContext = networkObject
@@ -72,7 +65,7 @@ namespace RAT_WPF.Views
                 if (!exists)
                 {
                     canvas.Children.Add(view);
-                    Point dropPosition = e.GetPosition(view);
+                    Point dropPosition = e.GetPosition(canvas);
                     Canvas.SetLeft(view, dropPosition.X);
                     Canvas.SetTop(view, dropPosition.Y);
                 }
@@ -85,6 +78,17 @@ namespace RAT_WPF.Views
                 Canvas.SetLeft(element, dropPosition.X);
                 Canvas.SetTop(element, dropPosition.Y);
             }
+
+
+            if (NetworkObjectDropCommand?.CanExecute(null) ?? false)
+            {
+                NetworkObjectDropCommand?.Execute(null);
+            }
+        }
+
+        private void NetworkObject_DragOver(object sender, DragEventArgs e)
+        {
+            
         }
     }
 }

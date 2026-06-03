@@ -3,15 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using RAT_Logic;
+using RAT_WPF.Commands;
 
 namespace RAT_WPF.ViewModels
 {
     public class NetworkObjectViewModel : ViewModelBase
     {
-        private readonly RAT_Logic.NetworkObject _networkObject;
+        private readonly NetworkObject _networkObject;
 
         public String Type => _networkObject.Type.ToString();
+
+		public string Name
+		{
+			get 
+			{ 
+				return _networkObject.Name; 
+			}
+			set 
+			{ 
+				_networkObject.Name = value;
+				OnPropertyChanged(nameof(Name));
+			}
+		}
+
 
 		private int _x;
 
@@ -29,18 +45,14 @@ namespace RAT_WPF.ViewModels
 			set { _y = value; }
 		}
 
-		private bool _displayed = false;
-
-		public bool Displayed
-		{
-			get { return _displayed; }
-			set { _displayed = value; }
-		}
+		public NetworkObjectOpenSettings NetworkObjectOpenSettings { get; set; }
 
 
 		public NetworkObjectViewModel(RAT_Logic.NetworkObject networkObject) 
 		{
             _networkObject = networkObject;
+
+            NetworkObjectOpenSettings = new NetworkObjectOpenSettings(_networkObject);
         }
 	}
 }
