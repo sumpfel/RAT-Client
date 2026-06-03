@@ -27,7 +27,7 @@ namespace RAT_Logic
 
         public NetworkObjectType Type;
 
-        public NetworkObjectSettings Settings;
+        public NetworkObjectSettings Settings = new NetworkObjectSettings();
 
         public string Name;
 

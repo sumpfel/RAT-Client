@@ -128,5 +128,31 @@ namespace RAT_WPF.NetworkObject_UI
             TabItem tab = new TabItem() { Header = "ssh" };
             SshShellsTabControl.Items.Add(tab);
         }
+
+        private async void Button_Click_6(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string result = await networkObject.ExecuteSSH(sshInputBox.Text);
+            }
+            catch
+            {
+                MessageBox.Show("something went wrong? have you already opened a connection?");
+            }
+        }
+
+        private void Button_Click_7(object sender, RoutedEventArgs e)
+        {
+            UpdateInterfaceWindow updateLoginWindow = new UpdateInterfaceWindow();
+            if (updateLoginWindow.ShowDialog() == true)
+            {
+                networkObject.NetworkInterfaces.Add(updateLoginWindow.networkObjectInterface);
+            }
+            InterfacesStackPanel.Children.Clear();
+            foreach (NetworkObjectInterface networkObjectInterface in networkObject.NetworkInterfaces)
+            {
+                InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
+            }
+        }
     }
 }

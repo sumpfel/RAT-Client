@@ -24,14 +24,21 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="interfaces">
-                <StackPanel x:Name="InterfacesStackPanel">
-                    
+                <StackPanel>
+                    <Button Content="new interface" Click="Button_Click_7"></Button>
+                    <StackPanel x:Name="InterfacesStackPanel">
+                        
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
             <TabItem Header="shell">
                 <TabControl x:Name="SshShellsTabControl">
                     <TabItem Header="ssh">
-                        <TextBox Text="please create an ssh login first"/>
+                        <StackPanel>
+                            <TextBox x:Name="sshInputBox" Text="-_-"/>
+                            <Button Content="send" Click="Button_Click_6"></Button>
+                            <TextBlock x:Name="sshOutputBlock"></TextBlock>
+                        </StackPanel>
                     </TabItem>
                     <TabItem Header="+" MouseDown="TabItem_MouseDown">
                     </TabItem>
