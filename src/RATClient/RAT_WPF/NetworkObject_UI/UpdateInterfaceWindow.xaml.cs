@@ -31,6 +31,7 @@ namespace RAT_WPF.NetworkObject_UI
             try
             {
                 networkObjectInterface.Name = InterfaceNameTextBox.Text;
+                networkObjectInterface.IP = new IP();
                 networkObjectInterface.IP.IPv4 = Ipv4TextBox.Text;
                 networkObjectInterface.IP.IPv4SubnetMask = Ipv4MaskTextBox.Text;
                 networkObjectInterface.IP.IPv4Gateway = Ipv4GatewayTextBox.Text;

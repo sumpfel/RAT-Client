@@ -55,8 +55,9 @@ namespace RAT_WPF.NetworkObject_UI
             if (updateLoginWindow.ShowDialog() == true)
             {
                 networkObject.Settings.AddLogin(updateLoginWindow.login);
+                LoginsStackPanel.Children.Add(new LoginControl(updateLoginWindow.login, networkObject));//TODO: use something smarter than stack pannel: listview
             }
-            LoginsStackPanel.Children.Add(new LoginControl(updateLoginWindow.login, networkObject));//TODO: use something smarter than stack pannel: listview
+            
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -147,11 +148,11 @@ namespace RAT_WPF.NetworkObject_UI
             if (updateLoginWindow.ShowDialog() == true)
             {
                 networkObject.NetworkInterfaces.Add(updateLoginWindow.networkObjectInterface);
-            }
-            InterfacesStackPanel.Children.Clear();
-            foreach (NetworkObjectInterface networkObjectInterface in networkObject.NetworkInterfaces)
-            {
-                InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
+                InterfacesStackPanel.Children.Clear();
+                foreach (NetworkObjectInterface networkObjectInterface in networkObject.NetworkInterfaces)
+                {
+                    InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
+                }
             }
         }
     }
