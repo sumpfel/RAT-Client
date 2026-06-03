@@ -21,7 +21,7 @@ namespace RAT_WPF.ViewModels
             _networkObjects = new ObservableCollection<NetworkObjectViewModel>();
         }
 
-        public void AddNetworkObject(NetworkObject networkObject)
+        public void AddNetworkObject(RAT_Logic.NetworkObject networkObject)
         {
             _networkObjects.Add(new NetworkObjectViewModel(networkObject));
         }

@@ -122,5 +122,11 @@ namespace RAT_WPF
                 MessageBox.Show("something went wrong? have you already opened a connection?");
             }
         }
+
+        private void TabItem_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            TabItem tab = new TabItem() { Header = "ssh" };
+            SshShellsTabControl.Items.Add(tab);
+        }
     }
 }

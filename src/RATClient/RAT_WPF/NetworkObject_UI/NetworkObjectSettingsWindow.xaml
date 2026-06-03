@@ -29,12 +29,11 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="shell">
-                <TabControl>
+                <TabControl x:Name="SshShellsTabControl">
                     <TabItem Header="ssh">
                         <TextBox Text="please create an ssh login first"/>
                     </TabItem>
-                    <TabItem Header="+">
-                        <TextBox Text="please create a login first"/>
+                    <TabItem Header="+" MouseDown="TabItem_MouseDown">
                     </TabItem>
                 </TabControl>
             </TabItem>
