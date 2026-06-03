@@ -6,8 +6,15 @@
              xmlns:local="clr-namespace:RAT_WPF.Views"
              mc:Ignorable="d" 
              d:DesignHeight="45" d:DesignWidth="80" x:Name="grid">
-    <Grid Width="80" Height="45" MouseMove="Grid_MouseMove">
-        <Rectangle Fill="Blue"/>
-        <TextBlock Text="{Binding Type}"/>
+    <Grid Width="80" Height="70" MouseMove="Grid_MouseMove">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="45"/>
+            <!-- <RowDefinition Height="15"/> -->
+            <RowDefinition Height="25"/>
+        </Grid.RowDefinitions>
+        <Rectangle Fill="Blue" Grid.Row="0"/>
+        <TextBlock Text="{Binding Type}" Grid.Row="0"/>
+        <!--<TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Background ="WhiteSmoke" Grid.Row="1"/> -->
+        <Button Grid.Row="1" Content="Settings" Command="{Binding NetworkObjectOpenSettings}"/>
     </Grid>
 </UserControl>

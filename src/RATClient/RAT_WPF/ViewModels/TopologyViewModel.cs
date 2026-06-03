@@ -14,15 +14,19 @@ namespace RAT_WPF.ViewModels
     {
         public NetworkObjectListingViewModel defaultItems { get; }
 
+        public ICommand NetworkObjectAddedCommand { get; }
+
         public TopologyViewModel()
         {
             defaultItems = new NetworkObjectListingViewModel();
 
-            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Router , Name = "New Router"});
-            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Switch , Name = "New Switch"});
-            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Server , Name = "New Server"});
-            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Client , Name = "New Client"});
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Router , Name = "New Router", Settings = new NetworkObjectSettings()});
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Switch , Name = "New Switch", Settings = new NetworkObjectSettings()});
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Server , Name = "New Server", Settings = new NetworkObjectSettings()});
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Client , Name = "New Client", Settings = new NetworkObjectSettings()});
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.PC, Name = "New PC", Settings = new NetworkObjectSettings() });
 
+            // NetworkObjectAddedCommand = new NetworkObjectAddedCommand(defaultItems.NetworkObjects);
         }
     }
 }

@@ -35,6 +35,7 @@
         <views:CanvasView
             Grid.Row="1"
             Grid.Column="1"
+            NetworkObjectDropCommand="{Binding}"
             />
     </Grid>
 </UserControl>
