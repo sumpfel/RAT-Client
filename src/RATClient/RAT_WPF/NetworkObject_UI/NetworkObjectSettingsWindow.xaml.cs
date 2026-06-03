@@ -1,5 +1,5 @@
 ﻿using RAT_Logic;
-using RAT_WPF.NetworkObject;
+using RAT_WPF.NetworkObject_UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,27 +14,27 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace RAT_WPF
+namespace RAT_WPF.NetworkObject_UI
 {
     /// <summary>
     /// Interaktionslogik für NetworkObjectSettingsWindow.xaml
     /// </summary>
     public partial class NetworkObjectSettingsWindow : Window
     {
-        RAT_Logic.NetworkObject networkObject;
-        public NetworkObjectSettingsWindow(RAT_Logic.NetworkObject networkObject)
+        NetworkObject networkObject;
+        public NetworkObjectSettingsWindow(NetworkObject networkObject)
         {
             InitializeComponent();
-            if (networkObject.Type == RAT_Logic.NetworkObjectType.PC)
+            if (networkObject.Type == NetworkObjectType.PC)
             {
-                Dictionary<string, string> stats = RAT_Logic.NetworkObject.GetOwnDeviceInfos();
+                Dictionary<string, string> stats = NetworkObject.GetOwnDeviceInfos();
                 name.Content = $"name: {stats["name"]} (Your PC)";
                 os.Content = $"os: {stats["os"]}";
                 ram.Content = $"ram: {stats["ram"]}";
                 cpu.Content = $"cpu: {stats["cpu"]}";
                 gpu.Content = $"gpu: {stats["gpu"]}";
 
-                foreach (Dictionary<string,string> interface_ in RAT_Logic.NetworkObject.GetOwnDeviceInterfaces())
+                foreach (Dictionary<string,string> interface_ in NetworkObject.GetOwnDeviceInterfaces())
                 {
                     InterfacesStackPanel.Children.Add(new Label() { Content = $"{interface_["name"]} [{interface_["status"]}]"});
                 }

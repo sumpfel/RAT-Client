@@ -41,9 +41,7 @@ namespace RAT_Data
         //Graph
         /*public async Task<NetworkObjectGraph> GetNetworkGraph()
         {
-
-            // TODO: actual Data not empty
-            return Task.FromResult(new NetworkObjectGraph());
+            throw new NotImplementedException();
         }
 
         //NetworkObject
@@ -123,9 +121,6 @@ namespace RAT_Data
         {
             throw new NotImplementedException();
         }
-
-        
-
         
         //UserSettings
         public Task EditUserSettings(UserSettings userSettings)
