@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using RAT_Logic;
 using RAT_WPF.Commands;
+using RAT_WPF.Views;
 
 namespace RAT_WPF.ViewModels
 {
@@ -15,6 +16,10 @@ namespace RAT_WPF.ViewModels
         public NetworkObjectListingViewModel defaultItems { get; }
 
         public ICommand NetworkObjectAddedCommand { get; }
+
+        private readonly ObservableCollection<NetworkObjectViewModel> _networkObjects;
+
+        public IEnumerable<NetworkObjectViewModel> NetworkObjects => _networkObjects;
 
         public TopologyViewModel()
         {
@@ -27,6 +32,20 @@ namespace RAT_WPF.ViewModels
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.PC, Name = "New PC", Settings = new NetworkObjectSettings() });
 
             // NetworkObjectAddedCommand = new NetworkObjectAddedCommand(defaultItems.NetworkObjects);
+
+            _networkObjects = new ObservableCollection<NetworkObjectViewModel>()
+            {
+                /* For testing
+                
+                new NetworkObjectViewModel(new NetworkObject() { Type = NetworkObjectType.Router , Name = "Test", Settings = new NetworkObjectSettings(), X = 50, Y=100}),
+                new NetworkObjectViewModel(new NetworkObject() { Type = NetworkObjectType.Router , Name = "Test2", Settings = new NetworkObjectSettings(), X = 350, Y=250})
+                */
+            };
+        }
+
+        public void AddNetworkObjectViewModelToCanvas(NetworkObjectViewModel networkObject)
+        {
+            _networkObjects.Add(networkObject);
         }
     }
 }

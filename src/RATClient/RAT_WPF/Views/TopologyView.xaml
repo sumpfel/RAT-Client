@@ -32,10 +32,36 @@
             DataContext="{Binding defaultItems}"
             />
         <!--Canvas-->
+        <!-- Per View - Over Complex, not needed
         <views:CanvasView
             Grid.Row="1"
             Grid.Column="1"
             NetworkObjectDropCommand="{Binding}"
             />
+        -->
+        <ItemsControl ItemsSource="{Binding NetworkObjects}" Grid.Row="1" Grid.Column="1">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <views:NetworkObjectView/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+            <!--Help from AI-->
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas 
+                        AllowDrop="True" 
+                        Drop="NetworkObject_Drop" 
+                        DragOver="NetworkObject_DragOver" 
+                        Background="WhiteSmoke"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left" Value="{Binding X, Mode=TwoWay}"/>
+                    <Setter Property="Canvas.Top" Value="{Binding Y, Mode=TwoWay}"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <!--No more Help from AI-->
+        </ItemsControl>
     </Grid>
 </UserControl>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using RAT_Logic;
 using RAT_WPF.Commands;
@@ -28,24 +29,40 @@ namespace RAT_WPF.ViewModels
 			}
 		}
 
-
-		private int _x;
-
 		public int X
 		{
-			get { return _x; }
-			set { _x = value; }
+			get
+            {
+                return _networkObject.X;
+            }
+			set
+            {
+				if (value != _networkObject.X)
+				{
+                    _networkObject.X = value;
+                    OnPropertyChanged(nameof(X));
+                }
+
+            }
 		}
 
-		private int _y;
+        public int Y
+        {
+            get
+            {
+                return _networkObject.Y;
+            }
+            set
+            {
+                if (value != _networkObject.Y)
+                {
+                    _networkObject.Y = value;
+                    OnPropertyChanged(nameof(Y));
+                }
+            }
+        }
 
-		public int Y
-		{
-			get { return _y; }
-			set { _y = value; }
-		}
-
-		public NetworkObjectOpenSettings NetworkObjectOpenSettings { get; set; }
+        public NetworkObjectOpenSettings NetworkObjectOpenSettings { get; set; }
 
 
 		public NetworkObjectViewModel(NetworkObject networkObject) 
