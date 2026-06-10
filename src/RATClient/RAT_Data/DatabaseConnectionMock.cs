@@ -39,8 +39,22 @@ namespace RAT_Data
         }
 
         //Graph
+        /*public async Task<NetworkObjectGraph> GetNetworkGraph()
+        {
+            throw new NotImplementedException();
+        }
+
+        //NetworkObject
+        public async Task<NetworkObject> AddNetworkObject(NetworkObject networkObject)
+        {
+            networkObject.ID = 1;
+            return Task.FromResult(networkObject);
+        }*/
+
         public async Task<NetworkObjectGraph> GetNetworkGraph()
         {
+
+            // TODO: actual Data not empty
             throw new NotImplementedException();
         }
 
@@ -49,6 +63,7 @@ namespace RAT_Data
         {
             throw new NotImplementedException();
         }
+
         public Task EditNetworkObject(NetworkObject networkObject)
         {
             throw new NotImplementedException();

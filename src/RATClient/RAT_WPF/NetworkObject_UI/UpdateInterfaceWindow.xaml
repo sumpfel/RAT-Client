@@ -1,0 +1,30 @@
+﻿<Window x:Class="RAT_WPF.NetworkObject_UI.UpdateInterfaceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
+        mc:Ignorable="d"
+        Title="UpdateInterfaceWindow" Height="350" Width="800">
+    <StackPanel>
+        <Label Content="interface name:"></Label>
+        <TextBox x:Name="InterfaceNameTextBox"></TextBox>
+        <Label Content="ipv4:"></Label>
+        <TextBox x:Name="Ipv4TextBox"></TextBox>
+        <Label Content="ipv4 mask:"></Label>
+        <TextBox x:Name="Ipv4MaskTextBox"></TextBox>
+        <Label Content="ipv4Gateway:"></Label>
+        <TextBox x:Name="Ipv4GatewayTextBox"></TextBox>
+        <Label Content="ipv6:"></Label>
+        <TextBox x:Name="Ipv6TextBox"></TextBox>
+        <Label Content="ipv6 prefix:"></Label>
+        <TextBox x:Name="Ipv6PrefixTextBox"></TextBox>
+        <Label Content="ipv6Gateway:"></Label>
+        <TextBox x:Name="Ipv6GatewayTextBox"></TextBox>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content=" Cancel " FontSize="15" Margin="2"></Button>
+            <Button Content=" Ok " FontSize="15" Margin="2" Click="Button_Click"></Button>
+        </StackPanel>
+        
+    </StackPanel>
+</Window>

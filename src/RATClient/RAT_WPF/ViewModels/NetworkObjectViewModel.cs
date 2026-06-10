@@ -65,7 +65,7 @@ namespace RAT_WPF.ViewModels
         public NetworkObjectOpenSettings NetworkObjectOpenSettings { get; set; }
 
 
-		public NetworkObjectViewModel(NetworkObject networkObject) 
+		public NetworkObjectViewModel(RAT_Logic.NetworkObject networkObject) 
 		{
             _networkObject = networkObject;
 

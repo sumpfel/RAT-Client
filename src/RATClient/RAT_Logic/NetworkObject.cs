@@ -23,11 +23,11 @@ namespace RAT_Logic
     }
     public class NetworkObject
     {
-        public List<NetworkObjectInterface> NetworkInterfaces = new List<NetworkObjectInterface>();
+        public List<NetworkObjectInterface> NetworkInterfaces = new List<NetworkObjectInterface>();//new List<NetworkObjectInterface>() { new NetworkObjectInterface() { Name="eth0" ,IP = new IP() { IPv4 = "192.168.66.13", IPv4SubnetMask = "255.255.255.0", IPv4Gateway = "192.168.66.253", IPv6 = "ABC::ABC", IPv6PrefixLength=16 } } };
 
         public NetworkObjectType Type;
 
-        public NetworkObjectSettings Settings;
+        public NetworkObjectSettings Settings = new NetworkObjectSettings();
 
         public string Name;
 
@@ -39,6 +39,7 @@ namespace RAT_Logic
 
         // ssh tutorial: https://deepwiki.com/sshnet/SSH.NET/2-getting-started
         private SshClient? sshClient = null;
+        private List<ShellStream> sshShellStreams = new List<ShellStream>();
         private SftpClient? sftpClient = null;
         private ScpClient? scpClient = null;
 
@@ -51,10 +52,69 @@ namespace RAT_Logic
                 throw new EntryPointNotFoundException("No path to Remote Device Available");
             }
 
-            SshClient sshClient_ = new SshClient($"{networkObjectInterface.IP.IPv4}:{login.Port}", login.Username, login.Password);
+            SshClient sshClient_ = new SshClient(networkObjectInterface.IP.IPv4, login.Port, login.Username, login.Password);
             sshClient_.Connect();
             sshClient = sshClient_;
+
+            //this.OpenSSHstream();
         }
+        public int OpenSSHstream()
+        {
+            if (sshClient == null)
+            {
+                throw new EntryPointNotFoundException(
+                    "No SSH connection to device to open shell stream.");
+            }
+
+            ShellStream shellStream = sshClient.CreateShellStream(
+                "xterm",
+                80,
+                24,
+                800,
+                600,
+                1024);
+
+            sshShellStreams.Add(shellStream);
+
+            return sshShellStreams.Count - 1;
+        }
+
+        //KI: ChatGPT prompt: how to change my executeSSH wpf input output textbox button setup to use my sshShellStreams for a real bash linux terminal feal
+        public async Task StartReadingAsync(Action<string> onDataReceived, int shellId)
+        {
+            if (shellId < 0 || shellId >= sshShellStreams.Count)
+                return;
+
+            ShellStream shell = sshShellStreams[shellId];
+
+            await Task.Run(() =>
+            {
+                while (sshClient != null && sshClient.IsConnected)
+                {
+                    if (shell.DataAvailable)
+                    {
+                        string data = shell.Read();
+
+                        if (!string.IsNullOrEmpty(data))
+                        {
+                            onDataReceived(data);
+                        }
+                    }
+
+                    Thread.Sleep(10);
+                }
+            });
+        }
+        
+
+        public void SendCommand(string command, int shellId)
+        {
+            if (shellId < 0 || shellId >= sshShellStreams.Count)
+                return;
+
+            sshShellStreams[shellId].WriteLine(command);
+        }
+        // KI END
 
         public async Task<string> ExecuteSSH(string command)
         {
@@ -77,7 +137,7 @@ namespace RAT_Logic
                 throw new EntryPointNotFoundException("No path to Remote Device Available");
             }
 
-            SftpClient sftpClient_ = new SftpClient($"{networkObjectInterface.IP.IPv4}:{login.Port}", login.Username, login.Password);
+            SftpClient sftpClient_ = new SftpClient(networkObjectInterface.IP.IPv4, login.Port, login.Username, login.Password);
             sftpClient_.Connect();
             sftpClient = sftpClient_;
         }
@@ -122,7 +182,7 @@ namespace RAT_Logic
                 throw new EntryPointNotFoundException("No path to Remote Device Available");
             }
 
-            ScpClient scpClient_ = new ScpClient($"{networkObjectInterface.IP.IPv4}:{login.Port}", login.Username, login.Password);
+            ScpClient scpClient_ = new ScpClient(networkObjectInterface.IP.IPv4, login.Port, login.Username, login.Password);
             scpClient_.Connect();
             scpClient = scpClient_;
         }
@@ -241,7 +301,7 @@ namespace RAT_Logic
 
         private NetworkObjectInterface? GetInterfaceInSameNetworkAsHost()
         {
-            
+
             //GET OWN SUBNETMASK
             List<string> ownIpv4subnet = new List<string>();
             NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
@@ -251,7 +311,7 @@ namespace RAT_Logic
                 if (interf.OperationalStatus == OperationalStatus.Up)
                 {
                     var unicastIPAddresses = interf.GetIPProperties().UnicastAddresses;
-                    
+
                     foreach (var kp in unicastIPAddresses)
                     {
                         ownIpv4subnet.Add(kp.IPv4Mask.ToString());
@@ -266,7 +326,7 @@ namespace RAT_Logic
             {
                 foreach (NetworkObjectInterface networkObjectInterface in NetworkInterfaces)
                 {
-                    if (networkObjectInterface.IP.IPv4SubnetMask != ipv4subnet){continue;}
+                    if (networkObjectInterface.IP.IPv4SubnetMask != ipv4subnet) { continue; }
 
                     //TODO: check if there is a wire connection aka: own machine interface -cable- switch -cable- remote machine interface (also wifi to AccessPoint)
 
@@ -275,7 +335,11 @@ namespace RAT_Logic
             }
 
             return interface_;
+            /*return new NetworkObjectInterface()
+            {
+                Name = "eth0",
+                IP = new IP() { IPv4 = "192.168.66.13", IPv4SubnetMask = "255.255.255.0", IPv4Gateway = "192.168.66.253", IPv6 = "ABC::ABC", IPv6PrefixLength = 16 }
+            };*/
         }
-        
     }
 }
