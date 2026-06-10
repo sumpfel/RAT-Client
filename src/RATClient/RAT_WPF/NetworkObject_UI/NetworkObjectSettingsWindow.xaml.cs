@@ -22,9 +22,11 @@ namespace RAT_WPF.NetworkObject_UI
     public partial class NetworkObjectSettingsWindow : Window
     {
         NetworkObject networkObject;
-        public NetworkObjectSettingsWindow(NetworkObject networkObject)
+        
+        public NetworkObjectSettingsWindow(NetworkObject networkObject_)
         {
             InitializeComponent();
+            networkObject = networkObject_;
             if (networkObject.Type == NetworkObjectType.PC)
             {
                 Dictionary<string, string> stats = NetworkObject.GetOwnDeviceInfos();
@@ -47,6 +49,8 @@ namespace RAT_WPF.NetworkObject_UI
                     InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
                 }
             }
+
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -124,17 +128,12 @@ namespace RAT_WPF.NetworkObject_UI
             }
         }
 
-        private void TabItem_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            TabItem tab = new TabItem() { Header = "ssh" };
-            SshShellsTabControl.Items.Add(tab);
-        }
-
         private async void Button_Click_6(object sender, RoutedEventArgs e)
         {
             try
             {
                 string result = await networkObject.ExecuteSSH(sshInputBox.Text);
+                sshOutputBlock.Text = result;
             }
             catch
             {
@@ -154,6 +153,38 @@ namespace RAT_WPF.NetworkObject_UI
                     InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
                 }
             }
+        }
+
+        private void SshShellsTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SshShellsTabControl.SelectedIndex != SshShellsTabControl.Items.Count - 1)
+            {
+                return;
+            }
+            //KI
+            // open new shell stream
+            int shellId = networkObject.OpenSSHstream();
+
+            // create terminal control
+            sshTermainalControl terminal = new sshTermainalControl(
+                networkObject,
+                shellId);
+
+            // create tab
+            TabItem tab = new TabItem()
+            {
+                Header = $"ssh-{shellId}",
+                Content = terminal
+            };
+            SshShellsTabControl.SelectedIndex = 0; //das es koa zwo tes mol des event triggered wegs selected tab changed (also es goht halt beim if hops)
+            // insert BEFORE the + tab
+            SshShellsTabControl.Items.Insert(
+                SshShellsTabControl.Items.Count - 1,
+                tab);
+
+            // select new tab
+            SshShellsTabControl.SelectedItem = tab;
+            //KI END
         }
     }
 }

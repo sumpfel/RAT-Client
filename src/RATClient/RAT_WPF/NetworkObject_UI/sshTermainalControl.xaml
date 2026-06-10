@@ -1,0 +1,48 @@
+﻿<UserControl x:Class="RAT_WPF.NetworkObject_UI.sshTermainalControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
+             mc:Ignorable="d" 
+             d:MinHeight="200" d:MinWidth="200">
+    <!--KI prompt wpf simple text scroll to connect with a ssh shell stream -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- TERMINAL OUTPUT -->
+
+        <RichTextBox x:Name="TerminalBox"
+             Background="#0c0c0c"
+             Foreground="#d4d4d4"
+             FontFamily="Consolas"
+             FontSize="14"
+             IsReadOnly="True"
+             BorderThickness="0"
+             VerticalScrollBarVisibility="Auto"
+             HorizontalScrollBarVisibility="Auto">
+
+            <FlowDocument PageWidth="3000"/>
+
+        </RichTextBox>
+
+        <!-- COMMAND INPUT -->
+
+        <TextBox x:Name="CommandInput"
+         Grid.Row="1"
+         Background="#181818"
+         Foreground="White"
+         CaretBrush="White"
+         FontFamily="Consolas"
+         FontSize="14"
+         BorderBrush="#333"
+         BorderThickness="1"
+         Padding="6"
+         KeyDown="CommandInput_KeyDown"/>
+
+    </Grid>
+    <!-- KI END-->
+</UserControl>

@@ -32,15 +32,16 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="shell">
-                <TabControl x:Name="SshShellsTabControl">
-                    <TabItem Header="ssh">
+                <TabControl x:Name="SshShellsTabControl" SelectionChanged="SshShellsTabControl_SelectionChanged">
+                    <TabItem Header="ssh-comand">
                         <StackPanel>
                             <TextBox x:Name="sshInputBox" Text="-_-"/>
                             <Button Content="send" Click="Button_Click_6"></Button>
                             <TextBlock x:Name="sshOutputBlock"></TextBlock>
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="+" MouseDown="TabItem_MouseDown">
+                    <TabItem Header="+" x:Name="addSshShellStream">
+                        
                     </TabItem>
                 </TabControl>
             </TabItem>
