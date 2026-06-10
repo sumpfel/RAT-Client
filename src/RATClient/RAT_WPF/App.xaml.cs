@@ -12,7 +12,7 @@ namespace RAT_WPF
     public partial class App : Application
     {
         private readonly NavigationStore _navigationStore;
-
+        private bool _debugging_ignore_login=true;
         public App()
         {
             _navigationStore = new NavigationStore();
@@ -21,7 +21,15 @@ namespace RAT_WPF
         protected override void OnStartup(StartupEventArgs e)
         {
             // TODO: If already logged in, start topologyviewmodel instead
-            _navigationStore.CurrentViewModel = new LoginViewModel(_navigationStore);
+            if (_debugging_ignore_login)
+            {
+                _navigationStore.CurrentViewModel = new TopologyViewModel();
+            }
+            else
+            {
+                _navigationStore.CurrentViewModel = new LoginViewModel(_navigationStore);
+            }
+            
 
             MainWindow = new MainWindow()
             {
