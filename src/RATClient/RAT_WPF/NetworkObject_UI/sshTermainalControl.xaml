@@ -1,48 +1,71 @@
-﻿<UserControl x:Class="RAT_WPF.NetworkObject_UI.sshTermainalControl"
+<UserControl x:Class="RAT_WPF.NetworkObject_UI.sshTermainalControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:MinHeight="200" d:MinWidth="200">
-    <!--KI prompt wpf simple text scroll to connect with a ssh shell stream -->
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <!--KI start (Claude Opus 4.8, prompt 13): themed terminal — header bar, rounded console card, prompt glyph -->
+    <Border Background="{DynamicResource Term.Background}" CornerRadius="8" Margin="6"
+            BorderBrush="{DynamicResource Term.Border}" BorderThickness="1" ClipToBounds="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <!-- TERMINAL OUTPUT -->
+            <!-- HEADER BAR -->
+            <Border Grid.Row="0" Background="{DynamicResource Term.Header}" Padding="10,6">
+                <DockPanel>
+                    <TextBlock x:Name="TitleText" Text="ssh" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource Term.Muted}" FontFamily="Cascadia Mono, Consolas"
+                               FontSize="12"/>
+                </DockPanel>
+            </Border>
 
-        <RichTextBox x:Name="TerminalBox"
-             Background="#0c0c0c"
-             Foreground="#d4d4d4"
-             FontFamily="Consolas"
-             FontSize="14"
-             IsReadOnly="True"
-             BorderThickness="0"
-             VerticalScrollBarVisibility="Auto"
-             HorizontalScrollBarVisibility="Auto">
+            <!-- TERMINAL OUTPUT -->
+            <RichTextBox x:Name="TerminalBox" Grid.Row="1"
+                 Background="Transparent"
+                 Foreground="{DynamicResource Term.Text}"
+                 FontFamily="Cascadia Mono, Consolas"
+                 FontSize="13.5"
+                 IsReadOnly="True"
+                 IsUndoEnabled="False"
+                 BorderThickness="0"
+                 Padding="10,8"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto">
+                <RichTextBox.Resources>
+                    <Style TargetType="Paragraph">
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="LineHeight" Value="18"/>
+                    </Style>
+                </RichTextBox.Resources>
+                <FlowDocument PageWidth="3000"/>
+            </RichTextBox>
 
-            <FlowDocument PageWidth="3000"/>
-
-        </RichTextBox>
-
-        <!-- COMMAND INPUT -->
-
-        <TextBox x:Name="CommandInput"
-         Grid.Row="1"
-         Background="#181818"
-         Foreground="White"
-         CaretBrush="White"
-         FontFamily="Consolas"
-         FontSize="14"
-         BorderBrush="#333"
-         BorderThickness="1"
-         Padding="6"
-         KeyDown="CommandInput_KeyDown"/>
-
-    </Grid>
+            <!-- COMMAND INPUT (prompt glyph + textbox) -->
+            <Border Grid.Row="2" Background="{DynamicResource Term.InputBg}"
+                    BorderBrush="{DynamicResource Term.Border}" BorderThickness="0,1,0,0">
+                <DockPanel Margin="10,0,8,0">
+                    <TextBlock DockPanel.Dock="Left" Text="❯" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="{DynamicResource Term.Prompt}" FontFamily="Cascadia Mono, Consolas"
+                               FontSize="15" FontWeight="Bold"/>
+                    <TextBox x:Name="CommandInput"
+                     Background="Transparent"
+                     Foreground="{DynamicResource Term.Text}"
+                     CaretBrush="{DynamicResource Term.Prompt}"
+                     FontFamily="Cascadia Mono, Consolas"
+                     FontSize="13.5"
+                     BorderThickness="0"
+                     Padding="0,8"
+                     VerticalContentAlignment="Center"
+                     KeyDown="CommandInput_KeyDown"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Border>
     <!-- KI END-->
 </UserControl>

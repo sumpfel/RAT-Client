@@ -240,3 +240,51 @@ layer maps `RAT_Data.User` -> `NetworkUser`.
 
 **Verified:** builds (0 errors); via UI Automation opened a seeded device's Access Control tab — "Your access: Owner",
 grant panel enabled, grid lists debug=Owner / alice=Admin / bob=See.
+
+---------
+
+## Prompt 11 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** In the add-interface window, mark every IP field "(optional)" (not just IPv4) and make sure they really
+are optional. Make the PC's interfaces real `NetworkObjectInterface`s on the NetworkObject so they can be picked in the
+SelectInterfaceWindow. The SelectInterfaceWindow was buggy/weird — rebuild it nicely, e.g. reuse the InterfaceControl
+without the edit/delete buttons.
+
+**Changes made (AI regions marked `prompt 12` / `prompt 9/12` / `prompt 2/12` / `prompt 4/12`):**
+
+- `RAT_WPF/NetworkObject_UI/UpdateInterfaceWindow.xaml(.cs)` — every IP label now says "(optional)"; IPv6 prefix
+  defaults to empty; cleaned the "any IP filled?" check; only builds an `IP` when a field is filled (truly optional).
+- `RAT_Logic/NetworkObject.cs` — `GetOwnDeviceInterfacesAsModel()` (real host NICs as `NetworkObjectInterface`s) and
+  `PopulateOwnDeviceInterfaces()` to fill the object's interface list.
+- `RAT_WPF/ViewModels/TopologyViewModel.cs` — the PC palette item is populated with the host's real interfaces.
+- `RAT_WPF/NetworkObject_UI/NetworkObjectSettingsWindow.xaml.cs` — own-PC tab also populates the model list if empty.
+- `RAT_WPF/NetworkObject_UI/InterfaceControl.xaml.cs` — modelled-interface ctor takes `readOnly` (hides
+  Toggle/Edit/Delete, keeps (i)).
+- `RAT_WPF/NetworkObject_UI/SelectInterfaceWindow.xaml(.cs)` — rebuilt: a styled ListBox whose rows are read-only
+  `InterfaceControl`s with a clear selection highlight; double-click or Select returns the chosen interface.
+
+**Verified:** builds (0 errors); launched the SelectInterfaceWindow against the host PC and screenshotted — rows show
+the real NICs (Ethernet/Wi-Fi/Local Area Connections) with status pills, the selected row is highlighted.
+
+---------
+
+## Prompt 12 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Make the sshTerminalControl not a flat black background but match the app styling, and improve the shell
+styling and syntax highlighting — not just colors.
+
+**Changes made (AI regions marked `prompt 13`):**
+
+- `RAT_WPF/Themes/DarkTheme.xaml` + `LightTheme.xaml` — added a `Term.*` palette (warm dark console that stays
+  on-brand with the brown theme in both modes): background/input/header, text/muted, prompt, user/host/path,
+  command/flag/string/number, file-type colors (dir/exec/archive/image/code), and error/warn/success/border.
+- `RAT_WPF/NetworkObject_UI/sshTermainalControl.xaml` — restyled into a rounded console card: header bar with
+  traffic-light dots + "ssh — shell #N" title, transparent themed RichTextBox with line-height, and a themed input row
+  with a `❯` prompt glyph (no more `#0c0c0c`/`#181818`).
+- `RAT_WPF/NetworkObject_UI/sshTermainalControl.xaml.cs` — replaced the ad-hoc highlighter with a tokenizing one that
+  resolves theme brushes and classifies: bash prompts (user/host/path/`$`|`#`), command vs flags (`-x`/`--long`),
+  quoted strings, env vars (`$VAR`), unix permission strings (`drwxr-xr-x`), IPv4(:port), numbers/sizes, and files by
+  extension category (dir/exec/archive/image/code), plus error/warning/success log lines. Whitespace is preserved.
+
+**Verified:** builds (0 errors); previewed the control with sample output and screenshotted — prompts, commands, flags,
+perms, IPs, numbers, per-type file colors, and error/warn/success lines all render correctly on the themed console.

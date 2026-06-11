@@ -126,10 +126,16 @@ namespace RAT_WPF.NetworkObject_UI
             InterfacesStackPanel.Children.Clear();
             if (isOwnPc)
             {
-                //KI start (Claude Opus 4.8, prompt 2): show real host NICs only (Ethernet/WiFi/USB-Ethernet) with the
+                //KI start (Claude Opus 4.8, prompt 2/12): show real host NICs only (Ethernet/WiFi/USB-Ethernet) with the
                 // interface control + (i) details; you can't invent interfaces on your own PC, so hide the add button.
+                // Also make sure the PC's model interface list is populated (so they can be selected elsewhere).
                 NewInterfaceButton.Visibility = Visibility.Collapsed;
                 InterfacesHint.Text = "Physical interfaces detected on this PC (Ethernet, Wi-Fi, USB-Ethernet). Click (i) for details.";
+
+                if (networkObject.NetworkInterfaces.Count == 0)
+                {
+                    networkObject.PopulateOwnDeviceInterfaces();
+                }
 
                 foreach (HostInterfaceInfo info in NetworkObject.GetOwnDeviceInterfacesDetailed())
                 {

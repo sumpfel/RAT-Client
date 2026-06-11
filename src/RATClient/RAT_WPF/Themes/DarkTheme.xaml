@@ -22,5 +22,30 @@
     <SolidColorBrush x:Key="Brush.CanvasNode"   Color="#FF3B2418"/>
     <SolidColorBrush x:Key="Brush.CanvasNodeText" Color="#FFF1E6D6"/>
     <!--KI end-->
+
+    <!--KI start (Claude Opus 4.8, prompt 13): SSH terminal palette (warm console that fits the brown theme)-->
+    <SolidColorBrush x:Key="Term.Background" Color="#FF1B120B"/>
+    <SolidColorBrush x:Key="Term.InputBg"   Color="#FF241811"/>
+    <SolidColorBrush x:Key="Term.Header"    Color="#FF2E1E13"/>
+    <SolidColorBrush x:Key="Term.Text"      Color="#FFEDE0CF"/>
+    <SolidColorBrush x:Key="Term.Muted"     Color="#FFB59A7E"/>
+    <SolidColorBrush x:Key="Term.Prompt"    Color="#FFE0A86A"/>
+    <SolidColorBrush x:Key="Term.User"      Color="#FF8FBF6A"/>
+    <SolidColorBrush x:Key="Term.Host"      Color="#FF6AB0A0"/>
+    <SolidColorBrush x:Key="Term.Path"      Color="#FF6FA8DC"/>
+    <SolidColorBrush x:Key="Term.Command"   Color="#FFF1E6D6"/>
+    <SolidColorBrush x:Key="Term.Flag"      Color="#FFD9A55E"/>
+    <SolidColorBrush x:Key="Term.String"    Color="#FFC4D88A"/>
+    <SolidColorBrush x:Key="Term.Number"    Color="#FFE0B0F0"/>
+    <SolidColorBrush x:Key="Term.Dir"       Color="#FF6FA8DC"/>
+    <SolidColorBrush x:Key="Term.Exec"      Color="#FF8FBF6A"/>
+    <SolidColorBrush x:Key="Term.Archive"   Color="#FFE0A86A"/>
+    <SolidColorBrush x:Key="Term.Image"     Color="#FFD79AD8"/>
+    <SolidColorBrush x:Key="Term.Code"      Color="#FFE6C75A"/>
+    <SolidColorBrush x:Key="Term.Error"     Color="#FFE96A6A"/>
+    <SolidColorBrush x:Key="Term.Warn"      Color="#FFE0B84A"/>
+    <SolidColorBrush x:Key="Term.Success"   Color="#FF8FD06A"/>
+    <SolidColorBrush x:Key="Term.Border"    Color="#FF5A3A28"/>
+    <!--KI end-->
 </ResourceDictionary>
 <!--KI end-->

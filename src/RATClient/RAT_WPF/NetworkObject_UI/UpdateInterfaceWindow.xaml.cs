@@ -27,7 +27,7 @@ namespace RAT_WPF.NetworkObject_UI
                 Ipv4MaskTextBox.Text = ip?.IPv4SubnetMask ?? "";
                 Ipv4GatewayTextBox.Text = ip?.IPv4Gateway ?? "";
                 Ipv6TextBox.Text = ip?.IPv6 ?? "";
-                Ipv6PrefixTextBox.Text = ip != null ? ip.IPv6PrefixLength.ToString() : "0";
+                Ipv6PrefixTextBox.Text = (ip != null && ip.IPv6PrefixLength != 0) ? ip.IPv6PrefixLength.ToString() : "";
             }
         }
 
@@ -43,13 +43,13 @@ namespace RAT_WPF.NetworkObject_UI
 
             networkObjectInterface.Name = name;
 
-            // IP is optional — only build it when at least one field is filled in
+            // IP is fully optional — only build an IP object when at least one field is filled in
             bool hasAnyIp =
                 !string.IsNullOrWhiteSpace(Ipv4TextBox.Text) ||
                 !string.IsNullOrWhiteSpace(Ipv4MaskTextBox.Text) ||
                 !string.IsNullOrWhiteSpace(Ipv4GatewayTextBox.Text) ||
                 !string.IsNullOrWhiteSpace(Ipv6TextBox.Text) ||
-                !string.IsNullOrWhiteSpace(Ipv6PrefixTextBox.Text.Replace("0", ""));
+                !string.IsNullOrWhiteSpace(Ipv6PrefixTextBox.Text);
 
             if (hasAnyIp)
             {

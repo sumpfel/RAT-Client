@@ -43,17 +43,23 @@ namespace RAT_WPF.NetworkObject_UI
             // host interfaces can't be edited / removed / toggled from here
         }
 
-        /// <summary>Editable, software-modelled interface.</summary>
-        public InterfaceControl(NetworkObjectInterface networkObjectInterface)
+        /// <summary>
+        /// Modelled device interface. When <paramref name="readOnly"/> is false the row shows
+        /// Toggle/Edit/Delete actions; when true it only shows the (i) details button (e.g. for selection lists).
+        /// </summary>
+        public InterfaceControl(NetworkObjectInterface networkObjectInterface, bool readOnly = false)
         {
             InitializeComponent();
             _modelInterface = networkObjectInterface;
 
             TypeIcon.Source = IconProvider.Get(IconProvider.Ethernet);
 
-            ToggleButton.Visibility = Visibility.Visible;
-            EditButton.Visibility = Visibility.Visible;
-            DeleteButton.Visibility = Visibility.Visible;
+            if (!readOnly)
+            {
+                ToggleButton.Visibility = Visibility.Visible;
+                EditButton.Visibility = Visibility.Visible;
+                DeleteButton.Visibility = Visibility.Visible;
+            }
 
             Refresh();
         }

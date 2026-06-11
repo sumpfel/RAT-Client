@@ -5,13 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
         mc:Ignorable="d"
-        Title="Select interface" Width="420" MinWidth="320" Height="380" MinHeight="240"
+        Title="Select interface" Width="460" MinWidth="360" Height="420" MinHeight="260"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"
         TextElement.Foreground="{DynamicResource Brush.Text}"
         FontFamily="Segoe UI"
         WindowStartupLocation="CenterScreen">
-    <!--KI start (Claude Opus 4.8, prompt 9): pick an interface of a device; returns the chosen NetworkObjectInterface-->
+    <!--KI start (Claude Opus 4.8, prompt 9/12): pick an interface; rows reuse the read-only InterfaceControl-->
     <Border Margin="16" Background="{DynamicResource Brush.Surface}" CornerRadius="8" Padding="18">
         <DockPanel>
             <TextBlock DockPanel.Dock="Top" Text="Select interface" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,2"/>
@@ -23,20 +23,36 @@
                 <Button Content="Select" Style="{StaticResource ModernButton}" Click="Select_Click"/>
             </StackPanel>
 
+            <TextBlock DockPanel.Dock="Bottom" x:Name="EmptyText" Margin="0,8,0,0"
+                       Foreground="{DynamicResource Brush.TextMuted}" Visibility="Collapsed"
+                       Text="This device has no interfaces."/>
+
+            <!-- selectable list; each row hosts a read-only InterfaceControl -->
             <ListBox x:Name="InterfaceList" Background="Transparent" BorderThickness="0"
+                     HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      MouseDoubleClick="InterfaceList_MouseDoubleClick">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Margin="0,3" Padding="10,7">
-                            <StackPanel>
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource Brush.Text}"/>
-                                <TextBlock Foreground="{DynamicResource Brush.TextMuted}" FontSize="11"
-                                           Text="{Binding IP.IPv4, TargetNullValue='no IP set'}"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="bd" Background="Transparent" CornerRadius="8" Padding="2">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
             </ListBox>
         </DockPanel>
     </Border>

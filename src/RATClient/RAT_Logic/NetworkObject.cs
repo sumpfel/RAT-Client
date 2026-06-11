@@ -495,6 +495,36 @@ namespace RAT_Logic
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 12): real host NICs as NetworkObjectInterface objects, so the PC's
+        // interfaces actually live on the NetworkObject and can be picked in the SelectInterfaceWindow.
+        public static List<NetworkObjectInterface> GetOwnDeviceInterfacesAsModel()
+        {
+            List<NetworkObjectInterface> result = new List<NetworkObjectInterface>();
+            foreach (HostInterfaceInfo info in GetOwnDeviceInterfacesDetailed())
+            {
+                result.Add(new NetworkObjectInterface
+                {
+                    Name = info.Name,
+                    IsUp = info.IsUp,
+                    IP = info.IPv4.Count > 0 || info.IPv6.Count > 0
+                        ? new IP
+                        {
+                            IPv4 = info.IPv4.FirstOrDefault() ?? "",
+                            IPv6 = info.IPv6.FirstOrDefault() ?? ""
+                        }
+                        : null
+                });
+            }
+            return result;
+        }
+
+        /// <summary>Fills this object's interface list from the real host NICs (used for the "own PC" object).</summary>
+        public void PopulateOwnDeviceInterfaces()
+        {
+            NetworkInterfaces = GetOwnDeviceInterfacesAsModel();
+        }
+        //KI end
+
         private NetworkObjectInterface? GetInterfaceInSameNetworkAsHost()
         {
 

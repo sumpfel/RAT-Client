@@ -28,15 +28,15 @@
                     <TextBox x:Name="InterfaceNameTextBox" Style="{StaticResource ModernTextBox}"/>
                     <TextBlock Text="IPv4 (optional)" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv4TextBox" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="IPv4 subnet mask" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="IPv4 subnet mask (optional)" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv4MaskTextBox" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="IPv4 gateway" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="IPv4 gateway (optional)" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv4GatewayTextBox" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="IPv6" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="IPv6 (optional)" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv6TextBox" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="IPv6 prefix length" Style="{StaticResource FieldLabel}"/>
-                    <TextBox x:Name="Ipv6PrefixTextBox" Style="{StaticResource ModernTextBox}" Text="0"/>
-                    <TextBlock Text="IPv6 gateway" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="IPv6 prefix length (optional)" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="Ipv6PrefixTextBox" Style="{StaticResource ModernTextBox}" Text=""/>
+                    <TextBlock Text="IPv6 gateway (optional)" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv6GatewayTextBox" Style="{StaticResource ModernTextBox}"/>
                 </StackPanel>
             </ScrollViewer>

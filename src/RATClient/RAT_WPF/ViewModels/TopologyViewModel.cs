@@ -49,8 +49,11 @@ namespace RAT_WPF.ViewModels
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Switch , Name = "New Switch", Settings = new NetworkObjectSettings()});
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Server , Name = "New Server", Settings = new NetworkObjectSettings()});
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Client , Name = "New Client", Settings = new NetworkObjectSettings()});
-            //KI start (Claude Opus 4.8, prompt 4): default PC name = this machine's name (still changeable)
-            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.PC, Name = Environment.MachineName, Settings = new NetworkObjectSettings() });
+            //KI start (Claude Opus 4.8, prompt 4/12): default PC name = this machine's name (still changeable);
+            // and the PC carries this machine's real interfaces so they can be selected in the SelectInterfaceWindow.
+            NetworkObject ownPc = new NetworkObject() { Type = NetworkObjectType.PC, Name = Environment.MachineName, Settings = new NetworkObjectSettings() };
+            ownPc.PopulateOwnDeviceInterfaces();
+            defaultItems.AddNetworkObject(ownPc);
             //KI end
 
             // NetworkObjectAddedCommand = new NetworkObjectAddedCommand(defaultItems.NetworkObjects);
