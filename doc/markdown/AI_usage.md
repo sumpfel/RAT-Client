@@ -105,3 +105,104 @@ Visual Studio user (sumpfel), no co-author, then pull prioritising remote change
 
 **Verified:** solution builds (0 errors); drove the app via UI Automation to open Settings, switch to Dark, and
 confirmed by screenshot that the dropdown text ("Light"/"Dark") is legible and the whole UI recolors to dark brown.
+
+---------
+
+## Prompt 4 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Make the canvas dark themed and give devices a light background; default the PC name to the host's own
+machine name (still changeable; other PC specs stay read-only); add a Delete tool to remove objects from the canvas.
+
+**Changes made (AI regions wrapped in `KI start (Claude Opus 4.8, prompt 4)` … `KI end`):**
+
+- `RAT_WPF/Themes/LightTheme.xaml`, `DarkTheme.xaml` — added `Brush.Canvas` (dark in both themes), `Brush.CanvasNode`
+  (light) and `Brush.CanvasNodeText`.
+- `RAT_WPF/Views/TopologyView.xaml(.cs)` — canvas `Background` now `Brush.Canvas`; added a "🗑 Delete" tool
+  RadioButton; `IsDeleteToolActive` + `DeleteNode(...)` helpers.
+- `RAT_WPF/Views/NetworkObjectView.xaml(.cs)` — device node now uses the light `Brush.CanvasNode` card (with border)
+  and shows the device **Name**; `MouseLeftButtonDown` removes the node when the Delete tool is active, and dragging is
+  suppressed while that tool is active.
+- `RAT_WPF/ViewModels/TopologyViewModel.cs` — default PC name set to `Environment.MachineName`; added
+  `RemoveNetworkObjectViewModelFromCanvas(...)`.
+
+(Own-PC specs remaining read-only with only the name editable was already handled in prompt 1's `LoadOverview`, which
+keys on `NetworkObjectType.PC`.)
+
+**Verified:** solution builds (0 errors); drove the app via UI Automation + screenshots — confirmed the canvas is dark
+brown, device nodes sit on light cards, and selecting the Delete tool + clicking a node removes it from the canvas.
+
+---------
+
+## Prompt 5 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Don't force a dark canvas / white device nodes regardless of theme — the canvas and device nodes should
+follow the active theme (dark in dark mode, light in light mode).
+
+**Changes made (AI region marked `prompt 4/5`):**
+
+- `RAT_WPF/Themes/LightTheme.xaml` — `Brush.Canvas` is now light (paper-deep), `Brush.CanvasNode` light, node text dark.
+- `RAT_WPF/Themes/DarkTheme.xaml` — `Brush.Canvas` stays dark, `Brush.CanvasNode` is now a dark fur tone (not white),
+  node text light.
+
+**Verified:** built (0 errors); screenshotted both themes — light mode shows a paper canvas with light device cards,
+dark mode shows a dark canvas with dark device cards; labels readable in both.
+
+---------
+
+## Prompt 6 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Make the canvas clearly distinct (a slightly different background and/or a border).
+
+**Changes:** added `Brush.CanvasBorder` + brighter `Brush.Canvas`, and wrapped the canvas `ItemsControl` in a bordered
+`Border` in `TopologyView.xaml`. (Superseded the next turn — see prompt 8.)
+
+---------
+
+## Prompt 7 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Improve the interfaces and logins inside the device settings window — colour the Edit button (not just
+Connect/Delete), take the overall design "to the next level" (clean, useful). When adding an interface only the name
+should be required, and interfaces should be editable, deletable, and show up/down via a dedicated control.
+
+**Changes made (AI regions marked `prompt 7`):**
+
+- `RAT_Logic/NetworkObjectInterface.cs` — added `IsUp` (software up/down state); made `IP` nullable/optional and gave
+  `Name` a default.
+- `RAT_WPF/Themes/Shared.xaml` — new `AccentOutlineButton` style so "Edit" reads as a real (accent-outlined) action.
+- `RAT_WPF/NetworkObject_UI/InterfaceControl.xaml(.cs)` — reworked into a two-mode control: read-only for host PC NICs
+  (icon + status pill + (i) details), and **editable** for modelled device interfaces (Toggle up/down, Edit, Delete,
+  (i)); raises `EditRequested` / `DeleteRequested`.
+- `RAT_WPF/NetworkObject_UI/UpdateInterfaceWindow.xaml(.cs)` — only the **name** is required (IP fields optional and
+  only built when filled); supports **editing** an existing interface (ctor takes an optional interface, prefills).
+- `RAT_WPF/NetworkObject_UI/LoginControl.xaml` — restyled into a card with a status pill and an accent-outlined Edit
+  button to match.
+- `RAT_WPF/NetworkObject_UI/NetworkObjectSettingsWindow.xaml(.cs)` — Logins + Interfaces tabs given hints, scroll and
+  empty-states; software interfaces now render as editable `InterfaceControl`s wired to add/edit/delete.
+
+**Verified:** built (0 errors); via UI Automation opened a seeded device's settings and screenshotted both tabs —
+Interfaces show eth0 (UP, IP) and eth1 (DOWN, no IP) each with Toggle/Edit/Delete/(i); Logins show the SSH credential
+with status pill and Connect/Edit/Delete. Edit is clearly coloured in both.
+
+---------
+
+## Prompt 8 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Remove the border around the canvas.
+
+**Changes:** removed the bordered `Border` wrapper from `TopologyView.xaml` (back to a plain `ItemsControl`/`Canvas`)
+and dropped the now-unused `Brush.CanvasBorder` from both themes. The canvas keeps its slightly-distinct background tone.
+
+---------
+
+## Prompt 9 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Create a window to select an interface of a device — for now it just returns the chosen interface, nothing
+is done with it.
+
+**Changes made (AI region marked `prompt 9`):**
+
+- `RAT_WPF/NetworkObject_UI/SelectInterfaceWindow.xaml(.cs)` (new) — themed dialog that lists a device's
+  `NetworkInterfaces` (name + IPv4), supports double-click, and returns the picked `NetworkObjectInterface` via the
+  public `SelectedInterface` property (null on cancel). Not wired to anything else yet, by request.
+
+**Verified:** solution builds (0 errors).

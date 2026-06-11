@@ -5,25 +5,43 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
              mc:Ignorable="d"
-             d:DesignHeight="40" MinWidth="240">
-    <!--KI start (Claude Opus 4.8, prompt 1/2): restyle login row + real values + connection status indicator-->
-    <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Margin="0,3" Padding="8,4">
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <!-- status dot -->
-            <Ellipse x:Name="StatusDot" Width="10" Height="10" Margin="0,0,8,0"
-                     VerticalAlignment="Center" Fill="{DynamicResource Brush.Danger}"/>
-            <TextBlock x:Name="ProtocolText" FontWeight="SemiBold" VerticalAlignment="Center"
-                       Foreground="{DynamicResource Brush.Text}" MinWidth="50"/>
-            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11"
-                       Foreground="{DynamicResource Brush.TextMuted}" Text="not connected"/>
-            <TextBlock x:Name="UserText" VerticalAlignment="Center" Margin="10,0,0,0"
-                       Foreground="{DynamicResource Brush.TextMuted}"/>
-            <TextBlock x:Name="PortText" VerticalAlignment="Center" Margin="10,0,0,0"
-                       Foreground="{DynamicResource Brush.TextMuted}"/>
-            <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource ModernButton}" Click="Button_Click"/>
-            <Button Content="Edit" Style="{StaticResource SubtleButton}" Click="Button_Click_1"/>
-            <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click"/>
-        </StackPanel>
+             d:DesignHeight="52" MinWidth="320">
+    <!--KI start (Claude Opus 4.8, prompt 1/2/7): login row — protocol icon, status pill, actions (colored Edit)-->
+    <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="8" Margin="0,4" Padding="10,7"
+            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" x:Name="ProtocolText" FontWeight="SemiBold" FontSize="13" MinWidth="48"
+                       VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                <TextBlock x:Name="UserText" Foreground="{DynamicResource Brush.Text}" FontSize="12"/>
+                <TextBlock x:Name="PortText" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11"/>
+            </StackPanel>
+
+            <!-- status pill -->
+            <Border Grid.Column="2" CornerRadius="10" Padding="8,2" Margin="6,0" VerticalAlignment="Center"
+                    Background="{DynamicResource Brush.SurfaceAlt}">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse x:Name="StatusDot" Width="8" Height="8" Margin="0,0,5,0"
+                             VerticalAlignment="Center" Fill="{DynamicResource Brush.Danger}"/>
+                    <TextBlock x:Name="StatusText" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}" Text="not connected"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource ModernButton}" Click="Button_Click"/>
+                <Button Content="Edit" Style="{StaticResource AccentOutlineButton}" Click="Button_Click_1"/>
+                <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click"/>
+            </StackPanel>
+        </Grid>
     </Border>
     <!--KI end-->
 </UserControl>

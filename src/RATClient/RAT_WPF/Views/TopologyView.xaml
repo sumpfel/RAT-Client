@@ -29,8 +29,11 @@
                         HorizontalAlignment="Right" Click="SettingsButton_Click"/>
                 <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
                     <!--Tools-->
-                    <RadioButton Content="Cursor" Style="{StaticResource RadioButtonTool}" IsChecked="True"/>
+                    <RadioButton x:Name="CursorTool" Content="Cursor" Style="{StaticResource RadioButtonTool}" IsChecked="True"/>
                     <RadioButton Content="Ping" Style="{StaticResource RadioButtonTool}"/>
+                    <!--KI start (Claude Opus 4.8, prompt 4): delete tool — when active, clicking a canvas device removes it-->
+                    <RadioButton x:Name="DeleteTool" Content="🗑 Delete" Style="{StaticResource RadioButtonTool}"/>
+                    <!--KI end-->
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -49,7 +52,7 @@
             NetworkObjectDropCommand="{Binding}"
             />
         -->
-        <ItemsControl ItemsSource="{Binding NetworkObjects}" Grid.Row="1" Grid.Column="1">
+        <ItemsControl ItemsSource="{Binding NetworkObjects}" Grid.Row="1" Grid.Column="1" ClipToBounds="True">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <views:NetworkObjectView/>
@@ -58,11 +61,11 @@
             <!--Help from AI-->
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <Canvas 
-                        AllowDrop="True" 
-                        Drop="NetworkObject_Drop" 
-                        DragOver="NetworkObject_DragOver" 
-                        Background="WhiteSmoke"/>
+                    <Canvas
+                        AllowDrop="True"
+                        Drop="NetworkObject_Drop"
+                        DragOver="NetworkObject_DragOver"
+                        Background="{DynamicResource Brush.Canvas}"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemContainerStyle>

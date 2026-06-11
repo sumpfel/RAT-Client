@@ -7,17 +7,18 @@
              mc:Ignorable="d"
              d:DesignHeight="90" d:DesignWidth="90" x:Name="grid">
     <!--KI start (Claude Opus 4.8, prompt 2): canvas node with device icon-->
-    <Grid Width="90" Height="96" MouseMove="Grid_MouseMove">
+    <Grid Width="90" Height="96" MouseMove="Grid_MouseMove" MouseLeftButtonDown="Grid_MouseLeftButtonDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="56"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Background="{DynamicResource Brush.Surface}" CornerRadius="8" Padding="4">
+        <Border Grid.Row="0" Background="{DynamicResource Brush.CanvasNode}" CornerRadius="8" Padding="4"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
             <Image Source="{Binding Type, Converter={StaticResource IconKeyConverter}}"/>
         </Border>
-        <TextBlock Grid.Row="1" Text="{Binding Type}" HorizontalAlignment="Center"
-                   Foreground="{DynamicResource Brush.Text}" FontSize="11"/>
+        <TextBlock Grid.Row="1" Text="{Binding Name}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"
+                   MaxWidth="88" Foreground="{DynamicResource Brush.Text}" FontSize="11"/>
         <Button Grid.Row="2" Content="Settings" Command="{Binding NetworkObjectOpenSettings}"
                 Style="{StaticResource SubtleButton}" Padding="6,2" FontSize="11"/>
     </Grid>

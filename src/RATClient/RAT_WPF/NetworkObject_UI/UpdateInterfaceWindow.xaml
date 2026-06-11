@@ -21,10 +21,12 @@
             </StackPanel>
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="Network interface" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <TextBlock Text="Interface name" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="Network interface" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                    <TextBlock Text="Only the name is required — IP settings are optional."
+                               Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="0,0,0,8"/>
+                    <TextBlock Text="Interface name *" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="InterfaceNameTextBox" Style="{StaticResource ModernTextBox}"/>
-                    <TextBlock Text="IPv4" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="IPv4 (optional)" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv4TextBox" Style="{StaticResource ModernTextBox}"/>
                     <TextBlock Text="IPv4 subnet mask" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="Ipv4MaskTextBox" Style="{StaticResource ModernTextBox}"/>

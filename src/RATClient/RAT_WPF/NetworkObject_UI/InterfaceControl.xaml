@@ -5,9 +5,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
              mc:Ignorable="d"
-             d:DesignHeight="44" MinWidth="260">
-    <!--KI start (Claude Opus 4.8, prompt 2): host interface row with type icon, status, and (i) info button-->
-    <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Margin="0,3" Padding="8,5">
+             d:DesignHeight="52" MinWidth="320">
+    <!--KI start (Claude Opus 4.8, prompt 2/7): interface row — type icon, status pill, (i) details,
+         plus edit/delete and an up/down toggle for software (non-host) interfaces -->
+    <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="8" Margin="0,4" Padding="10,7"
+            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -16,20 +18,38 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Image Grid.Column="0" x:Name="TypeIcon" Width="26" Height="26" Margin="0,0,10,0"/>
+            <Image Grid.Column="0" x:Name="TypeIcon" Width="30" Height="30" Margin="0,0,12,0"
+                   VerticalAlignment="Center"/>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock x:Name="NameText" Foreground="{DynamicResource Brush.Text}" FontWeight="SemiBold"/>
-                <TextBlock x:Name="SubText" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11"/>
+                <TextBlock x:Name="NameText" Foreground="{DynamicResource Brush.Text}"
+                           FontWeight="SemiBold" FontSize="13"/>
+                <TextBlock x:Name="SubText" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11"
+                           TextTrimming="CharacterEllipsis"/>
             </StackPanel>
 
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
-                <Ellipse x:Name="StatusDot" Width="9" Height="9" Margin="0,0,4,0"/>
-                <TextBlock x:Name="StatusText" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}"/>
-            </StackPanel>
+            <!-- status pill -->
+            <Border Grid.Column="2" x:Name="StatusPill" CornerRadius="10" Padding="8,2" Margin="6,0"
+                    VerticalAlignment="Center" Background="{DynamicResource Brush.SurfaceAlt}">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse x:Name="StatusDot" Width="8" Height="8" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusText" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"/>
+                </StackPanel>
+            </Border>
 
-            <Button Grid.Column="3" Content="i" FontStyle="Italic" FontWeight="Bold"
-                    Style="{StaticResource IconButton}" Click="Info_Click" ToolTip="Interface details"/>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- software-only actions -->
+                <Button x:Name="ToggleButton" Content="Toggle" Style="{StaticResource SubtleButton}"
+                        Click="Toggle_Click" ToolTip="Bring the interface up / down" Visibility="Collapsed"/>
+                <Button x:Name="EditButton" Content="Edit" Style="{StaticResource AccentOutlineButton}"
+                        Click="Edit_Click" Visibility="Collapsed"/>
+                <Button x:Name="DeleteButton" Content="Delete" Style="{StaticResource DangerButton}"
+                        Click="Delete_Click" Visibility="Collapsed"/>
+                <!-- always available -->
+                <Button x:Name="InfoButton" Content="i" FontStyle="Italic" FontWeight="Bold"
+                        Style="{StaticResource IconButton}" Click="Info_Click" ToolTip="Interface details"/>
+            </StackPanel>
         </Grid>
     </Border>
     <!--KI end-->

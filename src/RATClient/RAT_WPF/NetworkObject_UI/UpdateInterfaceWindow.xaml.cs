@@ -1,17 +1,6 @@
-﻿using RAT_Logic;
+using RAT_Logic;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace RAT_WPF.NetworkObject_UI
 {
@@ -20,33 +9,64 @@ namespace RAT_WPF.NetworkObject_UI
     /// </summary>
     public partial class UpdateInterfaceWindow : Window
     {
-        public NetworkObjectInterface networkObjectInterface = new NetworkObjectInterface();
-        public UpdateInterfaceWindow()
+        public NetworkObjectInterface networkObjectInterface;
+
+        //KI start (Claude Opus 4.8, prompt 7): only the name is required; supports editing an existing interface
+        public UpdateInterfaceWindow(NetworkObjectInterface? existing = null)
         {
             InitializeComponent();
+
+            networkObjectInterface = existing ?? new NetworkObjectInterface();
+
+            if (existing != null)
+            {
+                Title = "Edit interface";
+                InterfaceNameTextBox.Text = existing.Name;
+                IP? ip = existing.IP;
+                Ipv4TextBox.Text = ip?.IPv4 ?? "";
+                Ipv4MaskTextBox.Text = ip?.IPv4SubnetMask ?? "";
+                Ipv4GatewayTextBox.Text = ip?.IPv4Gateway ?? "";
+                Ipv6TextBox.Text = ip?.IPv6 ?? "";
+                Ipv6PrefixTextBox.Text = ip != null ? ip.IPv6PrefixLength.ToString() : "0";
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string name = InterfaceNameTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(name))
             {
-                networkObjectInterface.Name = InterfaceNameTextBox.Text;
-                networkObjectInterface.IP = new IP();
-                networkObjectInterface.IP.IPv4 = Ipv4TextBox.Text;
-                networkObjectInterface.IP.IPv4SubnetMask = Ipv4MaskTextBox.Text;
-                networkObjectInterface.IP.IPv4Gateway = Ipv4GatewayTextBox.Text;
-                networkObjectInterface.IP.IPv6 = Ipv6TextBox.Text;
-                networkObjectInterface.IP.IPv6PrefixLength = Convert.ToInt32(Ipv6PrefixTextBox.Text);
-                DialogResult = true;
-                this.Close();
+                MessageBox.Show("Please enter an interface name.", "Name required",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch
+
+            networkObjectInterface.Name = name;
+
+            // IP is optional — only build it when at least one field is filled in
+            bool hasAnyIp =
+                !string.IsNullOrWhiteSpace(Ipv4TextBox.Text) ||
+                !string.IsNullOrWhiteSpace(Ipv4MaskTextBox.Text) ||
+                !string.IsNullOrWhiteSpace(Ipv4GatewayTextBox.Text) ||
+                !string.IsNullOrWhiteSpace(Ipv6TextBox.Text) ||
+                !string.IsNullOrWhiteSpace(Ipv6PrefixTextBox.Text.Replace("0", ""));
+
+            if (hasAnyIp)
             {
-                MessageBox.Show("something went wron check input");
+                IP ip = networkObjectInterface.IP ?? new IP();
+                ip.IPv4 = Ipv4TextBox.Text.Trim();
+                ip.IPv4SubnetMask = Ipv4MaskTextBox.Text.Trim();
+                ip.IPv4Gateway = Ipv4GatewayTextBox.Text.Trim();
+                ip.IPv6 = Ipv6TextBox.Text.Trim();
+                int.TryParse(Ipv6PrefixTextBox.Text.Trim(), out int prefix);
+                ip.IPv6PrefixLength = prefix;
+                networkObjectInterface.IP = ip;
             }
+
+            DialogResult = true;
+            Close();
         }
 
-        //KI start (Claude Opus 4.8, prompt 1): wire up the previously dead Cancel button
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;

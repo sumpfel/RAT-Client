@@ -85,10 +85,16 @@
 
             <!-- ============ LOGINS ============ -->
             <TabItem Header="Logins">
-                <StackPanel x:Name="LoginsStackPanel" Margin="16">
-                    <Button Content="+ Add login" Style="{StaticResource ModernButton}"
+                <DockPanel Margin="16">
+                    <Button DockPanel.Dock="Top" Content="+ Add login" Style="{StaticResource ModernButton}"
                             HorizontalAlignment="Left" Click="Button_Click"/>
-                </StackPanel>
+                    <TextBlock DockPanel.Dock="Top" Margin="0,6,0,0" FontSize="11"
+                               Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"
+                               Text="Saved credentials for this device. Connect to open a session; the dot shows the live status."/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                        <StackPanel x:Name="LoginsStackPanel"/>
+                    </ScrollViewer>
+                </DockPanel>
             </TabItem>
 
             <!-- ============ INTERFACES ============ -->

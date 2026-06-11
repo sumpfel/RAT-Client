@@ -147,12 +147,51 @@ namespace RAT_WPF.NetworkObject_UI
             }
             else
             {
-                InterfacesHint.Text = "Interfaces stored for this device (software model).";
+                //KI start (Claude Opus 4.8, prompt 7): software interfaces are editable — control with edit/delete/toggle
+                NewInterfaceButton.Visibility = Visibility.Visible;
+                InterfacesHint.Text = "Interfaces stored for this device (software model). Add, edit, toggle up/down or delete.";
                 foreach (NetworkObjectInterface networkObjectInterface in networkObject.NetworkInterfaces)
                 {
-                    InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [{networkObjectInterface.IP?.IPv4 ?? "no ip"}]" });
+                    AddInterfaceControl(networkObjectInterface);
                 }
+
+                if (networkObject.NetworkInterfaces.Count == 0)
+                {
+                    InterfacesStackPanel.Children.Add(new TextBlock
+                    {
+                        Text = "No interfaces yet — add one above.",
+                        Foreground = (System.Windows.Media.Brush)Application.Current.Resources["Brush.TextMuted"],
+                        Margin = new Thickness(0, 6, 0, 0)
+                    });
+                }
+                //KI end
             }
+        }
+
+        //KI start (Claude Opus 4.8, prompt 7): build an editable interface control wired to edit/delete
+        private void AddInterfaceControl(NetworkObjectInterface networkObjectInterface)
+        {
+            InterfaceControl control = new InterfaceControl(networkObjectInterface);
+            control.EditRequested += OnInterfaceEdit;
+            control.DeleteRequested += OnInterfaceDelete;
+            InterfacesStackPanel.Children.Add(control);
+        }
+
+        private void OnInterfaceEdit(InterfaceControl control)
+        {
+            if (control.ModelInterface == null) { return; }
+            UpdateInterfaceWindow window = new UpdateInterfaceWindow(control.ModelInterface);
+            if (window.ShowDialog() == true)
+            {
+                control.Refresh();
+            }
+        }
+
+        private void OnInterfaceDelete(InterfaceControl control)
+        {
+            if (control.ModelInterface == null) { return; }
+            networkObject.NetworkInterfaces.Remove(control.ModelInterface);
+            LoadInterfaces();
         }
         //KI end
 
@@ -243,12 +282,14 @@ namespace RAT_WPF.NetworkObject_UI
 
         private void Button_Click_7(object sender, RoutedEventArgs e)
         {
-            UpdateInterfaceWindow updateLoginWindow = new UpdateInterfaceWindow();
-            if (updateLoginWindow.ShowDialog() == true)
+            //KI start (Claude Opus 4.8, prompt 7): add a new modelled interface, then rebuild the (editable) list
+            UpdateInterfaceWindow window = new UpdateInterfaceWindow();
+            if (window.ShowDialog() == true)
             {
-                networkObject.NetworkInterfaces.Add(updateLoginWindow.networkObjectInterface);
+                networkObject.NetworkInterfaces.Add(window.networkObjectInterface);
                 LoadInterfaces();
             }
+            //KI end
         }
 
         private void SshShellsTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)

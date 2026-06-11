@@ -17,5 +17,10 @@
     <SolidColorBrush x:Key="Brush.FurDark"    Color="#FF3B2418"/>
     <SolidColorBrush x:Key="Brush.Fur"        Color="#FF8A5A3C"/>
     <SolidColorBrush x:Key="Brush.Ear"        Color="#FFC97A4A"/>
+    <!--KI start (Claude Opus 4.8, prompt 4/5/6): canvas follows theme but is a touch distinct from the rest-->
+    <SolidColorBrush x:Key="Brush.Canvas"       Color="#FF120B06"/>
+    <SolidColorBrush x:Key="Brush.CanvasNode"   Color="#FF3B2418"/>
+    <SolidColorBrush x:Key="Brush.CanvasNodeText" Color="#FFF1E6D6"/>
+    <!--KI end-->
 </ResourceDictionary>
 <!--KI end-->
