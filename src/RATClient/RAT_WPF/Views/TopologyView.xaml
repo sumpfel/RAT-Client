@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:views="clr-namespace:RAT_WPF.Views"
+             xmlns:viewmodels="clr-namespace:RAT_WPF.ViewModels"
+             xmlns:converters="clr-namespace:RAT_WPF.Views.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -16,14 +18,19 @@
             <ColumnDefinition Width="4*"/>
         </Grid.ColumnDefinitions>
         <!--Topbar-->
-        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
-            <!--TODO: BurgerButton with Settings-->
-            <StackPanel Orientation="Horizontal">
-                <!--Tools-->
-                <RadioButton Content="Cursor" Style="{StaticResource RadioButtonTool}"/>
-                <RadioButton Content="Ping" Style="{StaticResource RadioButtonTool}"/>
-            </StackPanel>
+        <!--
+        // Source - https://stackoverflow.com/a/2908885
+        // Posted by Scott, modified by community. See post 'Timeline' for change history
+        // Retrieved 2026-06-11, License - CC BY-SA 4.0
+        -->
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Background="White">
+            <StackPanel.Resources>
+                <converters:ComparisonConverter x:Key="ComparisonConverter" />
+            </StackPanel.Resources>
+            <RadioButton Content="Cursor" IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Cursor}}" />
+            <RadioButton Content="Connection" IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Connector}}" />
         </StackPanel>
+
 
         <!--Sidebar-->
         <views:NetworkObjectListingView
@@ -40,12 +47,15 @@
             />
         -->
         <ItemsControl ItemsSource="{Binding NetworkObjects}" Grid.Row="1" Grid.Column="1">
+            <!--Help from AI-->
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <views:NetworkObjectView/>
+                    <views:NetworkObjectView
+                        CurrentTool="{Binding DataContext.ToolEnum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandLeftClickWithConnectionTool="{Binding DataContext.NetworkObjectAddConnectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        />
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
-            <!--Help from AI-->
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Canvas 
