@@ -31,7 +31,7 @@ namespace RAT_WPF.Views
         public static readonly DependencyProperty CurrentToolProperty =
             DependencyProperty.Register(nameof(CurrentTool), typeof(EnumTool), typeof(NetworkObjectView), new PropertyMetadata(EnumTool.Cursor));
 
-
+       
 
         public ICommand CommandLeftClickWithConnectionTool
         {
@@ -39,9 +39,21 @@ namespace RAT_WPF.Views
             set { SetValue(CommandLeftClickWithConnectionToolProperty, value); }
         }
 
+
         // Using a DependencyProperty as the backing store for CommandLeftClickWithConnectionTool.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty CommandLeftClickWithConnectionToolProperty =
             DependencyProperty.Register(nameof(CommandLeftClickWithConnectionTool), typeof(ICommand), typeof(NetworkObjectView), new PropertyMetadata(null));
+
+        public ICommand CommandLeftClickWithDeleteTool
+        {
+            get { return (ICommand)GetValue(CommandLeftClickWithDeleteToolProperty); }
+            set { SetValue(CommandLeftClickWithDeleteToolProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for CommandLeftClickWithDeleteTool.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CommandLeftClickWithDeleteToolProperty =
+            DependencyProperty.Register(nameof(CommandLeftClickWithDeleteTool), typeof(ICommand), typeof(NetworkObjectView), new PropertyMetadata(null));
+
 
 
         public NetworkObjectView()
@@ -51,29 +63,31 @@ namespace RAT_WPF.Views
 
         private void Grid_MouseMove(object sender, MouseEventArgs e)
         {
-            //KI start (Claude Opus 4.8, prompt 4): don't drag while the Delete tool is active
-            if (FindTopologyView()?.IsDeleteToolActive == true)
-            {
-                return;
-            }
-            //KI end
-            if (e.LeftButton == MouseButtonState.Pressed)
+            if (e.LeftButton == MouseButtonState.Pressed && DataContext is NetworkObjectViewModel networkObjectViewModel)
             {
                 if (CurrentTool == EnumTool.Cursor)
                 {
                     DragDrop.DoDragDrop(grid, new DataObject(DataFormats.Serializable, grid), DragDropEffects.Move);
                 }
-                else if (CurrentTool == EnumTool.Connector && DataContext is NetworkObjectViewModel networkObjectViewModel)
+                else if (CurrentTool == EnumTool.Connector)
                 { 
-                    if (CommandLeftClickWithConnectionTool?.CanExecute(null) ?? false)
+                    if (CommandLeftClickWithConnectionTool?.CanExecute(networkObjectViewModel) ?? false)
                     {
                         CommandLeftClickWithConnectionTool.Execute(networkObjectViewModel);
+                    }
+                }
+                else if (CurrentTool == EnumTool.Delete)
+                {
+                    if (CommandLeftClickWithDeleteTool?.CanExecute(networkObjectViewModel) ?? false)
+                    {
+                        CommandLeftClickWithDeleteTool.Execute(networkObjectViewModel);
                     }
                 }
             }
         }
 
         //KI start (Claude Opus 4.8, prompt 4): when the Delete tool is active, clicking this device removes it
+        /*
         private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             TopologyView? topology = FindTopologyView();
@@ -99,5 +113,8 @@ namespace RAT_WPF.Views
             return null;
         }
         //KI end
+
+        *(
+        */
     }
 }

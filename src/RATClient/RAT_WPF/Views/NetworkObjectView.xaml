@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              d:DesignHeight="90" d:DesignWidth="90" x:Name="grid">
     <!--KI start (Claude Opus 4.8, prompt 2): canvas node with device icon-->
-    <Grid Width="90" Height="96" MouseMove="Grid_MouseMove" MouseLeftButtonDown="Grid_MouseLeftButtonDown">
+    <Grid Width="90" Height="96" MouseMove="Grid_MouseMove">
         <Grid.RowDefinitions>
             <RowDefinition Height="56"/>
             <RowDefinition Height="Auto"/>

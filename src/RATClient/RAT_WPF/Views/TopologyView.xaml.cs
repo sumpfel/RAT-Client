@@ -108,7 +108,6 @@ namespace RAT_WPF.Views
         //KI end
 
         //KI start (Claude Opus 4.8, prompt 4): delete tool — let a canvas node remove itself when the tool is active
-        public bool IsDeleteToolActive => DeleteTool.IsChecked == true;
 
         public void DeleteNode(NetworkObjectViewModel node)
         {

@@ -14,6 +14,8 @@ namespace RAT_WPF.ViewModels
     {
         private readonly NetworkObject _networkObject;
 
+        public NetworkObject networkObject => _networkObject;
+
         //KI start (Claude Opus 4.8, prompt 11): expose the model so create/delete can check access rights
         public NetworkObject Model => _networkObject;
         //KI end

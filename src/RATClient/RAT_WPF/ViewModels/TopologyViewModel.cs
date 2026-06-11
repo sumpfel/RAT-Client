@@ -1,20 +1,23 @@
-﻿using System;
+﻿using RAT_Logic;
+using RAT_WPF.Commands;
+using RAT_WPF.Views;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
-using RAT_Logic;
-using RAT_WPF.Commands;
-using RAT_WPF.Views;
+using System.Xml.Linq;
 
 namespace RAT_WPF.ViewModels
 {
     public enum EnumTool
     {
         Cursor,
-        Connector
+        Connector,
+        Delete
     };
 
     public class TopologyViewModel : ViewModelBase
@@ -24,6 +27,8 @@ namespace RAT_WPF.ViewModels
         public ICommand NetworkObjectAddedCommand { get; }
 
         public ICommand NetworkObjectAddConnectionCommand { get; }
+
+        public ICommand NetworkObjectDeleteCommand { get; }
 
         private readonly ObservableCollection<NetworkObjectViewModel> _networkObjects;
 
@@ -58,7 +63,9 @@ namespace RAT_WPF.ViewModels
 
             // NetworkObjectAddedCommand = new NetworkObjectAddedCommand(defaultItems.NetworkObjects);
 
-            this.NetworkObjectAddConnectionCommand = new NetworkObjectAddConnectionCommand();
+            this.NetworkObjectAddConnectionCommand = new NetworkObjectAddConnectionCommand(this);
+
+            this.NetworkObjectDeleteCommand = new NetworkObjectDeleteCommand(this);
 
             _networkObjects = new ObservableCollection<NetworkObjectViewModel>()
             {
@@ -81,5 +88,21 @@ namespace RAT_WPF.ViewModels
             _networkObjects.Remove(networkObject);
         }
         //KI end
+
+        public void AddNetworkObjectConnectionViewModelToCanvas(NetworkObject[] networkObjects,NetworkObjectInterface[] networkObjectInterfaces)
+        {
+            //TODO: Add NetworkObjectConnectionViewModel To Canvas
+
+            if (networkObjects.Length == 2 && networkObjectInterfaces.Length == 2)
+            {
+                // TODO: Make speed and type and note and name adjustable
+                NetworkConnection networkConnection = new NetworkConnection(networkObjectInterfaces[0], networkObjectInterfaces[1], 1000000000, NetworkConnectionType.Wired, "test", "Kablex");
+
+                networkObjectInterfaces[0].Connection = networkConnection;
+                networkObjectInterfaces[1].Connection = networkConnection;
+
+                // TODO: Save Connection in List and render it
+            }
+        }
     }
 }

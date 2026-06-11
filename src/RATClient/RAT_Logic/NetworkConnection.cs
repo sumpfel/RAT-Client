@@ -16,11 +16,11 @@ namespace RAT_Logic
     {
         private NetworkObjectInterface[] networkObectInterfaces;
         public int Speed;
-        public NetworkObjectType Type;
+        public NetworkConnectionType Type;
         public string Note;
         public string Name;
 
-        NetworkConnection(NetworkObjectInterface networkObectInterface1, NetworkObjectInterface networkObectInterface2, int speed, NetworkObjectType type, string note, string name)
+        public NetworkConnection(NetworkObjectInterface networkObectInterface1, NetworkObjectInterface networkObectInterface2, int speed, NetworkConnectionType type, string note, string name)
         {
             this.networkObectInterfaces = new NetworkObjectInterface[2] {networkObectInterface1, networkObectInterface2};
             Speed = speed;
