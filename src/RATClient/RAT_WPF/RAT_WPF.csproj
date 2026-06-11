@@ -13,7 +13,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RAT_Logic\RAT_Logic.csproj" />
+    <ProjectReference Include="..\RAT_Data\RAT_Data.csproj" />
   </ItemGroup>
+
+  <!--KI start (Claude Opus 4.8, prompt 2): bundle logo as a resource and ship the icon-override folder to output-->
+  <ItemGroup>
+    <Resource Include="Assets\logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\Icons\**\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!--KI end-->
 
 </Project>

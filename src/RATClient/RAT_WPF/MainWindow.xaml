@@ -7,7 +7,10 @@
         xmlns:views="clr-namespace:RAT_WPF.Views"
         xmlns:vms="clr-namespace:RAT_WPF.ViewModels"
         mc:Ignorable="d"
-        Title="RAT" Height="450" Width="800">
+        Title="RAT" Height="450" Width="800"
+        Icon="{StaticResource AppLogo}"
+        Background="{DynamicResource Brush.Background}">
+    <!--KI start (Claude Opus 4.8, prompt 2): logo as window icon + themed background-->
     <Grid Margin="10 0 0 0">
         <Grid.Resources>
             <DataTemplate DataType="{x:Type vms:LoginViewModel}">
@@ -21,4 +24,5 @@
         <ContentControl Content="{Binding CurrentViewModel}"/>
 
     </Grid>
+    <!--KI end-->
 </Window>

@@ -33,11 +33,64 @@ namespace RAT_Logic
 
         public int ID;
 
+        //KI start (Claude Opus 4.8, prompt 1): stored, software-only specs editable for any device (not pushed to the real device)
+        public string Os = "";
+        public string Cpu = "";
+        public string Gpu = "";
+        public string Ram = "";
+        public string Specs = ""; // free-form extra notes
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 1): owner user + per-user permission objects
+        public NetworkUser? Owner;
+
+        public List<Permission> Permissions = new List<Permission>();
+
+        /// <summary>Grants (or replaces) the rights a user has on this device, in memory.</summary>
+        public void SetPermission(NetworkUser user, AccessRight rights)
+        {
+            Permission? existing = Permissions.FirstOrDefault(p => p.User.ID == user.ID);
+            if (existing != null) { existing.Rights = rights; }
+            else { Permissions.Add(new Permission(user, rights)); }
+            // TODO: persist to database once IDatabaseConnection AccessRights API exists
+        }
+
+        public void RemovePermission(NetworkUser user)
+        {
+            Permissions.RemoveAll(p => p.User.ID == user.ID);
+            // TODO: persist to database
+        }
+
+        /// <summary>True if the user owns the device or has been granted the given right.</summary>
+        public bool UserHasRight(NetworkUser? user, AccessRight right)
+        {
+            if (user == null) { return false; }
+            if (Owner != null && Owner.ID == user.ID) { return true; }
+            Permission? p = Permissions.FirstOrDefault(x => x.User.ID == user.ID);
+            return p != null && p.Has(right);
+        }
+        //KI end
+
         // ssh tutorial: https://deepwiki.com/sshnet/SSH.NET/2-getting-started
         private SshClient? sshClient = null;
         private List<ShellStream> sshShellStreams = new List<ShellStream>();
         private SftpClient? sftpClient = null;
         private ScpClient? scpClient = null;
+
+        //KI start (Claude Opus 4.8, prompt 2): live connection status for the UI (connected / not connected)
+        public bool IsSshConnected => sshClient != null && sshClient.IsConnected;
+        public bool IsSftpConnected => sftpClient != null && sftpClient.IsConnected;
+        public bool IsScpConnected => scpClient != null && scpClient.IsConnected;
+
+        /// <summary>True if there is an open, connected session for the given login protocol.</summary>
+        public bool IsConnected(LoginType type) => type switch
+        {
+            LoginType.SSH => IsSshConnected,
+            LoginType.SFTP => IsSftpConnected,
+            LoginType.SCP => IsScpConnected,
+            _ => false
+        };
+        //KI end
 
         public void OpenSSH(Login login) // TODO: See if by id is better than by login
         {
@@ -230,6 +283,31 @@ namespace RAT_Logic
             return result;
         }
 
+        //KI start (Claude Opus 4.8, prompt 1): SNMP walk for the MIB browser tree
+        /// <summary>
+        /// Walks the SNMP subtree under <paramref name="objectIdentifier"/> and returns
+        /// every variable found. Used to populate the MIB browser.
+        /// </summary>
+        public IList<Lextm.SharpSnmpLib.Variable> WalkSnmp(SnmpSettings snmpSettings, string objectIdentifier, VersionCode version = VersionCode.V1)
+        {
+            NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
+            if (networkObjectInterface == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
+            {
+                throw new EntryPointNotFoundException("No path to Remote Device Available");
+            }
+
+            List<Variable> results = new List<Variable>();
+            Messenger.Walk(version,
+                           new IPEndPoint(IPAddress.Parse(networkObjectInterface.IP.IPv4), snmpSettings.Port),
+                           new OctetString(snmpSettings.ReadCommunity),
+                           new ObjectIdentifier(objectIdentifier),
+                           results,
+                           60000,
+                           WalkMode.WithinSubtree);
+            return results;
+        }
+        //KI end
+
         public static Dictionary<string, string> GetOwnDeviceInfos()
         {
             Dictionary<string, string> stats = new Dictionary<string, string>();
@@ -294,6 +372,83 @@ namespace RAT_Logic
 
             return interfaces_list;
         }
+
+        //KI start (Claude Opus 4.8, prompt 2): real host interfaces only (Ethernet / WiFi / USB-Ethernet),
+        // with full details, filtering out loopback / tunnels / virtual junk.
+        public static List<HostInterfaceInfo> GetOwnDeviceInterfacesDetailed()
+        {
+            List<HostInterfaceInfo> result = new List<HostInterfaceInfo>();
+
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                // drop the obvious garbage
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                    nic.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+                {
+                    continue;
+                }
+
+                HostInterfaceKind kind;
+                switch (nic.NetworkInterfaceType)
+                {
+                    case NetworkInterfaceType.Ethernet:
+                    case NetworkInterfaceType.GigabitEthernet:
+                    case NetworkInterfaceType.FastEthernetT:
+                    case NetworkInterfaceType.FastEthernetFx:
+                        kind = HostInterfaceKind.Ethernet;
+                        break;
+                    case NetworkInterfaceType.Wireless80211:
+                        kind = HostInterfaceKind.Wifi;
+                        break;
+                    default:
+                        // keep only USB-ethernet-style adapters among the rest; skip the noise
+                        string blob = (nic.Description + " " + nic.Name).ToLowerInvariant();
+                        if (blob.Contains("usb") && (blob.Contains("ethernet") || blob.Contains("lan") || blob.Contains("rndis")))
+                        {
+                            kind = HostInterfaceKind.UsbEthernet;
+                        }
+                        else
+                        {
+                            // not a real wired/wireless/usb NIC -> garbage (virtual switch, bluetooth PAN, etc.)
+                            continue;
+                        }
+                        break;
+                }
+
+                HostInterfaceInfo info = new HostInterfaceInfo
+                {
+                    Name = nic.Name,
+                    Description = nic.Description,
+                    Kind = kind,
+                    IsUp = nic.OperationalStatus == OperationalStatus.Up,
+                    Mac = string.Join(":", Array.ConvertAll(nic.GetPhysicalAddress().GetAddressBytes(), b => b.ToString("X2")))
+                };
+
+                try { info.SpeedText = nic.Speed > 0 ? $"{nic.Speed / 1_000_000.0:0.#} Mbps" : "—"; }
+                catch { info.SpeedText = "—"; }
+
+                try
+                {
+                    foreach (var ua in nic.GetIPProperties().UnicastAddresses)
+                    {
+                        if (ua.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            info.IPv4.Add(ua.Address.ToString());
+                        }
+                        else if (ua.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+                        {
+                            info.IPv6.Add(ua.Address.ToString());
+                        }
+                    }
+                }
+                catch { /* some adapters expose no IP props */ }
+
+                result.Add(info);
+            }
+
+            return result;
+        }
+        //KI end
 
         private NetworkObjectInterface? GetInterfaceInSameNetworkAsHost()
         {

@@ -1,0 +1,26 @@
+<!--KI start (Claude Opus 4.8, prompt 2): Light "paper + brown" theme matching doc/markdown/style/rats.css-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- rats.css palette:
+         fur-dark #3b2418  fur #5a3a28  fur-light #8a5a3c  belly #d9b58a
+         ear #c97a4a  tail #6b4a3a  paper #f6efe4  paper-deep #ece2cf
+         ink #2a1a10  accent #b85c2a -->
+
+    <SolidColorBrush x:Key="Brush.Background" Color="#FFF6EFE4"/>
+    <SolidColorBrush x:Key="Brush.Surface"    Color="#FFECE2CF"/>
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#FFE3D6BE"/>
+    <SolidColorBrush x:Key="Brush.Accent"     Color="#FFB85C2A"/>
+    <SolidColorBrush x:Key="Brush.AccentHover" Color="#FFC97A4A"/>
+    <SolidColorBrush x:Key="Brush.OnAccent"   Color="#FFF6EFE4"/>
+    <SolidColorBrush x:Key="Brush.Text"       Color="#FF2A1A10"/>
+    <SolidColorBrush x:Key="Brush.TextMuted"  Color="#FF6B4A3A"/>
+    <SolidColorBrush x:Key="Brush.Heading"    Color="#FF5A3A28"/>
+    <SolidColorBrush x:Key="Brush.Border"     Color="#FFC9B79A"/>
+    <SolidColorBrush x:Key="Brush.Danger"     Color="#FFB23A2A"/>
+    <SolidColorBrush x:Key="Brush.Success"    Color="#FF5A7A3C"/>
+    <SolidColorBrush x:Key="Brush.FurDark"    Color="#FF3B2418"/>
+    <SolidColorBrush x:Key="Brush.Fur"        Color="#FF5A3A28"/>
+    <SolidColorBrush x:Key="Brush.Ear"        Color="#FFC97A4A"/>
+</ResourceDictionary>
+<!--KI end-->

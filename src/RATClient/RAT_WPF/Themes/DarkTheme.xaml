@@ -1,0 +1,21 @@
+<!--KI start (Claude Opus 4.8, prompt 2): Dark-brown theme (same fur palette, dark base)-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <SolidColorBrush x:Key="Brush.Background" Color="#FF20140D"/>
+    <SolidColorBrush x:Key="Brush.Surface"    Color="#FF2E1E13"/>
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#FF3B2418"/>
+    <SolidColorBrush x:Key="Brush.Accent"     Color="#FFC97A4A"/>
+    <SolidColorBrush x:Key="Brush.AccentHover" Color="#FFD9925E"/>
+    <SolidColorBrush x:Key="Brush.OnAccent"   Color="#FF20140D"/>
+    <SolidColorBrush x:Key="Brush.Text"       Color="#FFF1E6D6"/>
+    <SolidColorBrush x:Key="Brush.TextMuted"  Color="#FFC2A98F"/>
+    <SolidColorBrush x:Key="Brush.Heading"    Color="#FFE3B98C"/>
+    <SolidColorBrush x:Key="Brush.Border"     Color="#FF5A3A28"/>
+    <SolidColorBrush x:Key="Brush.Danger"     Color="#FFE05B6B"/>
+    <SolidColorBrush x:Key="Brush.Success"    Color="#FF8FBF6A"/>
+    <SolidColorBrush x:Key="Brush.FurDark"    Color="#FF3B2418"/>
+    <SolidColorBrush x:Key="Brush.Fur"        Color="#FF8A5A3C"/>
+    <SolidColorBrush x:Key="Brush.Ear"        Color="#FFC97A4A"/>
+</ResourceDictionary>
+<!--KI end-->

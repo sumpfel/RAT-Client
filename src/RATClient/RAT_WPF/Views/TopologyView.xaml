@@ -1,29 +1,39 @@
-﻿<UserControl x:Class="RAT_WPF.Views.TopologyView"
+<UserControl x:Class="RAT_WPF.Views.TopologyView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:views="clr-namespace:RAT_WPF.Views"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             Background="{DynamicResource Brush.Background}">
+    <!--KI start (Claude Opus 4.8, prompt 2): brown-themed topbar with logo + Settings button-->
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="10*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="4*"/>
         </Grid.ColumnDefinitions>
+
         <!--Topbar-->
-        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
-            <!--TODO: BurgerButton with Settings-->
-            <StackPanel Orientation="Horizontal">
-                <!--Tools-->
-                <RadioButton Content="Cursor" Style="{StaticResource RadioButtonTool}"/>
-                <RadioButton Content="Ping" Style="{StaticResource RadioButtonTool}"/>
-            </StackPanel>
-        </StackPanel>
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="{DynamicResource Brush.Surface}" Padding="8,6">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <Image Source="{StaticResource AppLogo}" Width="28" Height="28" Margin="0,0,8,0"/>
+                    <TextBlock Text="RAT" Style="{StaticResource Header2}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button DockPanel.Dock="Right" Content="⚙ Settings" Style="{StaticResource SubtleButton}"
+                        HorizontalAlignment="Right" Click="SettingsButton_Click"/>
+                <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <!--Tools-->
+                    <RadioButton Content="Cursor" Style="{StaticResource RadioButtonTool}" IsChecked="True"/>
+                    <RadioButton Content="Ping" Style="{StaticResource RadioButtonTool}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
         <!--Sidebar-->
         <views:NetworkObjectListingView
@@ -38,4 +48,5 @@
             NetworkObjectDropCommand="{Binding}"
             />
     </Grid>
+    <!--KI end-->
 </UserControl>

@@ -1,18 +1,8 @@
-﻿using RAT_Logic;
+using RAT_Logic;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace RAT_WPF.NetworkObject_UI
 {
@@ -23,29 +13,79 @@ namespace RAT_WPF.NetworkObject_UI
     {
         public Login login;
         public RAT_Logic.NetworkObject networkObject;
+
+        //KI start (Claude Opus 4.8, prompt 2): let the parent remove this control on delete
+        public event Action<LoginControl>? Deleted;
+        //KI end
+
         public LoginControl(Login login_, RAT_Logic.NetworkObject networkObject_)
         {
             InitializeComponent();
             login = login_;
             networkObject = networkObject_;
+
+            //KI start (Claude Opus 4.8, prompt 1): show the real login details instead of static placeholders
+            ProtocolText.Text = login.Type.ToString();
+            UserText.Text = $"user: {login.Username}";
+            PortText.Text = $"port: {login.Port}";
+            //KI end
+
+            UpdateStatus();
         }
+
+        //KI start (Claude Opus 4.8, prompt 2): reflect connected / not connected state in the UI
+        public void UpdateStatus()
+        {
+            bool connected = networkObject.IsConnected(login.Type);
+            StatusDot.Fill = connected
+                ? (Brush)Application.Current.Resources["Brush.Success"]
+                : (Brush)Application.Current.Resources["Brush.Danger"];
+            StatusText.Text = connected ? "connected" : "not connected";
+            ConnectButton.Content = connected ? "Reconnect" : "Connect";
+        }
+        //KI end
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            switch (login.Type)
+            //KI start (Claude Opus 4.8, prompt 2): error handling — show a popup when the connection can't be opened
+            try
             {
-                case LoginType.SSH:
-                    networkObject.OpenSSH(login);
-                    break;
-                case LoginType.SFTP:
-                    networkObject.OpenSFTP(login);
-                    break;
-                case LoginType.SCP:
-                    networkObject.OpenSCP(login);
-                    break;
-                case LoginType.Telnet:
-                    throw new NotImplementedException();
+                switch (login.Type)
+                {
+                    case LoginType.SSH:
+                        networkObject.OpenSSH(login);
+                        break;
+                    case LoginType.SFTP:
+                        networkObject.OpenSFTP(login);
+                        break;
+                    case LoginType.SCP:
+                        networkObject.OpenSCP(login);
+                        break;
+                    case LoginType.Telnet:
+                        MessageBox.Show("Telnet is not implemented yet.", "Not supported",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                }
+
+                UpdateStatus();
+                if (networkObject.IsConnected(login.Type))
+                {
+                    MessageBox.Show($"{login.Type} connected to {login.Username}.", "Connected",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
+            catch (EntryPointNotFoundException ex)
+            {
+                // no route / no interface in same network as host
+                MessageBox.Show(ex.Message, "No connection",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not connect:\n{ex.Message}", "Connection failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            //KI end
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -53,8 +93,19 @@ namespace RAT_WPF.NetworkObject_UI
             UpdateLoginWindow updateLoginWindow = new UpdateLoginWindow(login);
             if (updateLoginWindow.ShowDialog() == true)
             {
-
+                login = updateLoginWindow.login;
+                ProtocolText.Text = login.Type.ToString();
+                UserText.Text = $"user: {login.Username}";
+                PortText.Text = $"port: {login.Port}";
+                UpdateStatus();
             }
         }
+
+        //KI start (Claude Opus 4.8, prompt 2): delete this login
+        private void Delete_Click(object sender, RoutedEventArgs e)
+        {
+            Deleted?.Invoke(this);
+        }
+        //KI end
     }
 }

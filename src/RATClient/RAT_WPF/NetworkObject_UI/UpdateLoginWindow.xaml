@@ -1,26 +1,41 @@
-﻿<Window x:Class="RAT_WPF.NetworkObject_UI.UpdateLoginWindow"
+<Window x:Class="RAT_WPF.NetworkObject_UI.UpdateLoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
         mc:Ignorable="d"
-        Title="UpdateLoginWindow" Height="255" Width="800">
-    <Grid Background="LightGray">
-        <StackPanel Orientation="Vertical" Margin="2">
-            <Label Content="port:"></Label>
-            <TextBox x:Name="port" FontSize="15" MinWidth="100" Text="22"></TextBox>
-            <Label Content="username:"></Label>
-            <TextBox x:Name="username" FontSize="15" MinWidth="100" Text=""></TextBox>
-            <Label Content="password/keyname:"></Label>
-            <PasswordBox x:Name="password" FontSize="15" MinWidth="100" PasswordChar="◆" Password=""></PasswordBox>
-            <Label Content="potocoll:"></Label>
-            <TextBox x:Name="protocoll" FontSize="15" MinWidth="50" Text="ssh"></TextBox>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="cancel" Margin="2" FontSize="20" Click="Button_Click_1"></Button>
-                <Button Content="save" FontSize="20" Margin="2" Click="Button_Click"></Button>
+        Title="Login" Width="420" MinWidth="340" MinHeight="200"
+        SizeToContent="Height" MaxHeight="640"
+        Icon="{StaticResource AppLogo}"
+        Background="{DynamicResource Brush.Background}"
+        TextElement.Foreground="{DynamicResource Brush.Text}"
+        FontFamily="Segoe UI"
+        WindowStartupLocation="CenterScreen">
+    <!--KI start (Claude Opus 4.8, prompt 1/3): login dialog with docked button bar + scroll so Save/Cancel always fit-->
+    <Border Margin="16" Background="{DynamicResource Brush.Surface}" CornerRadius="8" Padding="18">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <Button Content="Cancel" Style="{StaticResource SubtleButton}" Click="Button_Click_1"/>
+                <Button Content="Save" Style="{StaticResource ModernButton}" Click="Button_Click"/>
             </StackPanel>
-
-        </StackPanel>
-    </Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="SSH / Transfer login" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Port" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="port" Style="{StaticResource ModernTextBox}" Text="22"/>
+                    <TextBlock Text="Username" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="username" Style="{StaticResource ModernTextBox}" Text=""/>
+                    <TextBlock Text="Password / key name" Style="{StaticResource FieldLabel}"/>
+                    <PasswordBox x:Name="password" FontSize="13" PasswordChar="◆"
+                                 Background="{DynamicResource Brush.SurfaceAlt}"
+                                 Foreground="{DynamicResource Brush.Text}"
+                                 BorderBrush="{DynamicResource Brush.Border}" Padding="6,4"/>
+                    <TextBlock Text="Protocol (ssh / sftp / scp / telnet)" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="protocoll" Style="{StaticResource ModernTextBox}" Text="ssh"/>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+    <!--KI end-->
 </Window>

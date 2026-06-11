@@ -26,5 +26,14 @@ namespace RAT_WPF.Views
         {
             InitializeComponent();
         }
+
+        //KI start (Claude Opus 4.8, prompt 2): open the MVVM settings window
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsWindow settings = new SettingsWindow();
+            settings.Owner = Window.GetWindow(this);
+            settings.ShowDialog();
+        }
+        //KI end
     }
 }

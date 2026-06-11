@@ -45,5 +45,13 @@ namespace RAT_WPF.NetworkObject_UI
                 MessageBox.Show("something went wron check input");
             }
         }
+
+        //KI start (Claude Opus 4.8, prompt 1): wire up the previously dead Cancel button
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
+        }
+        //KI end
     }
 }

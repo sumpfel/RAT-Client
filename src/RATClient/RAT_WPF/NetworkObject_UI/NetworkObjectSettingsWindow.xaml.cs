@@ -1,4 +1,5 @@
-﻿using RAT_Logic;
+using Lextm.SharpSnmpLib;
+using RAT_Logic;
 using RAT_WPF.NetworkObject_UI;
 using System;
 using System.Collections.Generic;
@@ -22,36 +23,138 @@ namespace RAT_WPF.NetworkObject_UI
     public partial class NetworkObjectSettingsWindow : Window
     {
         NetworkObject networkObject;
-        
+
+        //KI start (Claude Opus 4.8, prompt 1): true when this object represents the host PC (live, mostly read-only specs)
+        private bool isOwnPc;
+        //KI end
+
         public NetworkObjectSettingsWindow(NetworkObject networkObject_)
         {
             InitializeComponent();
             networkObject = networkObject_;
-            if (networkObject.Type == NetworkObjectType.PC)
+
+            isOwnPc = networkObject.Type == NetworkObjectType.PC;
+
+            //KI start (Claude Opus 4.8, prompt 1): own PC gets owned by the logged-in user
+            if (isOwnPc && networkObject.Owner == null && Session.CurrentUser != null)
+            {
+                networkObject.Owner = Session.CurrentUser;
+            }
+            //KI end
+
+            LoadOverview();
+            LoadLogins();
+            LoadInterfaces();
+            LoadMibTree();
+            LoadAccessControl();
+        }
+
+        //KI start (Claude Opus 4.8, prompt 2): load any logins already stored on the device + wire delete
+        private void LoadLogins()
+        {
+            foreach (Login existing in networkObject.Settings.Logins)
+            {
+                AddLoginControl(existing);
+            }
+        }
+
+        private void AddLoginControl(Login loginToAdd)
+        {
+            LoginControl control = new LoginControl(loginToAdd, networkObject);
+            control.Deleted += OnLoginDeleted;
+            LoginsStackPanel.Children.Add(control);
+        }
+
+        private void OnLoginDeleted(LoginControl control)
+        {
+            networkObject.Settings.Logins.Remove(control.login);
+            LoginsStackPanel.Children.Remove(control);
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 1): editable overview. For the host PC live specs are shown and only the
+        // display name is editable; for every other device the name and all specs are editable in-software only.
+        private void LoadOverview()
+        {
+            if (isOwnPc)
             {
                 Dictionary<string, string> stats = NetworkObject.GetOwnDeviceInfos();
-                name.Content = $"name: {stats["name"]} (Your PC)";
-                os.Content = $"os: {stats["os"]}";
-                ram.Content = $"ram: {stats["ram"]}";
-                cpu.Content = $"cpu: {stats["cpu"]}";
-                gpu.Content = $"gpu: {stats["gpu"]}";
+                OverviewSubtitle.Text = "This PC — specs are read live from the host. Only the name is editable.";
 
-                foreach (Dictionary<string,string> interface_ in NetworkObject.GetOwnDeviceInterfaces())
-                {
-                    InterfacesStackPanel.Children.Add(new Label() { Content = $"{interface_["name"]} [{interface_["status"]}]"});
-                }
+                NameBox.Text = string.IsNullOrWhiteSpace(networkObject.Name) ? stats["name"] : networkObject.Name;
+                OsBox.Text = stats["os"];
+                CpuBox.Text = stats["cpu"];
+                GpuBox.Text = stats["gpu"];
+                RamBox.Text = stats["ram"] + " GB";
+
+                // live specs are read-only
+                OsBox.IsReadOnly = CpuBox.IsReadOnly = GpuBox.IsReadOnly = RamBox.IsReadOnly = true;
+                SpecsBox.Text = networkObject.Specs;
+                SpecsHint.Text = "Note: changes to specs are not applied here for your own PC — they are read from the system.";
             }
             else
             {
-                name.Content = networkObject.Name;
+                OverviewSubtitle.Text = $"{networkObject.Type} — changes are stored in the software only and are NOT pushed to the device.";
+                NameBox.Text = networkObject.Name;
+                OsBox.Text = networkObject.Os;
+                CpuBox.Text = networkObject.Cpu;
+                GpuBox.Text = networkObject.Gpu;
+                RamBox.Text = networkObject.Ram;
+                SpecsBox.Text = networkObject.Specs;
+                SpecsHint.Text = "These fields describe the device inside this app only; nothing is written to the real hardware.";
+            }
+        }
+
+        private void SaveOverview_Click(object sender, RoutedEventArgs e)
+        {
+            networkObject.Name = NameBox.Text;
+            if (!isOwnPc)
+            {
+                networkObject.Os = OsBox.Text;
+                networkObject.Cpu = CpuBox.Text;
+                networkObject.Gpu = GpuBox.Text;
+                networkObject.Ram = RamBox.Text;
+            }
+            networkObject.Specs = SpecsBox.Text;
+            Title = $"Device Settings — {networkObject.Name}";
+            MessageBox.Show("Saved (in software).");
+        }
+
+        private void LoadInterfaces()
+        {
+            InterfacesStackPanel.Children.Clear();
+            if (isOwnPc)
+            {
+                //KI start (Claude Opus 4.8, prompt 2): show real host NICs only (Ethernet/WiFi/USB-Ethernet) with the
+                // interface control + (i) details; you can't invent interfaces on your own PC, so hide the add button.
+                NewInterfaceButton.Visibility = Visibility.Collapsed;
+                InterfacesHint.Text = "Physical interfaces detected on this PC (Ethernet, Wi-Fi, USB-Ethernet). Click (i) for details.";
+
+                foreach (HostInterfaceInfo info in NetworkObject.GetOwnDeviceInterfacesDetailed())
+                {
+                    InterfacesStackPanel.Children.Add(new InterfaceControl(info));
+                }
+
+                if (InterfacesStackPanel.Children.Count == 0)
+                {
+                    InterfacesStackPanel.Children.Add(new TextBlock
+                    {
+                        Text = "No physical network interfaces found.",
+                        Foreground = (System.Windows.Media.Brush)Application.Current.Resources["Brush.TextMuted"]
+                    });
+                }
+                //KI end
+            }
+            else
+            {
+                InterfacesHint.Text = "Interfaces stored for this device (software model).";
                 foreach (NetworkObjectInterface networkObjectInterface in networkObject.NetworkInterfaces)
                 {
-                    InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
+                    InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [{networkObjectInterface.IP?.IPv4 ?? "no ip"}]" });
                 }
             }
-
-
         }
+        //KI end
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -59,36 +162,46 @@ namespace RAT_WPF.NetworkObject_UI
             if (updateLoginWindow.ShowDialog() == true)
             {
                 networkObject.Settings.AddLogin(updateLoginWindow.login);
-                LoginsStackPanel.Children.Add(new LoginControl(updateLoginWindow.login, networkObject));//TODO: use something smarter than stack pannel: listview
+                //KI start (Claude Opus 4.8, prompt 2): wire new control through the delete-aware helper
+                AddLoginControl(updateLoginWindow.login);
+                //KI end
             }
-            
+
         }
+
+        //KI start (Claude Opus 4.8, prompt 2): shared "no connection" popup so every action fails clearly
+        private static void ShowNoConnection(string protocol)
+        {
+            MessageBox.Show(
+                $"There is no open {protocol} connection to this device.\n\n" +
+                "Open a connection first from the Logins tab (add a login and press Connect).",
+                "No connection", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        private static void ShowActionFailed(string action, Exception ex)
+        {
+            MessageBox.Show($"{action} failed:\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        //KI end
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                networkObject.DownloadSFTP(SftpLocalPath.Text, SftpRemotePath.Text);
-            }catch
-            {
-                MessageBox.Show("something went wrong? have you already opened a connection?");
-            }
+            if (!networkObject.IsSftpConnected) { ShowNoConnection("SFTP"); return; }
+            try { networkObject.DownloadSFTP(SftpLocalPath.Text, SftpRemotePath.Text); }
+            catch (Exception ex) { ShowActionFailed("SFTP download", ex); }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                networkObject.UploadSFTP(SftpLocalPath.Text, SftpRemotePath.Text);
-            }
-            catch
-            {
-                MessageBox.Show("something went wrong? have you already opened a connection?");
-            }
+            if (!networkObject.IsSftpConnected) { ShowNoConnection("SFTP"); return; }
+            try { networkObject.UploadSFTP(SftpLocalPath.Text, SftpRemotePath.Text); }
+            catch (Exception ex) { ShowActionFailed("SFTP upload", ex); }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
+            if (!networkObject.IsSftpConnected) { ShowNoConnection("SFTP"); return; }
             try
             {
                 SftpDirList.Text = "";
@@ -98,47 +211,34 @@ namespace RAT_WPF.NetworkObject_UI
                     SftpDirList.Text += s + ", ";
                 }
             }
-            catch
-            {
-                MessageBox.Show("something went wrong? have you already opened a connection?");
-            }
+            catch (Exception ex) { ShowActionFailed("SFTP list", ex); }
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                networkObject.DownloadSCP(ScpLocalPath.Text, ScpRemotePath.Text);
-            }
-            catch
-            {
-                MessageBox.Show("something went wrong? have you already opened a connection?");
-            }
+            if (!networkObject.IsScpConnected) { ShowNoConnection("SCP"); return; }
+            try { networkObject.DownloadSCP(ScpLocalPath.Text, ScpRemotePath.Text); }
+            catch (Exception ex) { ShowActionFailed("SCP download", ex); }
         }
 
         private void Button_Click_5(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                networkObject.UploadSCP(ScpLocalPath.Text, ScpRemotePath.Text);
-            }
-            catch
-            {
-                MessageBox.Show("something went wrong? have you already opened a connection?");
-            }
+            if (!networkObject.IsScpConnected) { ShowNoConnection("SCP"); return; }
+            try { networkObject.UploadSCP(ScpLocalPath.Text, ScpRemotePath.Text); }
+            catch (Exception ex) { ShowActionFailed("SCP upload", ex); }
         }
 
         private async void Button_Click_6(object sender, RoutedEventArgs e)
         {
+            //KI start (Claude Opus 4.8, prompt 2): pop up "no connection" instead of a generic message
+            if (!networkObject.IsSshConnected) { ShowNoConnection("SSH"); return; }
             try
             {
                 string result = await networkObject.ExecuteSSH(sshInputBox.Text);
                 sshOutputBlock.Text = result;
             }
-            catch
-            {
-                MessageBox.Show("something went wrong? have you already opened a connection?");
-            }
+            catch (Exception ex) { ShowActionFailed("SSH command", ex); }
+            //KI end
         }
 
         private void Button_Click_7(object sender, RoutedEventArgs e)
@@ -147,11 +247,7 @@ namespace RAT_WPF.NetworkObject_UI
             if (updateLoginWindow.ShowDialog() == true)
             {
                 networkObject.NetworkInterfaces.Add(updateLoginWindow.networkObjectInterface);
-                InterfacesStackPanel.Children.Clear();
-                foreach (NetworkObjectInterface networkObjectInterface in networkObject.NetworkInterfaces)
-                {
-                    InterfacesStackPanel.Children.Add(new Label() { Content = $"{networkObjectInterface.Name} [???]" });
-                }
+                LoadInterfaces();
             }
         }
 
@@ -161,6 +257,16 @@ namespace RAT_WPF.NetworkObject_UI
             {
                 return;
             }
+
+            //KI start (Claude Opus 4.8, prompt 2): don't try to open a shell stream with no SSH connection
+            if (!networkObject.IsSshConnected)
+            {
+                ShowNoConnection("SSH");
+                SshShellsTabControl.SelectedIndex = 0; // bounce back off the "+" tab
+                return;
+            }
+            //KI end
+
             //KI
             // open new shell stream
             int shellId = networkObject.OpenSSHstream();
@@ -186,5 +292,146 @@ namespace RAT_WPF.NetworkObject_UI
             SshShellsTabControl.SelectedItem = tab;
             //KI END
         }
+
+        //KI start (Claude Opus 4.8, prompt 1): MIB browser (built-in common OIDs + raw Get/Walk/Set)
+        private sealed class SnmpRow
+        {
+            public string Oid { get; set; } = "";
+            public string Value { get; set; } = "";
+        }
+
+        private void LoadMibTree()
+        {
+            foreach (MibNode node in MibCatalog.CommonNodes)
+            {
+                MibTree.Items.Add(new ListBoxItem
+                {
+                    Content = node.Name,
+                    Tag = node,
+                    ToolTip = $"{node.Oid}\n{node.Description}",
+                    Foreground = (Brush)Application.Current.Resources["Brush.Text"]
+                });
+            }
+        }
+
+        private void MibTree_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (MibTree.SelectedItem is ListBoxItem item && item.Tag is MibNode node)
+            {
+                SnmpOid.Text = node.Oid;
+            }
+        }
+
+        private SnmpSettings BuildSnmpSettings()
+        {
+            int port = 161;
+            int.TryParse(SnmpPort.Text, out port);
+            if (port == 0) { port = 161; }
+            return new SnmpSettings(
+                string.IsNullOrWhiteSpace(SnmpReadCommunity.Text) ? "public" : SnmpReadCommunity.Text,
+                string.IsNullOrWhiteSpace(SnmpWriteCommunity.Text) ? "private" : SnmpWriteCommunity.Text,
+                port,
+                networkObject.Settings.Snmp?.ID ?? 0);
+        }
+
+        private VersionCode SelectedSnmpVersion()
+            => SnmpVersion.SelectedIndex == 1 ? VersionCode.V2 : VersionCode.V1;
+
+        private void ShowSnmpResults(IEnumerable<Variable> variables)
+        {
+            List<SnmpRow> rows = variables
+                .Select(v => new SnmpRow { Oid = v.Id.ToString(), Value = v.Data.ToString() })
+                .ToList();
+            SnmpResults.ItemsSource = rows;
+        }
+
+        private void SnmpGet_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = networkObject.GetSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SelectedSnmpVersion());
+                ShowSnmpResults(result);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"SNMP GET failed:\n{ex.Message}");
+            }
+        }
+
+        private void SnmpWalk_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = networkObject.WalkSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SelectedSnmpVersion());
+                ShowSnmpResults(result);
+                if (result.Count == 0)
+                {
+                    MessageBox.Show("Walk returned no variables.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"SNMP WALK failed:\n{ex.Message}");
+            }
+        }
+
+        private void SnmpSet_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                networkObject.SetSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SnmpSetValue.Text, SelectedSnmpVersion());
+                MessageBox.Show("SET sent. Use Get to confirm the new value.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"SNMP SET failed:\n{ex.Message}");
+            }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 1): in-memory access control (owner + per-user permissions)
+        private sealed class PermissionRow
+        {
+            public string UserName { get; set; } = "";
+            public string Rights { get; set; } = "";
+        }
+
+        private void LoadAccessControl()
+        {
+            OwnerLabel.Text = networkObject.Owner != null
+                ? $"Owner: {networkObject.Owner}"
+                : "Owner: (none)";
+            RefreshPermissionsGrid();
+        }
+
+        private void RefreshPermissionsGrid()
+        {
+            PermissionsGrid.ItemsSource = networkObject.Permissions
+                .Select(p => new PermissionRow { UserName = p.User.ToString(), Rights = p.Rights.ToString() })
+                .ToList();
+        }
+
+        private void GrantPermission_Click(object sender, RoutedEventArgs e)
+        {
+            string userName = PermUserName.Text.Trim();
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                MessageBox.Show("Enter a user name to grant access to.");
+                return;
+            }
+
+            AccessRight rights = AccessRight.None;
+            if (RightView.IsChecked == true) { rights |= AccessRight.View; }
+            if (RightEdit.IsChecked == true) { rights |= AccessRight.Edit; }
+            if (RightConnect.IsChecked == true) { rights |= AccessRight.Connect; }
+            if (RightSnmp.IsChecked == true) { rights |= AccessRight.Snmp; }
+            if (RightManage.IsChecked == true) { rights |= AccessRight.Manage; }
+
+            // ID is unknown without a database; derive a stable-ish id from the name for now.
+            networkObject.SetPermission(new NetworkUser(userName, userName.GetHashCode()), rights);
+            RefreshPermissionsGrid();
+            PermUserName.Clear();
+        }
+        //KI end
     }
 }

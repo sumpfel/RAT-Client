@@ -1,19 +1,29 @@
-﻿<UserControl x:Class="RAT_WPF.NetworkObject_UI.LoginControl"
+<UserControl x:Class="RAT_WPF.NetworkObject_UI.LoginControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
-             mc:Ignorable="d" 
-             d:DesignHeight="30" MinWidth="200">
-    <Grid Background="LightGray">
-        <StackPanel Orientation="Horizontal" Margin="2">
-            <Label Content="port: "></Label>
-            <Label Content="user: "></Label>
-            <Label Content="potocoll: "></Label>
-            <Button Content="connect" Margin="2" Click="Button_Click"></Button>
-            <Button Content="edit" Margin="2" Click="Button_Click_1"></Button>
-            <Button Content="delete" Margin="2"></Button>
+             mc:Ignorable="d"
+             d:DesignHeight="40" MinWidth="240">
+    <!--KI start (Claude Opus 4.8, prompt 1/2): restyle login row + real values + connection status indicator-->
+    <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Margin="0,3" Padding="8,4">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- status dot -->
+            <Ellipse x:Name="StatusDot" Width="10" Height="10" Margin="0,0,8,0"
+                     VerticalAlignment="Center" Fill="{DynamicResource Brush.Danger}"/>
+            <TextBlock x:Name="ProtocolText" FontWeight="SemiBold" VerticalAlignment="Center"
+                       Foreground="{DynamicResource Brush.Text}" MinWidth="50"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="6,0,0,0" FontSize="11"
+                       Foreground="{DynamicResource Brush.TextMuted}" Text="not connected"/>
+            <TextBlock x:Name="UserText" VerticalAlignment="Center" Margin="10,0,0,0"
+                       Foreground="{DynamicResource Brush.TextMuted}"/>
+            <TextBlock x:Name="PortText" VerticalAlignment="Center" Margin="10,0,0,0"
+                       Foreground="{DynamicResource Brush.TextMuted}"/>
+            <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource ModernButton}" Click="Button_Click"/>
+            <Button Content="Edit" Style="{StaticResource SubtleButton}" Click="Button_Click_1"/>
+            <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click"/>
         </StackPanel>
-    </Grid>
+    </Border>
+    <!--KI end-->
 </UserControl>

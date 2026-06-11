@@ -32,6 +32,10 @@ namespace RAT_WPF.Commands
         {
             // TODO: Do login, if successful nav to topologieview
 
+            //KI start (Claude Opus 4.8, prompt 1): remember who logged in so PC network objects can be owned by them
+            RAT_Logic.Session.CurrentUser = new RAT_Logic.NetworkUser(_loginViewModel.Username, 0);
+            //KI end
+
             // navigation Part
 
             _navigationStore.CurrentViewModel = new TopologyViewModel();

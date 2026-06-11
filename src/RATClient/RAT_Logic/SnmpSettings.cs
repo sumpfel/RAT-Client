@@ -22,5 +22,15 @@ namespace RAT_Logic
             WriteCommunity = writeCommunity;
             ID = iD;
         }
+
+        //KI start (Claude Opus 4.8, prompt 1): convenience ctor for the MIB browser UI
+        public SnmpSettings(string readCommunity, string writeCommunity, int port, int iD)
+        {
+            ReadCommunity = readCommunity;
+            WriteCommunity = writeCommunity;
+            Port = port;
+            ID = iD;
+        }
+        //KI end
     }
 }
