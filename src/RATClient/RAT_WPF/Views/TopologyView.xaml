@@ -4,10 +4,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:views="clr-namespace:RAT_WPF.Views"
+             xmlns:viewmodels="clr-namespace:RAT_WPF.ViewModels"
+             xmlns:converters="clr-namespace:RAT_WPF.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800"
              Background="{DynamicResource Brush.Background}">
-    <!--KI start (Claude Opus 4.8, prompt 2): brown-themed topbar with logo + Settings button-->
+    <!--KI start (Claude Opus 4.8, prompt 2/10): brown-themed topbar with logo + Settings + enum-bound tools-->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,7 +21,14 @@
         </Grid.ColumnDefinitions>
 
         <!--Topbar-->
+        <!--
+        // ComparisonConverter for enum-bound radio tools - Source: https://stackoverflow.com/a/2908885
+        // Posted by Scott, modified by community. Retrieved 2026-06-11, License - CC BY-SA 4.0
+        -->
         <Border Grid.Row="0" Grid.ColumnSpan="2" Background="{DynamicResource Brush.Surface}" Padding="8,6">
+            <Border.Resources>
+                <converters:ComparisonConverter x:Key="ComparisonConverter" />
+            </Border.Resources>
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
                     <Image Source="{StaticResource AppLogo}" Width="28" Height="28" Margin="0,0,8,0"/>
@@ -28,15 +37,18 @@
                 <Button DockPanel.Dock="Right" Content="⚙ Settings" Style="{StaticResource SubtleButton}"
                         HorizontalAlignment="Right" Click="SettingsButton_Click"/>
                 <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
-                    <!--Tools-->
-                    <RadioButton x:Name="CursorTool" Content="Cursor" Style="{StaticResource RadioButtonTool}" IsChecked="True"/>
-                    <RadioButton Content="Ping" Style="{StaticResource RadioButtonTool}"/>
+                    <!--Tools (Cursor/Connection are enum-bound to ToolEnum) -->
+                    <RadioButton Content="Cursor" Style="{StaticResource RadioButtonTool}"
+                                 IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Cursor}}" />
+                    <RadioButton Content="Connection" Style="{StaticResource RadioButtonTool}"
+                                 IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Connector}}" />
                     <!--KI start (Claude Opus 4.8, prompt 4): delete tool — when active, clicking a canvas device removes it-->
                     <RadioButton x:Name="DeleteTool" Content="🗑 Delete" Style="{StaticResource RadioButtonTool}"/>
                     <!--KI end-->
                 </StackPanel>
             </DockPanel>
         </Border>
+
 
         <!--Sidebar-->
         <views:NetworkObjectListingView
@@ -53,12 +65,15 @@
             />
         -->
         <ItemsControl ItemsSource="{Binding NetworkObjects}" Grid.Row="1" Grid.Column="1" ClipToBounds="True">
+            <!--Help from AI-->
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <views:NetworkObjectView/>
+                    <views:NetworkObjectView
+                        CurrentTool="{Binding DataContext.ToolEnum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandLeftClickWithConnectionTool="{Binding DataContext.NetworkObjectAddConnectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        />
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
-            <!--Help from AI-->
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Canvas

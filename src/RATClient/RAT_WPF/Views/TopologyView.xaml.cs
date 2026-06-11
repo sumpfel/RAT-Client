@@ -30,11 +30,14 @@ namespace RAT_WPF.Views
             {
                 if (data is NetworkObjectViewModel networkObject)
                 {
+                    /*
                     NetworkObjectView view = new NetworkObjectView()
                     {
-                        DataContext = networkObject
+                        DataContext = networkObject,
+                        CurrentTool = topologyViewModel.ToolEnum,
+                        CommandLeftClickWithConnectionTool = topologyViewModel.NetworkObjectAddConnectionCommand
                     };
-
+                    */
                     bool exists = false;
 
                     // TODO: Improve so that multiple new Elements can be added, without having to rename them

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RAT_WPF.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,29 @@ namespace RAT_WPF.Views
     /// </summary>
     public partial class NetworkObjectView : UserControl
     {
+        public EnumTool CurrentTool
+        {
+            get { return (EnumTool)GetValue(CurrentToolProperty); }
+            set { SetValue(CurrentToolProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Tool.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CurrentToolProperty =
+            DependencyProperty.Register(nameof(CurrentTool), typeof(EnumTool), typeof(NetworkObjectView), new PropertyMetadata(EnumTool.Cursor));
+
+
+
+        public ICommand CommandLeftClickWithConnectionTool
+        {
+            get { return (ICommand)GetValue(CommandLeftClickWithConnectionToolProperty); }
+            set { SetValue(CommandLeftClickWithConnectionToolProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for CommandLeftClickWithConnectionTool.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CommandLeftClickWithConnectionToolProperty =
+            DependencyProperty.Register(nameof(CommandLeftClickWithConnectionTool), typeof(ICommand), typeof(NetworkObjectView), new PropertyMetadata(null));
+
+
         public NetworkObjectView()
         {
             InitializeComponent();
@@ -35,7 +59,17 @@ namespace RAT_WPF.Views
             //KI end
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                DragDrop.DoDragDrop(grid, new DataObject(DataFormats.Serializable, grid), DragDropEffects.Move);
+                if (CurrentTool == EnumTool.Cursor)
+                {
+                    DragDrop.DoDragDrop(grid, new DataObject(DataFormats.Serializable, grid), DragDropEffects.Move);
+                }
+                else if (CurrentTool == EnumTool.Connector && DataContext is NetworkObjectViewModel networkObjectViewModel)
+                { 
+                    if (CommandLeftClickWithConnectionTool?.CanExecute(null) ?? false)
+                    {
+                        CommandLeftClickWithConnectionTool.Execute(networkObjectViewModel);
+                    }
+                }
             }
         }
 
