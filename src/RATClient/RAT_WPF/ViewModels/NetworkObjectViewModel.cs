@@ -14,6 +14,7 @@ namespace RAT_WPF.ViewModels
     {
         private readonly NetworkObject _networkObject;
 
+        public NetworkObject networkObject => _networkObject;
         public String Type => _networkObject.Type.ToString();
 
 		public string Name

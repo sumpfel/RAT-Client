@@ -38,13 +38,12 @@
                         HorizontalAlignment="Right" Click="SettingsButton_Click"/>
                 <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
                     <!--Tools (Cursor/Connection are enum-bound to ToolEnum) -->
-                    <RadioButton Content="Cursor" Style="{StaticResource RadioButtonTool}"
+                    <RadioButton Content="🖱 Cursor" Style="{StaticResource RadioButtonTool}"
                                  IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Cursor}}" />
-                    <RadioButton Content="Connection" Style="{StaticResource RadioButtonTool}"
+                    <RadioButton Content="🔌 Connection" Style="{StaticResource RadioButtonTool}"
                                  IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Connector}}" />
-                    <!--KI start (Claude Opus 4.8, prompt 4): delete tool — when active, clicking a canvas device removes it-->
-                    <RadioButton x:Name="DeleteTool" Content="🗑 Delete" Style="{StaticResource RadioButtonTool}"/>
-                    <!--KI end-->
+                    <RadioButton Content="🗑 Delete" Style="{StaticResource RadioButtonTool}"
+                                 IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Delete}}" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -71,6 +70,7 @@
                     <views:NetworkObjectView
                         CurrentTool="{Binding DataContext.ToolEnum, RelativeSource={RelativeSource AncestorType=UserControl}}"
                         CommandLeftClickWithConnectionTool="{Binding DataContext.NetworkObjectAddConnectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandLeftClickWithDeleteTool="{Binding DataContext.NetworkObjectDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                         />
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
