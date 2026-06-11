@@ -206,3 +206,37 @@ is done with it.
   public `SelectedInterface` property (null on cancel). Not wired to anything else yet, by request.
 
 **Verified:** solution builds (0 errors).
+
+---------
+
+## Prompt 10 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Reworked the access-rights model (user edited `AccessRight.cs` + `User.cs`). A NetworkObject has multiple
+AccessRights (one per user; a user with no entry is assumed `Hidden`/0 — the DB already drops objects a user can't
+see). `User` now has `CanCreate` (needed to create NetworkObjects) and a `Privileges` field. Privilege rules: a user
+may change only Hidden/See/Edit of others if they are an **Admin** of that object; cannot take rights from another
+**Admin** or the **Owner**; only an **Owner** can change Admins/Owners, grant/remove Owner, and delete the object.
+
+**Note on the circular reference:** `AccessRight` as written referenced `User`, but RAT_Logic can't reference RAT_Data
+(RAT_Data already depends on RAT_Logic). As written, `User` actually bound to `Lextm.SharpSnmpLib.Security.User`. Kept
+the model in RAT_Logic referencing the logic-layer `NetworkUser` (extended with `CanCreate`/`Privileges`); the WPF/data
+layer maps `RAT_Data.User` -> `NetworkUser`.
+
+**Changes made (AI regions marked `prompt 11`/`prompt 1/11`):**
+
+- `RAT_Logic/AccessRight.cs` — `AccesRights` enum (Hidden/See/Edit/Admin/Owner) + `AccessRight { NetworkUser; AccesRights }`.
+- `RAT_Logic/Permission.cs` — dropped the old `[Flags]` `Permission`; `NetworkUser` now carries `CanCreate` + `Privileges`.
+- `RAT_Logic/NetworkObject.cs` — replaced `Owner`/`Permissions`/`SetPermission`/`UserHasRight` with
+  `List<AccessRight> AccessRights` + `GetRight` (Hidden default), `HasAtLeast`, `CanChangeRight` (enforces the
+  Admin/Owner rules), `SetRight`/`ApplyRight`, and `CanBeDeletedBy` (Owner only).
+- `RAT_WPF/Commands/LoginCommand.cs` + `App.xaml.cs` — current user carries `CanCreate` (defaults true in dev until the
+  DB login is wired); debug-skip path seeds a dev user.
+- `RAT_WPF/ViewModels/NetworkObjectViewModel.cs` — exposes `Model` so create/delete can check rights.
+- `RAT_WPF/Views/TopologyView.xaml.cs` — creating (drop) requires `CanCreate` and makes the creator the Owner; the
+  Delete tool requires Owner (`CanBeDeletedBy`).
+- `RAT_WPF/NetworkObject_UI/NetworkObjectSettingsWindow.xaml(.cs)` — Access Control tab rebuilt: shows the current
+  user's role, a level dropdown limited to what they may assign (Admin -> up to Edit, Owner -> any), a grid of
+  per-user rights, and routes changes through `SetRight` so the rules are enforced (with a clear "Not allowed" popup).
+
+**Verified:** builds (0 errors); via UI Automation opened a seeded device's Access Control tab — "Your access: Owner",
+grant panel enabled, grid lists debug=Owner / alice=Admin / bob=See.

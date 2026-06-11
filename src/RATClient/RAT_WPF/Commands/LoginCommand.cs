@@ -32,8 +32,10 @@ namespace RAT_WPF.Commands
         {
             // TODO: Do login, if successful nav to topologieview
 
-            //KI start (Claude Opus 4.8, prompt 1): remember who logged in so PC network objects can be owned by them
-            RAT_Logic.Session.CurrentUser = new RAT_Logic.NetworkUser(_loginViewModel.Username, 0);
+            //KI start (Claude Opus 4.8, prompt 1/11): remember who logged in. CanCreate/Privileges come from the
+            // account; login is still stubbed, so default CanCreate=true for dev until the DB login is wired up.
+            // TODO: map the real RAT_Data.User returned by IDatabaseConnection.Login() (CanCreate, Privileges, ID).
+            RAT_Logic.Session.CurrentUser = new RAT_Logic.NetworkUser(_loginViewModel.Username, 0, canCreate: true);
             //KI end
 
             // navigation Part

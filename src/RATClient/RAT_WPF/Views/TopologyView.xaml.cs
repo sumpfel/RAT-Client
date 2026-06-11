@@ -30,6 +30,14 @@ namespace RAT_WPF.Views
             {
                 if (data is NetworkObjectViewModel networkObject)
                 {
+                    //KI start (Claude Opus 4.8, prompt 11): only users with CanCreate may add network objects
+                    if (RAT_Logic.Session.CurrentUser?.CanCreate != true)
+                    {
+                        MessageBox.Show("You don't have permission to create network objects.",
+                            "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    //KI end
                     /*
                     NetworkObjectView view = new NetworkObjectView()
                     {
@@ -58,6 +66,15 @@ namespace RAT_WPF.Views
                         // Canvas.SetTop(view, dropPosition.Y);
                         networkObject.X = (int)dropPosition.X;
                         networkObject.Y = (int)dropPosition.Y;
+
+                        //KI start (Claude Opus 4.8, prompt 11): the creator owns the object they just created
+                        if (RAT_Logic.Session.CurrentUser != null
+                            && !networkObject.Model.AccessRights.Any(a => a.Rights == RAT_Logic.AccesRights.Owner))
+                        {
+                            networkObject.Model.ApplyRight(RAT_Logic.Session.CurrentUser, RAT_Logic.AccesRights.Owner);
+                        }
+                        //KI end
+
                         topologyViewModel.AddNetworkObjectViewModelToCanvas(networkObject);
                     }
                 }
@@ -95,6 +112,14 @@ namespace RAT_WPF.Views
 
         public void DeleteNode(NetworkObjectViewModel node)
         {
+            //KI start (Claude Opus 4.8, prompt 11): only an Owner of the object may delete it
+            if (!node.Model.CanBeDeletedBy(RAT_Logic.Session.CurrentUser))
+            {
+                MessageBox.Show("Only an owner of this device can delete it.",
+                    "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            //KI end
             if (this.DataContext is TopologyViewModel topologyViewModel)
             {
                 topologyViewModel.RemoveNetworkObjectViewModelFromCanvas(node);

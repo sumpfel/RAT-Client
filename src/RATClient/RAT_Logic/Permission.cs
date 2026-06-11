@@ -6,42 +6,33 @@ using System.Threading.Tasks;
 
 namespace RAT_Logic
 {
-    //KI start (Claude Opus 4.8, prompt 1): permission object = which user + which rights
+    //KI start (Claude Opus 4.8, prompt 1/11): logic-layer identity of a user.
     /// <summary>
     /// A lightweight identity of a user inside the logic layer.
     /// RAT_Logic cannot reference RAT_Data.User (that would be a circular project
     /// reference), so the WPF layer maps the logged-in RAT_Data.User onto this.
+    /// Carries the account-level flags the rights logic needs (CanCreate, Privileges).
     /// </summary>
     public class NetworkUser
     {
         public string UserName;
         public int ID;
 
-        public NetworkUser(string userName, int id)
+        /// <summary>Account is allowed to create new network objects.</summary>
+        public bool CanCreate;
+
+        /// <summary>Global account tier (not used to gate per-object rights here).</summary>
+        public int Privileges;
+
+        public NetworkUser(string userName, int id, bool canCreate = false, int privileges = 10)
         {
             UserName = userName;
             ID = id;
+            CanCreate = canCreate;
+            Privileges = privileges;
         }
 
         public override string ToString() => $"{UserName} (#{ID})";
-    }
-
-    /// <summary>
-    /// Couples a <see cref="NetworkUser"/> with the <see cref="AccessRight"/>s
-    /// they hold on a single <see cref="NetworkObject"/>.
-    /// </summary>
-    public class Permission
-    {
-        public NetworkUser User;
-        public AccessRight Rights;
-
-        public Permission(NetworkUser user, AccessRight rights)
-        {
-            User = user;
-            Rights = rights;
-        }
-
-        public bool Has(AccessRight right) => (Rights & right) == right;
     }
     //KI end
 }

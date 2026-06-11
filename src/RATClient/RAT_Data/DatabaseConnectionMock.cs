@@ -102,7 +102,7 @@ namespace RAT_Data
             string password = "password";
             if (User.UserName == userName && User.Password == password)
             {
-                return Task.FromResult(new User(userName, password, 0));
+                return Task.FromResult(new User(userName, password, 0,100,true)); // TODO ask DATABASE for canCreate and privilege level
             }
             else
             {

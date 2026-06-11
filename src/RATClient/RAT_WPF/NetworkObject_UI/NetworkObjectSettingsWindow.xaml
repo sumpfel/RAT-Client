@@ -256,22 +256,25 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" x:Name="OwnerLabel" Margin="0,0,0,10"
-                               Foreground="{DynamicResource Brush.TextMuted}" Text="Owner: (none)"/>
+                    <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                        <TextBlock x:Name="MyRoleLabel" Foreground="{DynamicResource Brush.TextMuted}" Text=""/>
+                        <TextBlock x:Name="AccessHint" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11"
+                                   TextWrapping="Wrap" Margin="0,2,0,0" Text=""/>
+                    </StackPanel>
 
-                    <Border Grid.Row="1" Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Padding="10">
+                    <Border Grid.Row="1" x:Name="GrantPanel" Background="{DynamicResource Brush.SurfaceAlt}"
+                            CornerRadius="6" Padding="10">
                         <StackPanel>
-                            <TextBlock Text="Grant access to a user" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Set a user's access" FontWeight="SemiBold" Margin="0,0,0,6"/>
                             <StackPanel Orientation="Horizontal">
                                 <TextBox x:Name="PermUserName" Style="{StaticResource ModernTextBox}" Width="160"
                                          VerticalAlignment="Center"/>
-                                <CheckBox x:Name="RightView"    Content="View"    Foreground="{DynamicResource Brush.Text}" Margin="8,0,0,0" VerticalAlignment="Center" IsChecked="True"/>
-                                <CheckBox x:Name="RightEdit"    Content="Edit"    Foreground="{DynamicResource Brush.Text}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                <CheckBox x:Name="RightConnect" Content="Connect" Foreground="{DynamicResource Brush.Text}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                <CheckBox x:Name="RightSnmp"    Content="SNMP"    Foreground="{DynamicResource Brush.Text}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                <CheckBox x:Name="RightManage"  Content="Manage"  Foreground="{DynamicResource Brush.Text}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                <Button Content="Grant" Style="{StaticResource ModernButton}" Click="GrantPermission_Click"/>
+                                <ComboBox x:Name="RightLevel" Width="120" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                <Button Content="Apply" Style="{StaticResource ModernButton}" Click="GrantPermission_Click"/>
                             </StackPanel>
+                            <TextBlock Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="0,6,0,0"
+                                       TextWrapping="Wrap"
+                                       Text="Admins may set Hidden/See/Edit on lower users. Only an Owner can set Admin/Owner or change another Admin/Owner."/>
                         </StackPanel>
                     </Border>
 
@@ -281,8 +284,8 @@
                                   RowBackground="Transparent" AlternatingRowBackground="#22FFFFFF"
                                   GridLinesVisibility="Horizontal" BorderThickness="0" HeadersVisibility="Column">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="User"   Binding="{Binding UserName}" Width="*"/>
-                                <DataGridTextColumn Header="Rights" Binding="{Binding Rights}"   Width="2*"/>
+                                <DataGridTextColumn Header="User"  Binding="{Binding UserName}" Width="*"/>
+                                <DataGridTextColumn Header="Right" Binding="{Binding Right}"    Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>

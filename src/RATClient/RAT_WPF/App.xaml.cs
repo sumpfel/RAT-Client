@@ -23,6 +23,10 @@ namespace RAT_WPF
             // TODO: If already logged in, start topologyviewmodel instead
             if (_debugging_ignore_login)
             {
+                //KI start (Claude Opus 4.8, prompt 11): debug-login skips the login screen, so seed a dev user
+                // (CanCreate=true) — otherwise Session.CurrentUser is null and creation/ownership won't work.
+                RAT_Logic.Session.CurrentUser ??= new RAT_Logic.NetworkUser("debug", 0, canCreate: true);
+                //KI end
                 _navigationStore.CurrentViewModel = new TopologyViewModel();
             }
             else

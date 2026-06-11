@@ -35,10 +35,11 @@ namespace RAT_WPF.NetworkObject_UI
 
             isOwnPc = networkObject.Type == NetworkObjectType.PC;
 
-            //KI start (Claude Opus 4.8, prompt 1): own PC gets owned by the logged-in user
-            if (isOwnPc && networkObject.Owner == null && Session.CurrentUser != null)
+            //KI start (Claude Opus 4.8, prompt 1/11): own PC gets owned by the logged-in user if it has no owner yet
+            if (isOwnPc && Session.CurrentUser != null
+                && !networkObject.AccessRights.Any(a => a.Rights == AccesRights.Owner))
             {
-                networkObject.Owner = Session.CurrentUser;
+                networkObject.ApplyRight(Session.CurrentUser, AccesRights.Owner);
             }
             //KI end
 
@@ -430,46 +431,80 @@ namespace RAT_WPF.NetworkObject_UI
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 1): in-memory access control (owner + per-user permissions)
-        private sealed class PermissionRow
+        //KI start (Claude Opus 4.8, prompt 11): hierarchical per-user access control with privilege rules
+        private sealed class AccessRow
         {
             public string UserName { get; set; } = "";
-            public string Rights { get; set; } = "";
+            public string Right { get; set; } = "";
         }
 
         private void LoadAccessControl()
         {
-            OwnerLabel.Text = networkObject.Owner != null
-                ? $"Owner: {networkObject.Owner}"
-                : "Owner: (none)";
+            AccesRights myRight = networkObject.GetRight(Session.CurrentUser);
+            MyRoleLabel.Text = $"Your access on this device: {myRight}";
+
+            // only Admin and Owner can change rights
+            bool canManage = myRight >= AccesRights.Admin;
+            GrantPanel.IsEnabled = canManage;
+            AccessHint.Text = canManage
+                ? "You can change other users' access below."
+                : "You don't have permission to change access on this device (need Admin or Owner).";
+
+            // which levels the current user may assign
+            RightLevel.Items.Clear();
+            foreach (AccesRights level in Enum.GetValues<AccesRights>())
+            {
+                // an Admin can only assign up to Edit; an Owner can assign anything
+                if (myRight == AccesRights.Admin && level > AccesRights.Edit) { continue; }
+                RightLevel.Items.Add(level);
+            }
+            if (RightLevel.Items.Count > 0) { RightLevel.SelectedIndex = 0; }
+
             RefreshPermissionsGrid();
         }
 
         private void RefreshPermissionsGrid()
         {
-            PermissionsGrid.ItemsSource = networkObject.Permissions
-                .Select(p => new PermissionRow { UserName = p.User.ToString(), Rights = p.Rights.ToString() })
+            PermissionsGrid.ItemsSource = networkObject.AccessRights
+                .OrderByDescending(a => a.Rights)
+                .Select(a => new AccessRow { UserName = a.User.ToString(), Right = a.Rights.ToString() })
                 .ToList();
         }
 
         private void GrantPermission_Click(object sender, RoutedEventArgs e)
         {
-            string userName = PermUserName.Text.Trim();
-            if (string.IsNullOrWhiteSpace(userName))
+            if (Session.CurrentUser == null)
             {
-                MessageBox.Show("Enter a user name to grant access to.");
+                MessageBox.Show("No current user.");
                 return;
             }
 
-            AccessRight rights = AccessRight.None;
-            if (RightView.IsChecked == true) { rights |= AccessRight.View; }
-            if (RightEdit.IsChecked == true) { rights |= AccessRight.Edit; }
-            if (RightConnect.IsChecked == true) { rights |= AccessRight.Connect; }
-            if (RightSnmp.IsChecked == true) { rights |= AccessRight.Snmp; }
-            if (RightManage.IsChecked == true) { rights |= AccessRight.Manage; }
+            string userName = PermUserName.Text.Trim();
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                MessageBox.Show("Enter the user name to set access for.");
+                return;
+            }
+            if (RightLevel.SelectedItem is not AccesRights newRight)
+            {
+                MessageBox.Show("Select an access level.");
+                return;
+            }
 
             // ID is unknown without a database; derive a stable-ish id from the name for now.
-            networkObject.SetPermission(new NetworkUser(userName, userName.GetHashCode()), rights);
+            // TODO: resolve the real user (and ID) from IDatabaseConnection.GetAllUsers().
+            NetworkUser target = new NetworkUser(userName, userName.GetHashCode());
+
+            if (!networkObject.SetRight(Session.CurrentUser, target, newRight))
+            {
+                MessageBox.Show(
+                    "You're not allowed to set that access for this user.\n\n" +
+                    "Admins can only set Hidden/See/Edit on users below them; only an Owner can change Admins/Owners " +
+                    "or grant Admin/Owner.",
+                    "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             RefreshPermissionsGrid();
             PermUserName.Clear();
         }

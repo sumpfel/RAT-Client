@@ -45,34 +45,75 @@ namespace RAT_Logic
         public string Specs = ""; // free-form extra notes
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 1): owner user + per-user permission objects
-        public NetworkUser? Owner;
+        //KI start (Claude Opus 4.8, prompt 11): per-user access rights (one AccessRight per user).
+        // A user with no entry is assumed to have AccesRights.Hidden (0). The DB already filters out objects a
+        // user has no access to, so anything reaching the client is at least visible to the current user.
+        public List<AccessRight> AccessRights = new List<AccessRight>();
 
-        public List<Permission> Permissions = new List<Permission>();
-
-        /// <summary>Grants (or replaces) the rights a user has on this device, in memory.</summary>
-        public void SetPermission(NetworkUser user, AccessRight rights)
+        /// <summary>The right a user holds on this object; Hidden (0) if they have no entry.</summary>
+        public AccesRights GetRight(NetworkUser? user)
         {
-            Permission? existing = Permissions.FirstOrDefault(p => p.User.ID == user.ID);
-            if (existing != null) { existing.Rights = rights; }
-            else { Permissions.Add(new Permission(user, rights)); }
+            if (user == null) { return AccesRights.Hidden; }
+            AccessRight? entry = AccessRights.FirstOrDefault(a => a.User.ID == user.ID);
+            return entry?.Rights ?? AccesRights.Hidden;
+        }
+
+        public bool HasAtLeast(NetworkUser? user, AccesRights minimum) => GetRight(user) >= minimum;
+
+        /// <summary>
+        /// Whether <paramref name="actor"/> may change <paramref name="target"/>'s right to
+        /// <paramref name="newRight"/>, per the rules:
+        ///  - Admins may set Hidden/See/Edit on users whose current right is lower than the admin's,
+        ///    and may not grant Admin/Owner, nor touch other Admins/Owners.
+        ///  - Owners may change anyone (including granting/removing Owner and Admin).
+        /// </summary>
+        public bool CanChangeRight(NetworkUser actor, NetworkUser target, AccesRights newRight)
+        {
+            if (actor.ID == target.ID) { return false; } // can't change your own rights here
+
+            AccesRights actorRight = GetRight(actor);
+            AccesRights targetRight = GetRight(target);
+
+            if (actorRight == AccesRights.Owner)
+            {
+                return true; // owner can do anything, including grant/remove Owner and Admin
+            }
+
+            if (actorRight == AccesRights.Admin)
+            {
+                // admins can only manage users strictly below them...
+                if (targetRight >= AccesRights.Admin) { return false; } // can't touch admins or owners
+                // ...and only assign Hidden / See / Edit (never Admin or Owner)
+                return newRight <= AccesRights.Edit;
+            }
+
+            return false; // See / Edit / Hidden users can't change anyone's rights
+        }
+
+        /// <summary>Sets a user's right if <paramref name="actor"/> is allowed to. Returns success.</summary>
+        public bool SetRight(NetworkUser actor, NetworkUser target, AccesRights newRight)
+        {
+            if (!CanChangeRight(actor, target, newRight)) { return false; }
+            ApplyRight(target, newRight);
             // TODO: persist to database once IDatabaseConnection AccessRights API exists
+            return true;
         }
 
-        public void RemovePermission(NetworkUser user)
+        /// <summary>Sets a user's right without permission checks (e.g. seeding the first owner).</summary>
+        public void ApplyRight(NetworkUser user, AccesRights right)
         {
-            Permissions.RemoveAll(p => p.User.ID == user.ID);
-            // TODO: persist to database
+            AccessRight? existing = AccessRights.FirstOrDefault(a => a.User.ID == user.ID);
+            if (right == AccesRights.Hidden)
+            {
+                if (existing != null) { AccessRights.Remove(existing); } // Hidden == no entry
+                return;
+            }
+            if (existing != null) { existing.Rights = right; }
+            else { AccessRights.Add(new AccessRight(user, right)); }
         }
 
-        /// <summary>True if the user owns the device or has been granted the given right.</summary>
-        public bool UserHasRight(NetworkUser? user, AccessRight right)
-        {
-            if (user == null) { return false; }
-            if (Owner != null && Owner.ID == user.ID) { return true; }
-            Permission? p = Permissions.FirstOrDefault(x => x.User.ID == user.ID);
-            return p != null && p.Has(right);
-        }
+        /// <summary>Only an Owner may delete the object.</summary>
+        public bool CanBeDeletedBy(NetworkUser? user) => GetRight(user) == AccesRights.Owner;
         //KI end
 
         // ssh tutorial: https://deepwiki.com/sshnet/SSH.NET/2-getting-started
