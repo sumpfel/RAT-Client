@@ -33,6 +33,10 @@ namespace RAT_Logic
 
         public int ID;
 
+        public int X;
+
+        public int Y;
+
         //KI start (Claude Opus 4.8, prompt 1): stored, software-only specs editable for any device (not pushed to the real device)
         public string Os = "";
         public string Cpu = "";
