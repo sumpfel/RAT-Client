@@ -27,7 +27,7 @@
         -->
         <Border Grid.Row="0" Grid.ColumnSpan="2" Background="{DynamicResource Brush.Surface}" Padding="8,6">
             <Border.Resources>
-                <converters:ComparisonConverter x:Key="ComparisonConverter" />
+                <converters:ComparisonConverter x:Key="ComparisonConverter"/>
             </Border.Resources>
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
@@ -63,34 +63,49 @@
             NetworkObjectDropCommand="{Binding}"
             />
         -->
-        <ItemsControl ItemsSource="{Binding NetworkObjects}" Grid.Row="1" Grid.Column="1" ClipToBounds="True">
-            <!--Help from AI-->
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <views:NetworkObjectView
-                        CurrentTool="{Binding DataContext.ToolEnum, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandLeftClickWithConnectionTool="{Binding DataContext.NetworkObjectAddConnectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandLeftClickWithDeleteTool="{Binding DataContext.NetworkObjectDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        />
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <Canvas
-                        AllowDrop="True"
-                        Drop="NetworkObject_Drop"
-                        DragOver="NetworkObject_DragOver"
-                        Background="{DynamicResource Brush.Canvas}"/>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemContainerStyle>
-                <Style TargetType="ContentPresenter">
-                    <Setter Property="Canvas.Left" Value="{Binding X, Mode=TwoWay}"/>
-                    <Setter Property="Canvas.Top" Value="{Binding Y, Mode=TwoWay}"/>
-                </Style>
-            </ItemsControl.ItemContainerStyle>
-            <!--No more Help from AI-->
-        </ItemsControl>
+        <!--Help from AI-->
+        <Grid Grid.Row="1" Grid.Column="1" ClipToBounds="True">
+            <ItemsControl ItemsSource="{Binding NetworkConnectionViewModels}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas Background="{DynamicResource Brush.Canvas}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}" StrokeThickness="2" Stroke="Black"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            
+            <ItemsControl ItemsSource="{Binding NetworkObjects}">
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <views:NetworkObjectView
+                CurrentTool="{Binding DataContext.ToolEnum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                CommandLeftClickWithConnectionTool="{Binding DataContext.NetworkObjectAddConnectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                CommandLeftClickWithDeleteTool="{Binding DataContext.NetworkObjectDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas
+                AllowDrop="True"
+                Drop="NetworkObject_Drop"
+                DragOver="NetworkObject_DragOver"
+                Background="Transparent"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding X, Mode=TwoWay}"/>
+                        <Setter Property="Canvas.Top" Value="{Binding Y, Mode=TwoWay}"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+            </ItemsControl>
+        </Grid>
+        <!--No more Help from AI-->
     </Grid>
     <!--KI end-->
 </UserControl>

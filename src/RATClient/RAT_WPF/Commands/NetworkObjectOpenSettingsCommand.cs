@@ -9,7 +9,7 @@ using System.Windows;
 
 namespace RAT_WPF.Commands
 {
-    public class NetworkObjectOpenSettings(NetworkObject networkObject) : CommandBase
+    public class NetworkObjectOpenSettingsCommand(NetworkObject networkObject) : CommandBase
     {
         public override void Execute(object? parameter)
         {

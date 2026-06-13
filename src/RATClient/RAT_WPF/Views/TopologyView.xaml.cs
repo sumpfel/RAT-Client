@@ -59,7 +59,6 @@ namespace RAT_WPF.Views
 
                     if (!exists)
                     {
-                        // TODO: Add to List in TopologyViewModel, and update x and y
                         // canvas.Children.Add(view);
                         Point dropPosition = e.GetPosition(canvas);
                         // Canvas.SetLeft(view, dropPosition.X);

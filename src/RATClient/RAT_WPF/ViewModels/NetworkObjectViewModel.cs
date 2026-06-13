@@ -22,6 +22,8 @@ namespace RAT_WPF.ViewModels
 
         public String Type => _networkObject.Type.ToString();
 
+        public List<NetworkObjectInterface> networkObjectInterfaces => _networkObject.NetworkInterfaces;
+
 		public string Name
 		{
 			get 
@@ -68,14 +70,14 @@ namespace RAT_WPF.ViewModels
             }
         }
 
-        public NetworkObjectOpenSettings NetworkObjectOpenSettings { get; set; }
+        public NetworkObjectOpenSettingsCommand NetworkObjectOpenSettings { get; set; }
 
 
 		public NetworkObjectViewModel(RAT_Logic.NetworkObject networkObject) 
 		{
             _networkObject = networkObject;
 
-            NetworkObjectOpenSettings = new NetworkObjectOpenSettings(_networkObject);
+            NetworkObjectOpenSettings = new NetworkObjectOpenSettingsCommand(_networkObject);
         }
 	}
 }

@@ -28,7 +28,7 @@ namespace RAT_WPF.Commands
                     currentNetworkObjectInterface = window.SelectedInterface;
                 }
 
-                if (_previousnetworkObjectInterface != null && currentNetworkObjectInterface != null && _previousnetworkObjectInterface != currentNetworkObjectInterface && _previousnetworkObjectViewModel != currentNetworkObjectViewModel && _previousnetworkObjectViewModel != null)
+                if (_previousnetworkObjectInterface != null && currentNetworkObjectInterface != null && _previousnetworkObjectInterface.Connection == null && currentNetworkObjectInterface.Connection == null && _previousnetworkObjectInterface != currentNetworkObjectInterface && _previousnetworkObjectViewModel != currentNetworkObjectViewModel && _previousnetworkObjectViewModel != null)
                 {
                     topologyViewModel.AddNetworkObjectConnectionViewModelToCanvas(new NetworkObject[2] {_previousnetworkObjectViewModel.networkObject, currentNetworkObjectViewModel.networkObject},new NetworkObjectInterface[2] { _previousnetworkObjectInterface, currentNetworkObjectInterface });
 

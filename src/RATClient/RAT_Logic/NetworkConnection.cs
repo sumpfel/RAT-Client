@@ -14,7 +14,7 @@ namespace RAT_Logic
 
     public class NetworkConnection
     {
-        private NetworkObjectInterface[] networkObectInterfaces;
+        public NetworkObjectInterface[] networkObectInterfaces;
         public int Speed;
         public NetworkConnectionType Type;
         public string Note;

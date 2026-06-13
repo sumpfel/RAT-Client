@@ -34,6 +34,9 @@ namespace RAT_WPF.ViewModels
 
         public IEnumerable<NetworkObjectViewModel> NetworkObjects => _networkObjects;
 
+        private readonly ObservableCollection<NetworkConnectionViewModel> _networkConnectionViewModels = new ObservableCollection<NetworkConnectionViewModel>();
+        public IEnumerable<NetworkConnectionViewModel> NetworkConnectionViewModels => _networkConnectionViewModels;
+
         private EnumTool _toolEnum = EnumTool.Cursor;
         public EnumTool ToolEnum
         {
@@ -80,12 +83,29 @@ namespace RAT_WPF.ViewModels
         public void AddNetworkObjectViewModelToCanvas(NetworkObjectViewModel networkObject)
         {
             _networkObjects.Add(networkObject);
+            OnPropertyChanged(nameof(NetworkConnectionViewModels));
         }
 
         //KI start (Claude Opus 4.8, prompt 4): remove a device from the canvas (used by the Delete tool)
         public void RemoveNetworkObjectViewModelFromCanvas(NetworkObjectViewModel networkObject)
         {
             _networkObjects.Remove(networkObject);
+            OnPropertyChanged(nameof(NetworkConnectionViewModels));
+
+            // Also Removes any Connections attached to the deleted networkObject
+
+            // Help from AI for removing Connections
+
+            var connectionsToRemove = _networkConnectionViewModels
+                .Where(c => c.Source == networkObject || c.Target == networkObject)
+                .ToList();
+
+            foreach (var connection in connectionsToRemove)
+            {
+                _networkConnectionViewModels.Remove(connection);
+            }
+
+            // No more Help from AI for removing Connections
         }
         //KI end
 
@@ -101,7 +121,15 @@ namespace RAT_WPF.ViewModels
                 networkObjectInterfaces[0].Connection = networkConnection;
                 networkObjectInterfaces[1].Connection = networkConnection;
 
-                // TODO: Save Connection in List and render it
+                // Help from AI
+                NetworkObjectViewModel? sourceVM = _networkObjects.FirstOrDefault(n => n.networkObjectInterfaces.Contains(networkObjectInterfaces[0]));
+                NetworkObjectViewModel? targetVM = _networkObjects.FirstOrDefault(n => n.networkObjectInterfaces.Contains(networkObjectInterfaces[1]));
+
+                if (sourceVM != null && targetVM != null)
+                {
+                    _networkConnectionViewModels.Add(new NetworkConnectionViewModel(networkConnection, sourceVM, targetVM));
+                }
+                // No more Help from AI
             }
         }
     }
