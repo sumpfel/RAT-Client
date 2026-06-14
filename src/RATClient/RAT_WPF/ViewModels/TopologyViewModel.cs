@@ -102,6 +102,11 @@ namespace RAT_WPF.ViewModels
 
             foreach (var connection in connectionsToRemove)
             {
+                foreach(var interf in connection.networkConnection.networkObectInterfaces) 
+                {
+                    interf.Connection = null;
+                }
+
                 _networkConnectionViewModels.Remove(connection);
             }
 

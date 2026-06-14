@@ -10,7 +10,7 @@ namespace RAT_Logic
     {
         public string Name = "";
         public int MaxSpeed;
-        public NetworkConnection Connection;
+        public NetworkConnection? Connection;
         public IP? IP;
 
         //KI start (Claude Opus 4.8, prompt 7): software up/down state for modelled (non-host) interfaces

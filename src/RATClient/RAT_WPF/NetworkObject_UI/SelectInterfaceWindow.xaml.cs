@@ -20,11 +20,15 @@ namespace RAT_WPF.NetworkObject_UI
 
             foreach (NetworkObjectInterface iface in networkObject.NetworkInterfaces)
             {
-                InterfaceList.Items.Add(new ListBoxItem
+                // Only display interfaces where there is no connectiond
+                if (iface.Connection == null) 
                 {
-                    Content = new InterfaceControl(iface, readOnly: true),
-                    Tag = iface
-                });
+                    InterfaceList.Items.Add(new ListBoxItem
+                    {
+                        Content = new InterfaceControl(iface, readOnly: true),
+                        Tag = iface
+                    });
+                }
             }
 
             if (InterfaceList.Items.Count > 0)
