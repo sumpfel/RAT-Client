@@ -288,3 +288,55 @@ styling and syntax highlighting — not just colors.
 
 **Verified:** builds (0 errors); previewed the control with sample output and screenshotted — prompts, commands, flags,
 perms, IPs, numbers, per-type file colors, and error/warn/success lines all render correctly on the themed console.
+
+---------
+
+## Prompt 13 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Link the C# frontend with the database (RAT-Backend). Create a `DatabaseConnection` class that implements
+`IDatabaseConnection` and use it instead of the mock. Add any login WPF windows that are needed, built in the same
+style as the rest of the code so it stays understandable and changeable. Don't change RAT-Backend unless necessary
+(and if so, note it in the backend's `AI_usage.md`). Mark all AI-written code with start/end comments and document the
+usage here.
+
+**Decisions (asked the user):** wire the connection all the way into the UI (topology is loaded from the DB after
+login, and create/move/delete are persisted), and add small backend endpoints where the API was missing something
+(see RAT-Backend `AI_usage.md`, KI-10).
+
+**Changes made (all AI regions wrapped in `//KI start (Claude Opus 4.8, prompt: link the C# frontend with the
+RAT-Backend database)` … `//KI end`):**
+
+- `RAT_Data/DatabaseConnection.cs` (new) — real `IDatabaseConnection` over HTTP to the FastAPI backend using
+  `HttpClient` + `System.Text.Json` (no new NuGet package; built into net9.0). OAuth2 password login (`POST /user/login`)
+  yields a JWT bearer token that is sent on every other call. `GetNetworkGraph()` composes the topology client-side from
+  `/networkObject`, `/networkObjectInterface`, `/networkObjectConnection` and `/networkObjectPermission` (the backend has
+  no single graph route). Per-device logins are keyed by the caller's `NetworkObjectPermission` id, which is cached per
+  object during the graph load. `EditUser`/`DeleteUser` throw `NotSupportedException` (no backend endpoint exists).
+- `RAT_Data/UserSettings.cs` — made `Zoom`/`ShowPorts`/`ShowInterfaces` public so `EditUserSettings` can send them
+  (`PUT /user/settings/`); defaults mirror the backend.
+- `RAT_WPF/Stores/DatabaseConnectionStore.cs` (new) — app-wide holder for the active connection, mirroring the existing
+  static `RAT_Logic.Session.CurrentUser` pattern (the project uses no DI container).
+- `RAT_WPF/Commands/LoginCommand.cs` — the existing login screen (LoginView/LoginViewModel already present) now really
+  authenticates: builds a `DatabaseConnection` from the entered server IP/port + credentials, calls `Login()`, maps the
+  returned `RAT_Data.User` onto `Session.CurrentUser` (real ID / CanCreate), stores the connection, and navigates on
+  success; on failure it shows the error and stays on the login screen. No new window was needed — the styled
+  LoginView/LoginViewModel/LoginCommand MVVM trio already existed, so it was wired up rather than rebuilt.
+- `RAT_WPF/App.xaml.cs` — `_debugging_ignore_login` now defaults to `false` so the real (DB-backed) login screen is shown
+  (flip back to `true` to skip login during development; the canvas then starts empty and saving is a no-op).
+- `RAT_WPF/ViewModels/TopologyViewModel.cs` — after construction, `LoadFromDatabaseAsync()` loads the saved graph from the
+  connection and puts each device on the canvas (no-op + empty canvas when there is no connection).
+- `RAT_WPF/Views/TopologyView.xaml.cs` — dropping a new device persists it (`AddNetworkObject`, which also makes the
+  creator the Owner server-side and assigns the real id); moving a saved device persists its X/Y (`EditNetworkObject`);
+  the Delete tool deletes it on the server first and only then removes it from the canvas (keeps the node if the server
+  refuses). All persistence failures surface via a MessageBox; everything is a no-op without a connection.
+
+**Backend (necessary, documented in RAT-Backend/doc/markdown/AI_usage.md, KI-10):** added `GET /user/` (list users) and
+exposed `canCreate` on the user DTOs so the client can resolve permission rows to usernames and know who may create;
+fixed `NetworkObjectInterfaceOut.network_object_connection_id` to be `Optional[int]` (it was a non-optional `int` but is
+NULL for unconnected interfaces, which crashed `GET /networkObjectInterface/` and blocked the client's graph load).
+
+**Verified:** `RAT_Data` + `RAT_Logic` build with 0 errors on Linux (the WPF project targets `net9.0-windows` and can
+only be built on Windows — the user will verify the full UI build there). The backend flow the client depends on was
+smoke-tested against a throwaway DB via the running server: form login → JWT, `/user/me` and `/user/` return
+`can_create`, NetworkObject create/list, permission row (creator = Owner), per-device login create/list, user-settings
+PUT, and — after the interface fix — interface and connection create/list all return shapes matching the client DTOs.

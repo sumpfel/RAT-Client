@@ -1,5 +1,6 @@
 ﻿using RAT_Logic;
 using RAT_WPF.Commands;
+using RAT_WPF.Stores;
 using RAT_WPF.Views;
 using System;
 using System.Collections.Generic;
@@ -78,7 +79,38 @@ namespace RAT_WPF.ViewModels
                 new NetworkObjectViewModel(new NetworkObject() { Type = NetworkObjectType.Router , Name = "Test2", Settings = new NetworkObjectSettings(), X = 350, Y=250})
                 */
             };
+
+            //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+            // load the saved topology from the backend once we are logged in. Fire-and-forget so the
+            // constructor stays synchronous (matching the existing code); errors are shown but don't
+            // crash the app. When there is no connection (debug-skip login) the canvas just starts empty.
+            _ = LoadFromDatabaseAsync();
+            //KI end
         }
+
+        //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+        /// <summary>Loads the network graph from the database and puts every device on the canvas.</summary>
+        private async Task LoadFromDatabaseAsync()
+        {
+            if (DatabaseConnectionStore.Current == null) { return; }
+
+            try
+            {
+                NetworkObjectGraph graph = await DatabaseConnectionStore.Current.GetNetworkGraph();
+                if (graph?.networkObjects == null) { return; }
+
+                foreach (NetworkObject networkObject in graph.networkObjects)
+                {
+                    AddNetworkObjectViewModelToCanvas(new NetworkObjectViewModel(networkObject));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load the topology from the server: {ex.Message}",
+                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        //KI end
 
         public void AddNetworkObjectViewModelToCanvas(NetworkObjectViewModel networkObject)
         {

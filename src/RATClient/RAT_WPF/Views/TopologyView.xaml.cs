@@ -1,4 +1,5 @@
 ﻿using RAT_WPF.Commands;
+using RAT_WPF.Stores;
 using RAT_WPF.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -74,6 +75,12 @@ namespace RAT_WPF.Views
                         }
                         //KI end
 
+                        //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+                        // persist the new device to the backend (which also makes the creator its Owner
+                        // server-side and assigns the real id). Saving happens in the helper below.
+                        PersistNewNetworkObject(networkObject);
+                        //KI end
+
                         topologyViewModel.AddNetworkObjectViewModelToCanvas(networkObject);
                     }
                 }
@@ -81,9 +88,14 @@ namespace RAT_WPF.Views
                 else if (data is NetworkObjectView networkObjectView && networkObjectView.DataContext is NetworkObjectViewModel networkObjectViewModel)
                 {
                     Point dropPosition = e.GetPosition(canvas);
-                    
+
                     networkObjectViewModel.X = (int)dropPosition.X;
                     networkObjectViewModel.Y = (int)dropPosition.Y;
+
+                    //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+                    // a moved device already exists in the DB -> persist its new X/Y.
+                    PersistMovedNetworkObject(networkObjectViewModel);
+                    //KI end
                 }
             }
         }
@@ -120,8 +132,65 @@ namespace RAT_WPF.Views
             //KI end
             if (this.DataContext is TopologyViewModel topologyViewModel)
             {
-                topologyViewModel.RemoveNetworkObjectViewModelFromCanvas(node);
+                //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+                // remove from the backend first (only if it was ever saved, i.e. has a real id), then
+                // from the canvas. If the server rejects it we keep the node and show the reason.
+                PersistDeletedNetworkObject(node, topologyViewModel);
+                //KI end
             }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+        // Persistence helpers. All are async-void event-handler style (no Task is awaited by the
+        // caller) and swallow nothing silently — failures are surfaced via a MessageBox. They are
+        // no-ops when there is no active connection (e.g. the debug-skip-login path).
+
+        private async void PersistNewNetworkObject(NetworkObjectViewModel node)
+        {
+            if (DatabaseConnectionStore.Current == null) { return; }
+            try
+            {
+                await DatabaseConnectionStore.Current.AddNetworkObject(node.Model);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the new device to the server: {ex.Message}",
+                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private async void PersistMovedNetworkObject(NetworkObjectViewModel node)
+        {
+            if (DatabaseConnectionStore.Current == null) { return; }
+            if (node.Model.ID <= 0) { return; } // never saved yet -> nothing to update
+            try
+            {
+                await DatabaseConnectionStore.Current.EditNetworkObject(node.Model);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the device position to the server: {ex.Message}",
+                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private async void PersistDeletedNetworkObject(NetworkObjectViewModel node, TopologyViewModel topologyViewModel)
+        {
+            if (DatabaseConnectionStore.Current != null && node.Model.ID > 0)
+            {
+                try
+                {
+                    await DatabaseConnectionStore.Current.DeleteNetworkObject(node.Model);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not delete the device on the server: {ex.Message}",
+                        "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return; // keep the node on the canvas if the server refused
+                }
+            }
+            topologyViewModel.RemoveNetworkObjectViewModelFromCanvas(node);
         }
         //KI end
     }

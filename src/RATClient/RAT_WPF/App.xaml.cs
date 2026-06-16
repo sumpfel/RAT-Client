@@ -12,7 +12,12 @@ namespace RAT_WPF
     public partial class App : Application
     {
         private readonly NavigationStore _navigationStore;
-        private bool _debugging_ignore_login=true;
+        //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
+        // default to the real login screen now that it authenticates against the backend.
+        // Set this back to true to skip login during development (no DB connection then, so the
+        // canvas starts empty and saving is a no-op).
+        private bool _debugging_ignore_login = false;
+        //KI end
         public App()
         {
             _navigationStore = new NavigationStore();
