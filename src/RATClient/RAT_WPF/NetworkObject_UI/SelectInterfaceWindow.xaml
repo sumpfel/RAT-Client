@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
         mc:Ignorable="d"
-        Title="Select interface" Width="460" MinWidth="360" Height="420" MinHeight="260"
+        Title="Select interface" Width="560" MinWidth="440" Height="520" MinHeight="320"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"
         TextElement.Foreground="{DynamicResource Brush.Text}"

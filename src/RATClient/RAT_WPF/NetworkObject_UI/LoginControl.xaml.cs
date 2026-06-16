@@ -18,6 +18,10 @@ namespace RAT_WPF.NetworkObject_UI
         public event Action<LoginControl>? Deleted;
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 14): let the parent persist the edited login to the backend
+        public event Action<LoginControl>? Edited;
+        //KI end
+
         public LoginControl(Login login_, RAT_Logic.NetworkObject networkObject_)
         {
             InitializeComponent();
@@ -93,11 +97,17 @@ namespace RAT_WPF.NetworkObject_UI
             UpdateLoginWindow updateLoginWindow = new UpdateLoginWindow(login);
             if (updateLoginWindow.ShowDialog() == true)
             {
+                //KI start (Claude Opus 4.8, prompt 14): keep the db id across the edit and let the parent persist it
+                updateLoginWindow.login.ID = login.ID;
                 login = updateLoginWindow.login;
+                //KI end
                 ProtocolText.Text = login.Type.ToString();
                 UserText.Text = $"user: {login.Username}";
                 PortText.Text = $"port: {login.Port}";
                 UpdateStatus();
+                //KI start (Claude Opus 4.8, prompt 14): ask the parent to save the change to the backend
+                Edited?.Invoke(this);
+                //KI end
             }
         }
 

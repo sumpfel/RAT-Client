@@ -1,0 +1,77 @@
+<Window x:Class="RAT_WPF.ManageUsersWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Manage Users" Height="560" Width="640" MinHeight="420" MinWidth="520"
+        Icon="{StaticResource AppLogo}"
+        Background="{DynamicResource Brush.Background}"
+        TextElement.Foreground="{DynamicResource Brush.Text}"
+        FontFamily="Segoe UI"
+        WindowStartupLocation="CenterScreen">
+    <!--KI start (Claude Opus 4.8, prompt 14): admin-only user management — list users + create a new one.
+        Built in the same style as the other windows (Card + ModernButton/ModernTextBox + docked button bar).-->
+    <Border Style="{StaticResource Card}" Margin="16">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+                <Image Source="{StaticResource AppLogo}" Width="40" Height="40" Margin="0,0,10,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Manage Users" Style="{StaticResource Header}"/>
+                    <TextBlock Text="Create accounts and review existing users. (Admins only.)"
+                               Foreground="{DynamicResource Brush.TextMuted}" FontSize="12"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- close button docked to the bottom so it is always reachable -->
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <Button Content="Close" Style="{StaticResource SubtleButton}" Click="Close_Click"/>
+            </StackPanel>
+
+            <!-- create form -->
+            <Border DockPanel.Dock="Bottom" Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6"
+                    Padding="12" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Create a new user" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Text="Username" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="NewUserName" Style="{StaticResource ModernTextBox}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                            <TextBlock Text="Password" Style="{StaticResource FieldLabel}"/>
+                            <PasswordBox x:Name="NewUserPassword" Height="30" VerticalContentAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                            <CheckBox x:Name="NewUserIsAdmin" Content="Admin" Margin="0,0,0,4"/>
+                            <CheckBox x:Name="NewUserCanCreate" Content="Can create devices"/>
+                        </StackPanel>
+                    </Grid>
+                    <Button Content="Create user" Style="{StaticResource ModernButton}"
+                            HorizontalAlignment="Left" Margin="0,10,0,0" Click="CreateUser_Click"/>
+                </StackPanel>
+            </Border>
+
+            <!-- existing users -->
+            <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6">
+                <DataGrid x:Name="UsersGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                          Background="Transparent" Foreground="{DynamicResource Brush.Text}"
+                          RowBackground="Transparent" AlternatingRowBackground="#22FFFFFF"
+                          GridLinesVisibility="Horizontal" BorderThickness="0" HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID"          Binding="{Binding Id}"        Width="Auto"/>
+                        <DataGridTextColumn Header="Username"    Binding="{Binding Username}"  Width="*"/>
+                        <DataGridTextColumn Header="Admin"       Binding="{Binding IsAdmin}"   Width="Auto"/>
+                        <DataGridTextColumn Header="Can create"  Binding="{Binding CanCreate}" Width="Auto"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </DockPanel>
+    </Border>
+    <!--KI end-->
+</Window>

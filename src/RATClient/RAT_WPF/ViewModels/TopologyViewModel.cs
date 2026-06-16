@@ -167,7 +167,36 @@ namespace RAT_WPF.ViewModels
                     _networkConnectionViewModels.Add(new NetworkConnectionViewModel(networkConnection, sourceVM, targetVM));
                 }
                 // No more Help from AI
+
+                //KI start (Claude Opus 4.8, prompt 14): persist the new connection to the backend (needs both
+                // interfaces to be saved already, i.e. have a db id). Fire-and-forget with an error popup.
+                PersistNewConnection(networkConnection, networkObjectInterfaces[0], networkObjectInterfaces[1]);
+                //KI end
             }
         }
+
+        //KI start (Claude Opus 4.8, prompt 14): connection persistence helpers.
+        private async void PersistNewConnection(NetworkConnection connection, NetworkObjectInterface a, NetworkObjectInterface b)
+        {
+            if (DatabaseConnectionStore.Current == null) { return; }
+            if (a.ID <= 0 || b.ID <= 0)
+            {
+                MessageBox.Show(
+                    "Both interfaces must be saved on the server before they can be connected.\n" +
+                    "Open each device's settings and add/save the interface first.",
+                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            try
+            {
+                await DatabaseConnectionStore.Current.AddConnection(connection, a, b);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the connection to the server: {ex.Message}",
+                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        //KI end
     }
 }

@@ -20,6 +20,11 @@ namespace RAT_Logic
         public string Note;
         public string Name;
 
+        //KI start (Claude Opus 4.8, prompt 14): database identity (0 == not saved yet) so a connection can be
+        // deleted on the backend. Filled by DatabaseConnection when the graph is loaded / a connection is created.
+        public int ID;
+        //KI end
+
         public NetworkConnection(NetworkObjectInterface networkObectInterface1, NetworkObjectInterface networkObectInterface2, int speed, NetworkConnectionType type, string note, string name)
         {
             this.networkObectInterfaces = new NetworkObjectInterface[2] {networkObectInterface1, networkObectInterface2};

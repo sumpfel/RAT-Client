@@ -340,3 +340,58 @@ only be built on Windows — the user will verify the full UI build there). The 
 smoke-tested against a throwaway DB via the running server: form login → JWT, `/user/me` and `/user/` return
 `can_create`, NetworkObject create/list, permission row (creator = Owner), per-device login create/list, user-settings
 PUT, and — after the interface fix — interface and connection create/list all return shapes matching the client DTOs.
+
+---------
+
+## Prompt 14 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** The client only managed to *create* things; editing/deleting NetworkObjects, and anything to do with
+interfaces / connections / logins, did nothing. Fix all of that so it persists. Make the windows a bit larger and
+prettier. Add a way (admin only) to create other users. Make granting permissions for a NetworkObject work perfectly.
+Treat a PC as a normal NetworkObject for everyone else (just shown as a "PC"); only the owner(s) of their own machine
+see live PC interfaces/stats. Mark everything as AI, edit the backend if needed.
+
+**Decisions (asked the user):** own-PC live view = current user is Owner AND the object's name matches this machine's
+name; expose user-creation as an admin-only "Users" button on the topology top bar.
+
+**Root cause:** `IDatabaseConnection` had no methods for interfaces, connections or permissions, and the settings
+window did everything in memory (`// TODO: Save to Database`). Permissions used a fake `NetworkUser(name,
+name.GetHashCode())`, so they could never map to a real account.
+
+**Changes made (all AI regions wrapped in `//KI start (Claude Opus 4.8, prompt 14)` … `//KI end`):**
+
+- `RAT_Logic/NetworkObjectInterface.cs` — added `ID` + `NetworkObjectId` (db identity / owning object) so an interface
+  can be edited/deleted on the backend.
+- `RAT_Logic/NetworkConnection.cs` — added `ID` (db identity) so a connection can be deleted.
+- `RAT_Logic/AccessRight.cs` — added `ID` (backend permission-row id) so a permission can be deleted.
+- `RAT_Data/IDatabaseConnection.cs` — added interface CRUD (`AddInterface`/`EditInterface`/`DeleteInterface`),
+  connection CRUD (`AddConnection`/`DeleteConnection`) and permissions (`GetNetworkObjectPermissions`/`SetPermission`/
+  `DeletePermission`).
+- `RAT_Data/DatabaseConnection.cs` — implemented all of the above over the matching backend routes; `GetNetworkGraph`
+  now fills interface/connection IDs, loads all users, and attaches each object's real `AccessRight`s (resolved to
+  usernames). `SetPermission(Hidden)` is routed to a delete (Hidden == no row).
+- `RAT_Data/DatabaseConnectionMock.cs` — stubs for the new interface methods so it still compiles.
+- `RAT_WPF/NetworkObject_UI/NetworkObjectSettingsWindow.xaml(.cs)` — every action now persists through the connection:
+  Save overview (`EditNetworkObject`/`AddNetworkObject`), add/edit/delete login, add/edit/delete interface, and the
+  Access Control tab loads users + rights from the DB, grants via `SetPermission` against a **real** user picked from a
+  dropdown (was a free-text box), and shows the live rights grid. The window is larger (900×720) and centered.
+- `RAT_WPF/NetworkObject_UI/LoginControl.xaml.cs` — added an `Edited` event so the parent can persist a login edit
+  (and the db id is preserved across the edit).
+- `RAT_WPF/ViewModels/TopologyViewModel.cs` — creating a connection now persists it (`AddConnection`), requiring both
+  interfaces to be saved first (clear popup otherwise).
+- `RAT_WPF/ManageUsersWindow.xaml(.cs)` (new) — admin-only window that lists users and creates new ones
+  (username/password/admin/can-create) via `AddUser`; opened from a new **👤 Users** button on the topology top bar
+  that is only visible to admins (`Privileges >= 100`).
+- `RAT_WPF/Views/TopologyView.xaml(.cs)` — the admin-only Users button + handler.
+- **Own-PC rule:** `NetworkObjectSettingsWindow.ComputeIsOwnPc()` now returns true only for a PC the current user owns
+  whose name matches this machine; everyone else sees the stored DB fields with just the PC icon (no live host specs).
+- Bigger/centered windows: `MainWindow` (1180×720), `UpdateInterfaceWindow`, `UpdateLoginWindow`, `SelectInterfaceWindow`.
+
+**Backend (necessary, documented in RAT-Backend/doc/markdown/AI_usage.md, KI-11):** deleting a NetworkObject now
+cascade-deletes its interfaces, the connections those interfaces used, and the logins/snmp settings on its permission
+rows — otherwise dangling rows broke the next graph load.
+
+**Verified:** the **full WPF solution builds with 0 errors** (built on Linux with `-p:EnableWindowsTargeting=true`).
+Backend flows smoke-tested against a throwaway DB: create user (admin), list users, create/edit interface (PUT 200),
+create connection, grant a permission to another user, and delete a NetworkObject — confirming its interface and
+connection are gone (cascade) while an unrelated object's interface stays.

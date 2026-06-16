@@ -7,7 +7,8 @@
         xmlns:views="clr-namespace:RAT_WPF.Views"
         xmlns:vms="clr-namespace:RAT_WPF.ViewModels"
         mc:Ignorable="d"
-        Title="RAT" Height="450" Width="800"
+        Title="RAT" Height="720" Width="1180" MinHeight="500" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}">
     <!--KI start (Claude Opus 4.8, prompt 2): logo as window icon + themed background-->

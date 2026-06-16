@@ -15,7 +15,7 @@ namespace RAT_Logic
     {
         Hidden = 0, // don't see device or its connections at all; a visible device wired to it is drawn as an anonymous "?" device
         See = 1,    // can see the device and its interfaces (logins are per-user, so a user can add their own ssh logins etc.)
-        Edit = 2,   // change SNMP read/write community and the interfaces (cannot delete the object)
+        Edit = 2,   // can change the interfaces and other settings (nmae etc) (cannot delete the object)
         Admin = 3,  // Edit + change permissions of users with LOWER rights on this object (cannot delete the object)
         Owner = 4   // change permissions of admins, grant/remove "Owner" on other users, and delete the object
     }
@@ -24,6 +24,11 @@ namespace RAT_Logic
     {
         public NetworkUser User;
         public AccesRights Rights;
+
+        //KI start (Claude Opus 4.8, prompt 14): backend permission-row id (0 == not persisted yet) so the
+        // row can be deleted on the server. Filled by DatabaseConnection.GetNetworkObjectPermissions.
+        public int ID;
+        //KI end
 
         public AccessRight(NetworkUser user, AccesRights rights)
         {

@@ -1,6 +1,8 @@
 using Lextm.SharpSnmpLib;
+using RAT_Data;
 using RAT_Logic;
 using RAT_WPF.NetworkObject_UI;
+using RAT_WPF.Stores;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,8 +26,14 @@ namespace RAT_WPF.NetworkObject_UI
     {
         NetworkObject networkObject;
 
-        //KI start (Claude Opus 4.8, prompt 1): true when this object represents the host PC (live, mostly read-only specs)
+        //KI start (Claude Opus 4.8, prompt 1/14): true only when this object is THIS machine AND the current user
+        // owns it. A PC owned by someone else (or not matching this host's name) is treated as a normal device:
+        // the stored DB fields are shown, never this machine's live specs/NICs. See ComputeIsOwnPc().
         private bool isOwnPc;
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 14): shortcut to the active backend connection (may be null in dev).
+        private IDatabaseConnection? Db => DatabaseConnectionStore.Current;
         //KI end
 
         public event EventHandler NetworkObjectViewNeedsUpdate;
@@ -35,15 +43,7 @@ namespace RAT_WPF.NetworkObject_UI
             InitializeComponent();
             networkObject = networkObject_;
 
-            isOwnPc = networkObject.Type == NetworkObjectType.PC;
-
-            //KI start (Claude Opus 4.8, prompt 1/11): own PC gets owned by the logged-in user if it has no owner yet
-            if (isOwnPc && Session.CurrentUser != null
-                && !networkObject.AccessRights.Any(a => a.Rights == AccesRights.Owner))
-            {
-                networkObject.ApplyRight(Session.CurrentUser, AccesRights.Owner);
-            }
-            //KI end
+            isOwnPc = ComputeIsOwnPc();
 
             LoadOverview();
             LoadLogins();
@@ -52,9 +52,39 @@ namespace RAT_WPF.NetworkObject_UI
             LoadAccessControl();
         }
 
-        //KI start (Claude Opus 4.8, prompt 2): load any logins already stored on the device + wire delete
-        private void LoadLogins()
+        //KI start (Claude Opus 4.8, prompt 14): "own PC" = a PC device that represents this machine and that the
+        // current user owns. Only then do we show live host specs/interfaces; otherwise it's a normal stored device.
+        private bool ComputeIsOwnPc()
         {
+            if (networkObject.Type != NetworkObjectType.PC) { return false; }
+            if (Session.CurrentUser == null) { return false; }
+            bool isOwner = networkObject.GetRight(Session.CurrentUser) == AccesRights.Owner;
+            bool isThisMachine = string.Equals(networkObject.Name, Environment.MachineName, StringComparison.OrdinalIgnoreCase)
+                                 || string.IsNullOrWhiteSpace(networkObject.Name);
+            return isOwner && isThisMachine;
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 2/14): load the logins for this device. If a backend connection is
+        // available they are read from the DB (per-user logins); otherwise fall back to whatever is in memory.
+        private async void LoadLogins()
+        {
+            networkObject.Settings.Logins.Clear();
+            LoginsStackPanel.Children.Clear();
+
+            if (Db != null && networkObject.ID > 0)
+            {
+                try
+                {
+                    List<Login> logins = await Db.GetUserDeviceLogin(networkObject);
+                    foreach (Login login in logins)
+                    {
+                        networkObject.Settings.Logins.Add(login);
+                    }
+                }
+                catch (Exception ex) { ShowDbError("load the logins", ex); }
+            }
+
             foreach (Login existing in networkObject.Settings.Logins)
             {
                 AddLoginControl(existing);
@@ -65,11 +95,30 @@ namespace RAT_WPF.NetworkObject_UI
         {
             LoginControl control = new LoginControl(loginToAdd, networkObject);
             control.Deleted += OnLoginDeleted;
+            control.Edited += OnLoginEdited; // KI (prompt 14): persist edits
             LoginsStackPanel.Children.Add(control);
         }
 
-        private void OnLoginDeleted(LoginControl control)
+        //KI start (Claude Opus 4.8, prompt 14): persist an edited login to the backend.
+        private async void OnLoginEdited(LoginControl control)
         {
+            if (Db != null && control.login.ID > 0)
+            {
+                try { await Db.EditUserDeviceLogin(control.login); }
+                catch (Exception ex) { ShowDbError("save the login", ex); }
+            }
+        }
+        //KI end
+
+        private async void OnLoginDeleted(LoginControl control)
+        {
+            //KI start (Claude Opus 4.8, prompt 14): delete the login on the backend before dropping it locally.
+            if (Db != null && control.login.ID > 0)
+            {
+                try { await Db.DeletetUserDeviceLogin(control.login); }
+                catch (Exception ex) { ShowDbError("delete the login", ex); return; }
+            }
+            //KI end
             networkObject.Settings.Logins.Remove(control.login);
             LoginsStackPanel.Children.Remove(control);
         }
@@ -108,7 +157,7 @@ namespace RAT_WPF.NetworkObject_UI
             }
         }
 
-        private void SaveOverview_Click(object sender, RoutedEventArgs e)
+        private async void SaveOverview_Click(object sender, RoutedEventArgs e)
         {
             networkObject.Name = NameBox.Text;
             if (!isOwnPc)
@@ -120,8 +169,27 @@ namespace RAT_WPF.NetworkObject_UI
             }
             networkObject.Specs = SpecsBox.Text;
             Title = $"Device Settings — {networkObject.Name}";
+
+            //KI start (Claude Opus 4.8, prompt 14): persist the overview to the backend.
+            // Edit if it already has a db id, otherwise create it (and own it).
+            if (Db != null)
+            {
+                try
+                {
+                    if (networkObject.ID > 0)
+                    {
+                        await Db.EditNetworkObject(networkObject);
+                    }
+                    else
+                    {
+                        await Db.AddNetworkObject(networkObject);
+                    }
+                }
+                catch (Exception ex) { ShowDbError("save the device", ex); }
+            }
+            //KI end
+
             NetworkObjectViewNeedsUpdate?.Invoke(this, EventArgs.Empty);
-            // TODO: Save in Database
         }
 
         private void LoadInterfaces()
@@ -188,31 +256,52 @@ namespace RAT_WPF.NetworkObject_UI
             // TODO: Save to Database
         }
 
-        private void OnInterfaceEdit(InterfaceControl control)
+        private async void OnInterfaceEdit(InterfaceControl control)
         {
             if (control.ModelInterface == null) { return; }
             UpdateInterfaceWindow window = new UpdateInterfaceWindow(control.ModelInterface);
             if (window.ShowDialog() == true)
             {
                 control.Refresh();
+                //KI start (Claude Opus 4.8, prompt 14): persist the edited interface to the backend
+                if (Db != null && control.ModelInterface.ID > 0)
+                {
+                    try { await Db.EditInterface(control.ModelInterface); }
+                    catch (Exception ex) { ShowDbError("save the interface", ex); }
+                }
+                //KI end
             }
-            // TODO: Save to Database
         }
 
-        private void OnInterfaceDelete(InterfaceControl control)
+        private async void OnInterfaceDelete(InterfaceControl control)
         {
             if (control.ModelInterface == null) { return; }
+            //KI start (Claude Opus 4.8, prompt 14): delete the interface on the backend before removing it locally
+            if (Db != null && control.ModelInterface.ID > 0)
+            {
+                try { await Db.DeleteInterface(control.ModelInterface); }
+                catch (Exception ex) { ShowDbError("delete the interface", ex); return; }
+            }
+            //KI end
             networkObject.NetworkInterfaces.Remove(control.ModelInterface);
             LoadInterfaces();
         }
         //KI end
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
             UpdateLoginWindow updateLoginWindow = new UpdateLoginWindow(null);
             if (updateLoginWindow.ShowDialog() == true)
             {
-                networkObject.Settings.AddLogin(updateLoginWindow.login);
+                //KI start (Claude Opus 4.8, prompt 14): persist the new login to the backend (it is stored against
+                // the current user's permission row for this device). Only add it to the UI once it saved.
+                if (Db != null && networkObject.ID > 0)
+                {
+                    try { await Db.AddUserDeviceLogin(updateLoginWindow.login, networkObject); }
+                    catch (Exception ex) { ShowDbError("add the login", ex); return; }
+                }
+                //KI end
+                networkObject.Settings.Logins.Add(updateLoginWindow.login);
                 //KI start (Claude Opus 4.8, prompt 2): wire new control through the delete-aware helper
                 AddLoginControl(updateLoginWindow.login);
                 //KI end
@@ -233,6 +322,14 @@ namespace RAT_WPF.NetworkObject_UI
         {
             MessageBox.Show($"{action} failed:\n{ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 14): one consistent popup for backend errors.
+        private static void ShowDbError(string action, Exception ex)
+        {
+            MessageBox.Show($"Could not {action} on the server:\n{ex.Message}", "Database",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         //KI end
 
@@ -292,12 +389,17 @@ namespace RAT_WPF.NetworkObject_UI
             //KI end
         }
 
-        private void Button_Click_7(object sender, RoutedEventArgs e)
+        private async void Button_Click_7(object sender, RoutedEventArgs e)
         {
-            //KI start (Claude Opus 4.8, prompt 7): add a new modelled interface, then rebuild the (editable) list
+            //KI start (Claude Opus 4.8, prompt 7/14): add a new modelled interface, persist it, then rebuild the list
             UpdateInterfaceWindow window = new UpdateInterfaceWindow();
             if (window.ShowDialog() == true)
             {
+                if (Db != null && networkObject.ID > 0)
+                {
+                    try { await Db.AddInterface(window.networkObjectInterface, networkObject); }
+                    catch (Exception ex) { ShowDbError("add the interface", ex); return; }
+                }
                 networkObject.NetworkInterfaces.Add(window.networkObjectInterface);
                 LoadInterfaces();
             }
@@ -442,15 +544,33 @@ namespace RAT_WPF.NetworkObject_UI
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 11): hierarchical per-user access control with privilege rules
+        //KI start (Claude Opus 4.8, prompt 11/14): hierarchical per-user access control, now backed by the database.
+        // Users come from IDatabaseConnection.GetAllUsers() (real IDs!), permissions are read/written via the
+        // permission endpoints, and the local client-side rules (SetRight) still gate what the UI lets you try.
         private sealed class AccessRow
         {
             public string UserName { get; set; } = "";
             public string Right { get; set; } = "";
         }
 
-        private void LoadAccessControl()
+        private List<NetworkUser> _allUsers = new List<NetworkUser>();
+
+        private async void LoadAccessControl()
         {
+            // refresh the access rights from the backend so the grid is accurate
+            if (Db != null && networkObject.ID > 0)
+            {
+                try
+                {
+                    networkObject.AccessRights = await Db.GetNetworkObjectPermissions(networkObject);
+                    // map RAT_Data.User -> logic-layer NetworkUser (what the rights logic + UI use)
+                    _allUsers = (await Db.GetAllUsers())
+                        .Select(u => new NetworkUser(u.UserName, u.ID, canCreate: u.CanCreate, privileges: u.Privileges))
+                        .ToList();
+                }
+                catch (Exception ex) { ShowDbError("load the access rights", ex); }
+            }
+
             AccesRights myRight = networkObject.GetRight(Session.CurrentUser);
             MyRoleLabel.Text = $"Your access on this device: {myRight}";
 
@@ -460,6 +580,14 @@ namespace RAT_WPF.NetworkObject_UI
             AccessHint.Text = canManage
                 ? "You can change other users' access below."
                 : "You don't have permission to change access on this device (need Admin or Owner).";
+
+            // user dropdown (everyone except yourself — you can't change your own rights here)
+            PermUserCombo.ItemsSource = _allUsers
+                .Where(u => u.ID != Session.CurrentUser?.ID)
+                .OrderBy(u => u.UserName)
+                .ToList();
+            PermUserCombo.DisplayMemberPath = nameof(NetworkUser.UserName);
+            if (PermUserCombo.Items.Count > 0) { PermUserCombo.SelectedIndex = 0; }
 
             // which levels the current user may assign
             RightLevel.Items.Clear();
@@ -482,18 +610,16 @@ namespace RAT_WPF.NetworkObject_UI
                 .ToList();
         }
 
-        private void GrantPermission_Click(object sender, RoutedEventArgs e)
+        private async void GrantPermission_Click(object sender, RoutedEventArgs e)
         {
             if (Session.CurrentUser == null)
             {
                 MessageBox.Show("No current user.");
                 return;
             }
-
-            string userName = PermUserName.Text.Trim();
-            if (string.IsNullOrWhiteSpace(userName))
+            if (PermUserCombo.SelectedItem is not NetworkUser target)
             {
-                MessageBox.Show("Enter the user name to set access for.");
+                MessageBox.Show("Select a user to set access for.");
                 return;
             }
             if (RightLevel.SelectedItem is not AccesRights newRight)
@@ -502,11 +628,8 @@ namespace RAT_WPF.NetworkObject_UI
                 return;
             }
 
-            // ID is unknown without a database; derive a stable-ish id from the name for now.
-            // TODO: resolve the real user (and ID) from IDatabaseConnection.GetAllUsers().
-            NetworkUser target = new NetworkUser(userName, userName.GetHashCode());
-
-            if (!networkObject.SetRight(Session.CurrentUser, target, newRight))
+            // client-side rule check first (mirrors the backend's rules; gives an instant, clear message)
+            if (!networkObject.CanChangeRight(Session.CurrentUser, target, newRight))
             {
                 MessageBox.Show(
                     "You're not allowed to set that access for this user.\n\n" +
@@ -516,8 +639,16 @@ namespace RAT_WPF.NetworkObject_UI
                 return;
             }
 
+            //KI start (Claude Opus 4.8, prompt 14): persist the new right to the backend, then mirror it locally.
+            if (Db != null && networkObject.ID > 0)
+            {
+                try { await Db.SetPermission(networkObject, target, newRight); }
+                catch (Exception ex) { ShowDbError("set the access right", ex); return; }
+            }
+            //KI end
+
+            networkObject.ApplyRight(target, newRight);
             RefreshPermissionsGrid();
-            PermUserName.Clear();
         }
         //KI end
     }

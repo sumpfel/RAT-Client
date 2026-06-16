@@ -1,0 +1,105 @@
+using RAT_Data;
+using RAT_WPF.Stores;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+
+namespace RAT_WPF
+{
+    //KI start (Claude Opus 4.8, prompt 14): admin-only window to list and create users via IDatabaseConnection.
+    /// <summary>
+    /// Lists all users (GET /user/) and lets an admin create new ones (POST /user/register).
+    /// Opened from the topology top bar; the button there is only shown to admins.
+    /// </summary>
+    public partial class ManageUsersWindow : Window
+    {
+        private IDatabaseConnection? Db => DatabaseConnectionStore.Current;
+
+        // small row type so the grid shows friendly columns
+        private sealed class UserRow
+        {
+            public int Id { get; set; }
+            public string Username { get; set; } = "";
+            public bool IsAdmin { get; set; }
+            public bool CanCreate { get; set; }
+        }
+
+        public ManageUsersWindow()
+        {
+            InitializeComponent();
+            LoadUsers();
+        }
+
+        private async void LoadUsers()
+        {
+            if (Db == null) { return; }
+            try
+            {
+                List<RAT_Data.User> users = await Db.GetAllUsers();
+                UsersGrid.ItemsSource = users
+                    .Select(u => new UserRow
+                    {
+                        Id = u.ID,
+                        Username = u.UserName,
+                        // Privileges >= 100 is how the connection encodes an admin account
+                        IsAdmin = u.Privileges >= 100,
+                        CanCreate = u.CanCreate
+                    })
+                    .OrderBy(u => u.Id)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load the users:\n{ex.Message}", "Database",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private async void CreateUser_Click(object sender, RoutedEventArgs e)
+        {
+            if (Db == null)
+            {
+                MessageBox.Show("Not connected to a server.", "Manage Users",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string username = NewUserName.Text.Trim();
+            string password = NewUserPassword.Password;
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                MessageBox.Show("Enter a username and a password.", "Manage Users",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Privileges >= 100 marks an admin for AddUser(); CanCreate is the create-devices flag.
+            RAT_Data.User newUser = new RAT_Data.User(
+                username, password, 0,
+                NewUserIsAdmin.IsChecked == true ? 100 : 10,
+                NewUserCanCreate.IsChecked == true);
+
+            try
+            {
+                await Db.AddUser(newUser);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not create the user:\n{ex.Message}", "Manage Users",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // reset the form and refresh the list
+            NewUserName.Clear();
+            NewUserPassword.Clear();
+            NewUserIsAdmin.IsChecked = false;
+            NewUserCanCreate.IsChecked = false;
+            LoadUsers();
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e) => Close();
+    }
+    //KI end
+}

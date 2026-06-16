@@ -258,6 +258,12 @@ namespace RAT_Data
             List<InterfaceDto> interfaceDtos = await GetJson<List<InterfaceDto>>("/networkObjectInterface/");
             List<ConnectionDto> connectionDtos = await GetJson<List<ConnectionDto>>("/networkObjectConnection/");
             List<PermissionDto> permissionDtos = await GetJson<List<PermissionDto>>("/networkObjectPermission/");
+            //KI start (Claude Opus 4.8, prompt 14): also load all users so permission rows can show a real name.
+            List<UserDto> userDtos = await GetJson<List<UserDto>>("/user/");
+            Dictionary<int, NetworkUser> usersById = userDtos.ToDictionary(
+                u => u.Id,
+                u => new NetworkUser(u.Username, u.Id, canCreate: u.CanCreate, privileges: u.IsAdmin ? 100 : 10));
+            //KI end
 
             // Remember which permission row is *mine* per object, so logins can be added/read later.
             _myPermissionIdByObjectId.Clear();
@@ -292,6 +298,8 @@ namespace RAT_Data
             {
                 NetworkObjectInterface iface = new NetworkObjectInterface
                 {
+                    ID = dto.Id,                            // KI (prompt 14): keep the db id for edit/delete
+                    NetworkObjectId = dto.NetworkObjectId,  // KI (prompt 14): link back to the owning object
                     Name = dto.Name,
                     MaxSpeed = dto.MaxSpeed,
                     IsUp = dto.IsUp,
@@ -329,11 +337,27 @@ namespace RAT_Data
                     dto.Type.Equals("Wireless", StringComparison.OrdinalIgnoreCase)
                         ? NetworkConnectionType.Wireless
                         : NetworkConnectionType.Wired,
-                    dto.Note ?? "", dto.Name);
+                    dto.Note ?? "", dto.Name)
+                {
+                    ID = dto.Id // KI (prompt 14): keep the db id for delete
+                };
 
                 ends[0].Connection = connection;
                 ends[1].Connection = connection;
             }
+
+            //KI start (Claude Opus 4.8, prompt 14): attach the access rights to each object so the Access Control
+            // tab shows the real per-user rights. A permission of 0 (Hidden) means "no entry", so it is skipped.
+            foreach (PermissionDto p in permissionDtos)
+            {
+                if (!objectsById.TryGetValue(p.NetworkObjectId, out NetworkObject? obj)) { continue; }
+                if (p.Permissions <= 0) { continue; }
+                NetworkUser user = usersById.TryGetValue(p.UserId, out NetworkUser? u)
+                    ? u
+                    : new NetworkUser($"user#{p.UserId}", p.UserId);
+                obj.AccessRights.Add(new AccessRight(user, (AccesRights)p.Permissions) { ID = p.Id });
+            }
+            //KI end
 
             return new NetworkObjectGraph { networkObjects = objectsById.Values.ToList() };
         }
@@ -361,6 +385,123 @@ namespace RAT_Data
                 $"{BaseUrl}/networkObject/{networkObject.ID}");
             await EnsureOk(response);
         }
+
+        // ----- IDatabaseConnection: NetworkObjectInterface ----------------------
+        //KI start (Claude Opus 4.8, prompt 14): interface persistence over /networkObjectInterface.
+
+        private static object ToInterfacePayload(NetworkObjectInterface iface, int networkObjectId) => new
+        {
+            network_object_id = networkObjectId,
+            // connection id is managed by the connection routes, not here -> always send null
+            network_object_connection_id = (int?)(iface.Connection?.ID > 0 ? iface.Connection.ID : null),
+            name = iface.Name ?? "",
+            max_speed = iface.MaxSpeed,
+            is_up = iface.IsUp,
+            ipv4 = iface.IP?.IPv4 ?? "",
+            ipv6 = iface.IP?.IPv6 ?? "",
+            ipv4_subnet_mask = iface.IP?.IPv4SubnetMask ?? "",
+            ipv6_prefix_length = iface.IP?.IPv6PrefixLength ?? 0,
+            ipv4_gateway = iface.IP?.IPv4Gateway ?? ""
+        };
+
+        public async Task<NetworkObjectInterface> AddInterface(NetworkObjectInterface networkObjectInterface, NetworkObject networkObject)
+        {
+            InterfaceDto created = await PostJson<InterfaceDto>(
+                "/networkObjectInterface/", ToInterfacePayload(networkObjectInterface, networkObject.ID));
+            networkObjectInterface.ID = created.Id;
+            networkObjectInterface.NetworkObjectId = created.NetworkObjectId;
+            return networkObjectInterface;
+        }
+
+        public async Task EditInterface(NetworkObjectInterface networkObjectInterface)
+        {
+            HttpResponseMessage response = await _http.PutAsJsonAsync(
+                $"{BaseUrl}/networkObjectInterface/{networkObjectInterface.ID}",
+                ToInterfacePayload(networkObjectInterface, networkObjectInterface.NetworkObjectId), _json);
+            await EnsureOk(response);
+        }
+
+        public async Task DeleteInterface(NetworkObjectInterface networkObjectInterface)
+        {
+            HttpResponseMessage response = await _http.DeleteAsync(
+                $"{BaseUrl}/networkObjectInterface/{networkObjectInterface.ID}");
+            await EnsureOk(response);
+        }
+        //KI end
+
+        // ----- IDatabaseConnection: NetworkConnection ---------------------------
+        //KI start (Claude Opus 4.8, prompt 14): connection persistence over /networkObjectConnection.
+
+        public async Task<NetworkConnection> AddConnection(NetworkConnection networkConnection, NetworkObjectInterface interface1, NetworkObjectInterface interface2)
+        {
+            ConnectionDto created = await PostJson<ConnectionDto>("/networkObjectConnection/", new
+            {
+                name = networkConnection.Name ?? "",
+                speed = networkConnection.Speed,
+                type = networkConnection.Type.ToString(),
+                note = networkConnection.Note ?? "",
+                nO1 = interface1.ID, // the backend expects the two interface ids
+                nO2 = interface2.ID
+            });
+            networkConnection.ID = created.Id;
+            return networkConnection;
+        }
+
+        public async Task DeleteConnection(NetworkConnection networkConnection)
+        {
+            HttpResponseMessage response = await _http.DeleteAsync(
+                $"{BaseUrl}/networkObjectConnection/{networkConnection.ID}");
+            await EnsureOk(response);
+        }
+        //KI end
+
+        // ----- IDatabaseConnection: AccessRights / permissions ------------------
+        //KI start (Claude Opus 4.8, prompt 14): permission persistence over /networkObjectPermission.
+
+        public async Task<List<AccessRight>> GetNetworkObjectPermissions(NetworkObject networkObject)
+        {
+            List<PermissionDto> permissions = await GetJson<List<PermissionDto>>("/networkObjectPermission/");
+            List<UserDto> users = await GetJson<List<UserDto>>("/user/");
+            Dictionary<int, NetworkUser> usersById = users.ToDictionary(
+                u => u.Id,
+                u => new NetworkUser(u.Username, u.Id, canCreate: u.CanCreate, privileges: u.IsAdmin ? 100 : 10));
+
+            return permissions
+                .Where(p => p.NetworkObjectId == networkObject.ID && p.Permissions > 0)
+                .Select(p => new AccessRight(
+                    usersById.TryGetValue(p.UserId, out NetworkUser? u) ? u : new NetworkUser($"user#{p.UserId}", p.UserId),
+                    (AccesRights)p.Permissions) { ID = p.Id })
+                .ToList();
+        }
+
+        public async Task SetPermission(NetworkObject networkObject, NetworkUser targetUser, AccesRights right)
+        {
+            // POST upserts: the backend updates the existing (user, object) row or creates a new one.
+            // Granting Hidden(0) is the same as removing the row -> route it through DeletePermission instead.
+            if (right == AccesRights.Hidden)
+            {
+                AccessRight? existing = networkObject.AccessRights.FirstOrDefault(a => a.User.ID == targetUser.ID);
+                if (existing != null) { await DeletePermission(networkObject, existing); }
+                return;
+            }
+
+            HttpResponseMessage response = await _http.PostAsJsonAsync($"{BaseUrl}/networkObjectPermission/", new
+            {
+                network_object_id = networkObject.ID,
+                target_user_id = targetUser.ID,
+                permissions = (int)right
+            }, _json);
+            await EnsureOk(response);
+        }
+
+        public async Task DeletePermission(NetworkObject networkObject, AccessRight accessRight)
+        {
+            if (accessRight.ID <= 0) { return; } // nothing persisted to remove
+            HttpResponseMessage response = await _http.DeleteAsync(
+                $"{BaseUrl}/networkObjectPermission/{accessRight.ID}");
+            await EnsureOk(response);
+        }
+        //KI end
 
         // ----- IDatabaseConnection: UserDeviceLogins ----------------------------
 

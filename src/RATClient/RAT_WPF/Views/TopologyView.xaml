@@ -34,6 +34,11 @@
                     <Image Source="{StaticResource AppLogo}" Width="28" Height="28" Margin="0,0,8,0"/>
                     <TextBlock Text="RAT" Style="{StaticResource Header2}" VerticalAlignment="Center"/>
                 </StackPanel>
+                <!--KI start (Claude Opus 4.8, prompt 14): admin-only Users button (visibility set in code-behind)-->
+                <Button DockPanel.Dock="Right" x:Name="UsersButton" Content="👤 Users"
+                        Style="{StaticResource SubtleButton}" Visibility="Collapsed"
+                        HorizontalAlignment="Right" Margin="0,0,8,0" Click="UsersButton_Click"/>
+                <!--KI end-->
                 <Button DockPanel.Dock="Right" Content="⚙ Settings" Style="{StaticResource SubtleButton}"
                         HorizontalAlignment="Right" Click="SettingsButton_Click"/>
                 <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">

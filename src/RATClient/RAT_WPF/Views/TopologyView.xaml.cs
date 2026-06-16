@@ -107,6 +107,13 @@ namespace RAT_WPF.Views
         public TopologyView()
         {
             InitializeComponent();
+
+            //KI start (Claude Opus 4.8, prompt 14): show the Users button only to admins (Privileges >= 100).
+            if (RAT_Logic.Session.CurrentUser?.Privileges >= 100)
+            {
+                UsersButton.Visibility = Visibility.Visible;
+            }
+            //KI end
         }
 
         //KI start (Claude Opus 4.8, prompt 2): open the MVVM settings window
@@ -115,6 +122,15 @@ namespace RAT_WPF.Views
             SettingsWindow settings = new SettingsWindow();
             settings.Owner = Window.GetWindow(this);
             settings.ShowDialog();
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 14): open the admin-only user management window
+        private void UsersButton_Click(object sender, RoutedEventArgs e)
+        {
+            ManageUsersWindow window = new ManageUsersWindow();
+            window.Owner = Window.GetWindow(this);
+            window.ShowDialog();
         }
         //KI end
 

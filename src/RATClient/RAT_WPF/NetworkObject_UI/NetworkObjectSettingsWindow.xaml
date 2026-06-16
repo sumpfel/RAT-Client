@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF"
         mc:Ignorable="d"
-        Title="Device Settings" Height="560" Width="640" MinHeight="360" MinWidth="480"
+        Title="Device Settings" Height="720" Width="900" MinHeight="480" MinWidth="640"
+        WindowStartupLocation="CenterScreen"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"
         TextElement.Foreground="{DynamicResource Brush.Text}"
@@ -267,10 +268,11 @@
                         <StackPanel>
                             <TextBlock Text="Set a user's access" FontWeight="SemiBold" Margin="0,0,0,6"/>
                             <StackPanel Orientation="Horizontal">
-                                <TextBox x:Name="PermUserName" Style="{StaticResource ModernTextBox}" Width="160"
-                                         VerticalAlignment="Center"/>
+                                <!--KI start (Claude Opus 4.8, prompt 14): pick a real user from the DB instead of typing a name-->
+                                <ComboBox x:Name="PermUserCombo" Width="180" VerticalAlignment="Center"/>
+                                <!--KI end-->
                                 <ComboBox x:Name="RightLevel" Width="120" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                <Button Content="Apply" Style="{StaticResource ModernButton}" Click="GrantPermission_Click"/>
+                                <Button Content="Apply" Style="{StaticResource ModernButton}" Margin="8,0,0,0" Click="GrantPermission_Click"/>
                             </StackPanel>
                             <TextBlock Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="0,6,0,0"
                                        TextWrapping="Wrap"

@@ -73,6 +73,42 @@ namespace RAT_Data
             throw new NotImplementedException();
         }
 
+        //KI start (Claude Opus 4.8, prompt 14): stubs for the new interface/connection/permission methods so the
+        // mock still implements IDatabaseConnection (real behaviour lives in DatabaseConnection).
+        public Task<NetworkObjectInterface> AddInterface(NetworkObjectInterface networkObjectInterface, NetworkObject networkObject)
+        {
+            throw new NotImplementedException();
+        }
+        public Task EditInterface(NetworkObjectInterface networkObjectInterface)
+        {
+            throw new NotImplementedException();
+        }
+        public Task DeleteInterface(NetworkObjectInterface networkObjectInterface)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<NetworkConnection> AddConnection(NetworkConnection networkConnection, NetworkObjectInterface interface1, NetworkObjectInterface interface2)
+        {
+            throw new NotImplementedException();
+        }
+        public Task DeleteConnection(NetworkConnection networkConnection)
+        {
+            throw new NotImplementedException();
+        }
+        public Task<List<AccessRight>> GetNetworkObjectPermissions(NetworkObject networkObject)
+        {
+            throw new NotImplementedException();
+        }
+        public Task SetPermission(NetworkObject networkObject, NetworkUser targetUser, AccesRights right)
+        {
+            throw new NotImplementedException();
+        }
+        public Task DeletePermission(NetworkObject networkObject, AccessRight accessRight)
+        {
+            throw new NotImplementedException();
+        }
+        //KI end
+
         //UserDeviceLogins (ssh, telnet, etc)
         public Task<List<Login>> GetUserDeviceLogin(NetworkObject networkObject)
         {
