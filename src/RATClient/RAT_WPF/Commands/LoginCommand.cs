@@ -48,17 +48,27 @@ namespace RAT_WPF.Commands
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Login failed: {ex.Message}", "Login",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                //KI start (Claude Opus 4.8, prompt 15): show the sad-rat status on the login screen instead of a popup
+                _loginViewModel.ShowStatus(false, $"Login failed: {ex.Message}");
+                //KI end
                 return;
             }
 
+            //KI start (Claude Opus 4.8, prompt 15): happy-rat success status (briefly visible before navigation)
+            _loginViewModel.ShowStatus(true, $"Welcome, {loggedIn.UserName}!");
+            //KI end
+
             DatabaseConnectionStore.Current = connection;
+            //KI start (Claude Opus 4.8, prompt 15): remember the server so a re-login only needs username/password
+            DatabaseConnectionStore.LastServerIp = _loginViewModel.ServerIp;
+            DatabaseConnectionStore.LastServerPort = _loginViewModel.ServerPort;
+            //KI end
             RAT_Logic.Session.CurrentUser = new RAT_Logic.NetworkUser(
                 loggedIn.UserName, loggedIn.ID, canCreate: loggedIn.CanCreate, privileges: loggedIn.Privileges);
 
             // navigation Part
-            _navigationStore.CurrentViewModel = new TopologyViewModel();
+            // KI (prompt 15): pass the navigation store so the topology can navigate back to login on logout
+            _navigationStore.CurrentViewModel = new TopologyViewModel(_navigationStore);
         }
         //KI end
 

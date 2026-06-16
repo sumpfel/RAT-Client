@@ -50,10 +50,18 @@ namespace RAT_Logic
         // user has no access to, so anything reaching the client is at least visible to the current user.
         public List<AccessRight> AccessRights = new List<AccessRight>();
 
+        //KI start (Claude Opus 4.8, prompt 15): a global admin (account Privileges >= 100, set by the backend
+        // is_admin flag) implicitly has Owner rights on EVERY object — the backend already enforces this, the
+        // client must mirror it or admins can't manage/delete objects they have no explicit permission row on.
+        private const int GlobalAdminPrivilege = 100;
+        public static bool IsGlobalAdmin(NetworkUser? user) => user != null && user.Privileges >= GlobalAdminPrivilege;
+        //KI end
+
         /// <summary>The right a user holds on this object; Hidden (0) if they have no entry.</summary>
         public AccesRights GetRight(NetworkUser? user)
         {
             if (user == null) { return AccesRights.Hidden; }
+            if (IsGlobalAdmin(user)) { return AccesRights.Owner; } // KI (prompt 15): admins own everything
             AccessRight? entry = AccessRights.FirstOrDefault(a => a.User.ID == user.ID);
             return entry?.Rights ?? AccesRights.Hidden;
         }

@@ -31,6 +31,11 @@ namespace RAT_WPF.ViewModels
 
         public ICommand NetworkObjectDeleteCommand { get; }
 
+        //KI start (Claude Opus 4.8, prompt 15): navigation store + logout command so the user can return to login.
+        private readonly Stores.NavigationStore? _navigationStore;
+        public ICommand LogoutCommand { get; }
+        //KI end
+
         private readonly ObservableCollection<NetworkObjectViewModel> _networkObjects;
 
         public IEnumerable<NetworkObjectViewModel> NetworkObjects => _networkObjects;
@@ -50,8 +55,16 @@ namespace RAT_WPF.ViewModels
             }
         }
 
-        public TopologyViewModel()
+        //KI start (Claude Opus 4.8, prompt 15): keep the parameterless ctor working (debug-skip-login path) by
+        // chaining to the new one with no navigation store.
+        public TopologyViewModel() : this(null) { }
+        //KI end
+
+        public TopologyViewModel(Stores.NavigationStore? navigationStore)
         {
+            _navigationStore = navigationStore; // KI (prompt 15)
+            LogoutCommand = new Commands.LogoutCommand(this); // KI (prompt 15)
+
             defaultItems = new NetworkObjectListingViewModel();
 
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Router , Name = "New Router", Settings = new NetworkObjectSettings()});
@@ -88,6 +101,20 @@ namespace RAT_WPF.ViewModels
             //KI end
         }
 
+        //KI start (Claude Opus 4.8, prompt 15): log out — clear the session + connection and go back to the
+        // login screen. The server IP/port stay remembered in DatabaseConnectionStore so the login form only
+        // needs the username + password again.
+        public void Logout()
+        {
+            DatabaseConnectionStore.Current = null;
+            Session.CurrentUser = null;
+            if (_navigationStore != null)
+            {
+                _navigationStore.CurrentViewModel = new LoginViewModel(_navigationStore);
+            }
+        }
+        //KI end
+
         //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
         /// <summary>Loads the network graph from the database and puts every device on the canvas.</summary>
         private async Task LoadFromDatabaseAsync()
@@ -99,10 +126,39 @@ namespace RAT_WPF.ViewModels
                 NetworkObjectGraph graph = await DatabaseConnectionStore.Current.GetNetworkGraph();
                 if (graph?.networkObjects == null) { return; }
 
+                // first the devices; keep a model -> view-model map so connections can find their endpoints
+                Dictionary<NetworkObject, NetworkObjectViewModel> vmByModel = new Dictionary<NetworkObject, NetworkObjectViewModel>();
                 foreach (NetworkObject networkObject in graph.networkObjects)
                 {
-                    AddNetworkObjectViewModelToCanvas(new NetworkObjectViewModel(networkObject));
+                    NetworkObjectViewModel vm = new NetworkObjectViewModel(networkObject);
+                    vmByModel[networkObject] = vm;
+                    AddNetworkObjectViewModelToCanvas(vm);
                 }
+
+                //KI start (Claude Opus 4.8, prompt 15): also draw the saved connections. GetNetworkGraph() already
+                // rebuilt each NetworkConnection and set it on both endpoint interfaces; here we turn every distinct
+                // connection into a NetworkConnectionViewModel between the two devices it joins.
+                HashSet<NetworkConnection> seen = new HashSet<NetworkConnection>();
+                foreach (NetworkObject networkObject in graph.networkObjects)
+                {
+                    foreach (NetworkObjectInterface iface in networkObject.NetworkInterfaces)
+                    {
+                        NetworkConnection? conn = iface.Connection;
+                        if (conn == null || !seen.Add(conn)) { continue; } // each connection only once
+
+                        NetworkObjectViewModel? sourceVm = vmByModel.Values.FirstOrDefault(
+                            v => v.networkObjectInterfaces.Contains(conn.networkObectInterfaces[0]));
+                        NetworkObjectViewModel? targetVm = vmByModel.Values.FirstOrDefault(
+                            v => v.networkObjectInterfaces.Contains(conn.networkObectInterfaces[1]));
+
+                        if (sourceVm != null && targetVm != null)
+                        {
+                            _networkConnectionViewModels.Add(new NetworkConnectionViewModel(conn, sourceVm, targetVm));
+                        }
+                    }
+                }
+                OnPropertyChanged(nameof(NetworkConnectionViewModels));
+                //KI end
             }
             catch (Exception ex)
             {
@@ -117,6 +173,36 @@ namespace RAT_WPF.ViewModels
             _networkObjects.Add(networkObject);
             OnPropertyChanged(nameof(NetworkConnectionViewModels));
         }
+
+        //KI start (Claude Opus 4.8, prompt 15): delete a device for real — check ownership, delete it on the
+        // backend, then remove it (and its connections) from the canvas. This is what the Delete tool calls now;
+        // previously the tool only removed the node in memory so the deletion was lost on the next load.
+        public async void DeleteNetworkObjectFromCanvasAndDatabase(NetworkObjectViewModel node)
+        {
+            if (!node.Model.CanBeDeletedBy(Session.CurrentUser))
+            {
+                MessageBox.Show("Only an owner of this device (or a global admin) can delete it.",
+                    "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (DatabaseConnectionStore.Current != null && node.Model.ID > 0)
+            {
+                try
+                {
+                    await DatabaseConnectionStore.Current.DeleteNetworkObject(node.Model);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not delete the device on the server: {ex.Message}",
+                        "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return; // keep the node if the server refused
+                }
+            }
+
+            RemoveNetworkObjectViewModelFromCanvas(node);
+        }
+        //KI end
 
         //KI start (Claude Opus 4.8, prompt 4): remove a device from the canvas (used by the Delete tool)
         public void RemoveNetworkObjectViewModelFromCanvas(NetworkObjectViewModel networkObject)

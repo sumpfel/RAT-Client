@@ -22,6 +22,11 @@ namespace RAT_WPF.Themes
         public const string Ethernet = "Icon.Ethernet";
         public const string Wifi = "Icon.Wifi";
         public const string Usb = "Icon.Usb";
+        //KI start (Claude Opus 4.8, prompt 15): more rat status icons
+        public const string LoginSuccess = "Icon.LoginSuccess";
+        public const string LoginFailed = "Icon.LoginFailed";
+        public const string Logout = "Icon.Logout";
+        //KI end
 
         private static readonly string IconDir =
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Icons");

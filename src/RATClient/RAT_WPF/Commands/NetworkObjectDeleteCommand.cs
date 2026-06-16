@@ -13,7 +13,10 @@ namespace RAT_WPF.Commands
         {
             if (parameter is NetworkObjectViewModel networkObjectViewModel)
             {
-                topologyViewModel.RemoveNetworkObjectViewModelFromCanvas(networkObjectViewModel);
+                //KI start (Claude Opus 4.8, prompt 15): delete through the DB-persisting + owner-checked path,
+                // not just the in-memory canvas removal (which was lost on the next load).
+                topologyViewModel.DeleteNetworkObjectFromCanvasAndDatabase(networkObjectViewModel);
+                //KI end
             }
         }
     }

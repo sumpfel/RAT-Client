@@ -83,6 +83,18 @@ namespace RAT_WPF.ViewModels
 			ConfirmCommand = new LoginCommand(this, navigationStore);
 
             this.PropertyChanged += OnLoginViewModelPropertyChanged;
+
+            //KI start (Claude Opus 4.8, prompt 15): after a logout the server is already known, so pre-fill the
+            // IP/port (they validate via the setters' PropertyChanged) — the user only re-enters username/password.
+            if (!string.IsNullOrWhiteSpace(Stores.DatabaseConnectionStore.LastServerIp))
+            {
+                ServerIp = Stores.DatabaseConnectionStore.LastServerIp!;
+            }
+            if (Stores.DatabaseConnectionStore.LastServerPort is int port)
+            {
+                ServerPort = port;
+            }
+            //KI end
 		}
 
 		private Brush _textBoxUsernameColor = Brushes.LightCoral;
@@ -144,6 +156,34 @@ namespace RAT_WPF.ViewModels
                 OnPropertyChanged(nameof(TextBoxServerPortColor));
             }
         }
+
+        //KI start (Claude Opus 4.8, prompt 15): login status (rat icon + message) shown on the login screen,
+        // set by the LoginCommand on success/failure.
+        private ImageSource? _statusIcon;
+        public ImageSource? StatusIcon
+        {
+            get => _statusIcon;
+            set { _statusIcon = value; OnPropertyChanged(nameof(StatusIcon)); OnPropertyChanged(nameof(StatusVisible)); }
+        }
+
+        private string _statusMessage = "";
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set { _statusMessage = value; OnPropertyChanged(nameof(StatusMessage)); }
+        }
+
+        public Visibility StatusVisible => _statusIcon == null ? Visibility.Collapsed : Visibility.Visible;
+
+        /// <summary>Show a login status with the matching rat icon.</summary>
+        public void ShowStatus(bool success, string message)
+        {
+            StatusIcon = Themes.IconProvider.Get(success
+                ? Themes.IconProvider.LoginSuccess
+                : Themes.IconProvider.LoginFailed);
+            StatusMessage = message;
+        }
+        //KI end
 
         public bool UsernameOk { get; private set; } = false;
         public bool PasswordOk { get; private set; } = false;

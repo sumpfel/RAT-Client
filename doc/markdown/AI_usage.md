@@ -395,3 +395,49 @@ rows — otherwise dangling rows broke the next graph load.
 Backend flows smoke-tested against a throwaway DB: create user (admin), list users, create/edit interface (PUT 200),
 create connection, grant a permission to another user, and delete a NetworkObject — confirming its interface and
 connection are gone (cascade) while an unrelated object's interface stays.
+
+---------
+
+## Prompt 15 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Global admins don't have all permissions everywhere like they should. Deleting NetworkObjects doesn't
+work, and connections aren't saved/loaded correctly (load each object's connections from the DB). Add more rat-themed
+icons (connection lost, successfully logged in, …). Add a Logout button that returns to the login window, remembering
+the backend IP/port so only username + password are asked again. In the NetworkObject Access Control tab the names
+dropdown text is invisible. Mark everything as AI; edit the backend if needed.
+
+**Changes made (all AI regions wrapped in `//KI start (Claude Opus 4.8, prompt 15)` … `//KI end`):**
+
+- **Global admins now own everything (client side):** `RAT_Logic/NetworkObject.cs` — `GetRight()` returns `Owner`
+  for any user with `Privileges >= 100` (the backend `is_admin` flag, already enforced server-side). Since
+  `CanChangeRight`/`CanBeDeletedBy`/`HasAtLeast` all go through `GetRight`, admins can now manage and delete any
+  object even with no explicit permission row. (Verified server-side: an admin with no perm row can PUT and DELETE
+  another user's object — 200/200.)
+- **Delete actually works:** the Delete tool used `NetworkObjectDeleteCommand`, which only removed the node from the
+  canvas in memory (no DB call, no owner check) — the delete was lost on reload. It now calls a new
+  `TopologyViewModel.DeleteNetworkObjectFromCanvasAndDatabase()` that checks ownership, deletes on the backend, then
+  removes the node. Removed the dead `DeleteNode`/`PersistDeletedNetworkObject` in `TopologyView.xaml.cs`.
+- **Connections load + draw:** `TopologyViewModel.LoadFromDatabaseAsync()` previously added only devices. It now also
+  rebuilds a `NetworkConnectionViewModel` for every distinct connection in the loaded graph (each
+  `interface.Connection`), so saved cables are drawn after login. (`GetNetworkGraph` already reconstructs the
+  `NetworkConnection`s and sets them on both endpoint interfaces.)
+- **Logout:** new `RAT_WPF/Commands/LogoutCommand.cs` + `TopologyViewModel.Logout()` clear `Session.CurrentUser` and
+  `DatabaseConnectionStore.Current` and navigate back to a fresh `LoginViewModel`. The topology now takes the
+  `NavigationStore` (new ctor; the parameterless one still works for the debug path). A **⎋ Logout** button (with the
+  new rat icon) sits on the top bar. `DatabaseConnectionStore` remembers `LastServerIp`/`LastServerPort`; `LoginCommand`
+  saves them on success and `LoginViewModel` pre-fills them, so a re-login only needs username + password.
+- **Dropdown text fix:** `RAT_WPF/Themes/Shared.xaml` — the themed `ComboBoxItem` template's `ContentPresenter` now
+  forces `TextElement.Foreground="{DynamicResource Brush.Text}"`. `DisplayMemberPath` items (the user dropdown in
+  Access Control) were rendered with no inherited colour and were invisible.
+- **More rat icons:** `RAT_WPF/Themes/Icons.xaml` — new vector `Icon.LoginSuccess` (happy rat + green check),
+  `Icon.LoginFailed` (rat + red X) and `Icon.Logout` (rat scurrying out a door); registered in `IconProvider`. The
+  login screen shows the happy/sad rat + a message via new `LoginViewModel.StatusIcon`/`StatusMessage`/`ShowStatus`
+  (set by `LoginCommand` instead of the old failure MessageBox); the logout button uses the rat door icon.
+
+**Backend:** no change needed — the API already grants global admins `OWNER` everywhere (`permissions.py`) and
+cascade-deletes an object's interfaces/connections (KI-11). Verified both against a throwaway DB.
+
+**Verified:** the **full WPF solution builds with 0 errors** (`-p:EnableWindowsTargeting=true` on Linux). The
+admin-can-edit/delete-others and cascade behaviours were confirmed against the live backend on a throwaway DB. The
+UI behaviour itself (dropdown legibility, logout flow, drawn connections, rat status icons) is for the user to confirm
+on Windows.

@@ -34,6 +34,15 @@
                     <Image Source="{StaticResource AppLogo}" Width="28" Height="28" Margin="0,0,8,0"/>
                     <TextBlock Text="RAT" Style="{StaticResource Header2}" VerticalAlignment="Center"/>
                 </StackPanel>
+                <!--KI start (Claude Opus 4.8, prompt 15): log out -> back to the login screen (rat door icon)-->
+                <Button DockPanel.Dock="Right" Style="{StaticResource SubtleButton}"
+                        HorizontalAlignment="Right" Margin="0,0,8,0" Command="{Binding LogoutCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{StaticResource Icon.Logout}" Width="18" Height="18" Margin="0,0,6,0"/>
+                        <TextBlock Text="Logout" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <!--KI end-->
                 <!--KI start (Claude Opus 4.8, prompt 14): admin-only Users button (visibility set in code-behind)-->
                 <Button DockPanel.Dock="Right" x:Name="UsersButton" Content="👤 Users"
                         Style="{StaticResource SubtleButton}" Visibility="Collapsed"

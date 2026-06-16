@@ -365,5 +365,126 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
+
+    <!--KI start (Claude Opus 4.8, prompt 15): more rat-themed status icons -->
+
+    <!-- ============================================================
+         Icon: LoginSuccess  (a happy rat head with a green check)
+         ============================================================ -->
+    <DrawingImage x:Key="Icon.LoginSuccess">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- rat head -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="46,52" RadiusX="26" RadiusY="23"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- ears -->
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="28,30" RadiusX="9" RadiusY="9"/>
+                            <EllipseGeometry Center="64,30" RadiusX="9" RadiusY="9"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- eyes (happy) -->
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="38,50" RadiusX="3" RadiusY="3"/>
+                            <EllipseGeometry Center="56,50" RadiusX="3" RadiusY="3"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- nose -->
+                <GeometryDrawing Brush="#FFE08FA8">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="47,62" RadiusX="3" RadiusY="2.4"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- green check badge -->
+                <GeometryDrawing Brush="#FF3FA34D">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="74,74" RadiusX="16" RadiusY="16"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFFFFFFF" Thickness="4" StartLineCap="Round" EndLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M66,74 L72,80 L83,67"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- ============================================================
+         Icon: LoginFailed  (a rat head with a red X badge)
+         ============================================================ -->
+    <DrawingImage x:Key="Icon.LoginFailed">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="46,52" RadiusX="26" RadiusY="23"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="28,30" RadiusX="9" RadiusY="9"/>
+                            <EllipseGeometry Center="64,30" RadiusX="9" RadiusY="9"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- sad/worried eyes -->
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="38,52" RadiusX="3" RadiusY="3"/>
+                            <EllipseGeometry Center="56,52" RadiusX="3" RadiusY="3"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFE08FA8">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="47,62" RadiusX="3" RadiusY="2.4"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- red X badge -->
+                <GeometryDrawing Brush="#FFC0392B">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="74,74" RadiusX="16" RadiusY="16"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFFFFFFF" Thickness="4" StartLineCap="Round" EndLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <LineGeometry StartPoint="68,68" EndPoint="80,80"/>
+                            <LineGeometry StartPoint="80,68" EndPoint="68,80"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- ============================================================
+         Icon: Logout  (a rat scurrying out through a door arrow)
+         ============================================================ -->
+    <DrawingImage x:Key="Icon.Logout">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- door frame -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FF5A3A28" Thickness="5"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M54,14 L20,14 L20,86 L54,86"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- exit arrow -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFC97A4A" Thickness="5" StartLineCap="Round" EndLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><LineGeometry StartPoint="44,50" EndPoint="84,50"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M76,38 L92,50 L76,62 Z"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- little rat tail by the door -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FF6B4A3A" Thickness="3" StartLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M30,74 C22,70 26,86 36,82"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <!--KI end-->
 </ResourceDictionary>
 <!--KI end-->

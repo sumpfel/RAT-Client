@@ -134,33 +134,9 @@ namespace RAT_WPF.Views
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 4): delete tool — let a canvas node remove itself when the tool is active
-
-        public void DeleteNode(NetworkObjectViewModel node)
-        {
-            //KI start (Claude Opus 4.8, prompt 11): only an Owner of the object may delete it
-            if (!node.Model.CanBeDeletedBy(RAT_Logic.Session.CurrentUser))
-            {
-                MessageBox.Show("Only an owner of this device can delete it.",
-                    "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            //KI end
-            if (this.DataContext is TopologyViewModel topologyViewModel)
-            {
-                //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
-                // remove from the backend first (only if it was ever saved, i.e. has a real id), then
-                // from the canvas. If the server rejects it we keep the node and show the reason.
-                PersistDeletedNetworkObject(node, topologyViewModel);
-                //KI end
-            }
-        }
-        //KI end
-
-        //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
-        // Persistence helpers. All are async-void event-handler style (no Task is awaited by the
-        // caller) and swallow nothing silently — failures are surfaced via a MessageBox. They are
-        // no-ops when there is no active connection (e.g. the debug-skip-login path).
+        //KI start (Claude Opus 4.8, prompt 14/15): create/move persistence helpers. async-void event-handler
+        // style (the caller does not await); failures surface via a MessageBox; no-ops without a connection.
+        // (Delete now lives in TopologyViewModel.DeleteNetworkObjectFromCanvasAndDatabase, called by the Delete tool.)
 
         private async void PersistNewNetworkObject(NetworkObjectViewModel node)
         {
@@ -191,23 +167,6 @@ namespace RAT_WPF.Views
             }
         }
 
-        private async void PersistDeletedNetworkObject(NetworkObjectViewModel node, TopologyViewModel topologyViewModel)
-        {
-            if (DatabaseConnectionStore.Current != null && node.Model.ID > 0)
-            {
-                try
-                {
-                    await DatabaseConnectionStore.Current.DeleteNetworkObject(node.Model);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Could not delete the device on the server: {ex.Message}",
-                        "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return; // keep the node on the canvas if the server refused
-                }
-            }
-            topologyViewModel.RemoveNetworkObjectViewModelFromCanvas(node);
-        }
         //KI end
     }
 }

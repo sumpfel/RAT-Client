@@ -231,9 +231,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
+                    <!--KI start (Claude Opus 4.8, prompt 15): force the item text colour so DisplayMemberPath items
+                        (e.g. the user dropdown in Access Control) are readable; a bare ContentPresenter did not
+                        inherit Brush.Text reliably, leaving the names invisible.-->
                     <Border x:Name="bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter/>
+                        <ContentPresenter TextElement.Foreground="{DynamicResource Brush.Text}"/>
                     </Border>
+                    <!--KI end-->
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.Accent}"/>
