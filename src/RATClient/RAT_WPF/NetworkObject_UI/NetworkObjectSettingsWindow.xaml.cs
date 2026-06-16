@@ -28,6 +28,8 @@ namespace RAT_WPF.NetworkObject_UI
         private bool isOwnPc;
         //KI end
 
+        public event EventHandler NetworkObjectViewNeedsUpdate;
+
         public NetworkObjectSettingsWindow(NetworkObject networkObject_)
         {
             InitializeComponent();
@@ -118,7 +120,8 @@ namespace RAT_WPF.NetworkObject_UI
             }
             networkObject.Specs = SpecsBox.Text;
             Title = $"Device Settings — {networkObject.Name}";
-            MessageBox.Show("Saved (in software).");
+            NetworkObjectViewNeedsUpdate?.Invoke(this, EventArgs.Empty);
+            // TODO: Save in Database
         }
 
         private void LoadInterfaces()
@@ -182,6 +185,7 @@ namespace RAT_WPF.NetworkObject_UI
             control.EditRequested += OnInterfaceEdit;
             control.DeleteRequested += OnInterfaceDelete;
             InterfacesStackPanel.Children.Add(control);
+            // TODO: Save to Database
         }
 
         private void OnInterfaceEdit(InterfaceControl control)
@@ -192,6 +196,7 @@ namespace RAT_WPF.NetworkObject_UI
             {
                 control.Refresh();
             }
+            // TODO: Save to Database
         }
 
         private void OnInterfaceDelete(InterfaceControl control)

@@ -77,7 +77,14 @@ namespace RAT_WPF.ViewModels
 		{
             _networkObject = networkObject;
 
-            NetworkObjectOpenSettings = new NetworkObjectOpenSettingsCommand(_networkObject);
+            NetworkObjectOpenSettings = new NetworkObjectOpenSettingsCommand(this);
+        }
+
+        public void RefreshUI()
+        {
+            OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(X));
+            OnPropertyChanged(nameof(Y));
         }
 	}
 }
