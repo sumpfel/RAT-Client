@@ -15,14 +15,18 @@ namespace RAT_Logic
     /// </summary>
     public class NetworkUser
     {
-        public string UserName;
-        public int ID;
+        //KI start (Claude Opus 4.8, prompt 17): these were public *fields*. WPF data binding only binds to
+        // *properties*, so {Binding UserName} on the PermUserCombo silently showed blank items. Auto-properties
+        // are source-compatible with the existing field reads/writes and make the bindings resolve.
+        public string UserName { get; set; }
+        public int ID { get; set; }
 
         /// <summary>Account is allowed to create new network objects.</summary>
-        public bool CanCreate;
+        public bool CanCreate { get; set; }
 
         /// <summary>Global account tier (not used to gate per-object rights here).</summary>
-        public int Privileges;
+        public int Privileges { get; set; }
+        //KI end
 
         public NetworkUser(string userName, int id, bool canCreate = false, int privileges = 10)
         {

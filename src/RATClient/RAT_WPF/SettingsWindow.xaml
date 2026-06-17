@@ -49,6 +49,12 @@
                     <Button Content="Edit my account" Style="{StaticResource ModernButton}"
                             HorizontalAlignment="Left" Click="EditMyAccount_Click"/>
                     <!--KI end-->
+
+                    <!--KI start (Claude Opus 4.8, prompt 17): About entry -->
+                    <TextBlock Text="About" Style="{StaticResource Header3}" Margin="0,20,0,2"/>
+                    <Button Content="About RAT" Style="{StaticResource SubtleButton}"
+                            HorizontalAlignment="Left" Click="About_Click"/>
+                    <!--KI end-->
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>

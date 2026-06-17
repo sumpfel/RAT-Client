@@ -75,6 +75,7 @@ namespace RAT_WPF.ViewModels
             // and the PC carries this machine's real interfaces so they can be selected in the SelectInterfaceWindow.
             NetworkObject ownPc = new NetworkObject() { Type = NetworkObjectType.PC, Name = Environment.MachineName, Settings = new NetworkObjectSettings() };
             ownPc.PopulateOwnDeviceInterfaces();
+            ownPc.ApplyDefaultPcSpecsIfEmpty(); // KI (prompt 17): a PC starts with this machine's real specs, not blanks
             defaultItems.AddNetworkObject(ownPc);
             //KI end
 

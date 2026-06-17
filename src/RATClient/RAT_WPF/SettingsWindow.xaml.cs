@@ -46,6 +46,13 @@ namespace RAT_WPF
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 17): open the About window
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            new AboutWindow { Owner = this }.ShowDialog();
+        }
+        //KI end
+
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();

@@ -485,6 +485,141 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
+
+    <!--KI start (Claude Opus 4.8, prompt 17): rat tangled with a database cylinder (for DB-error popups) -->
+    <DrawingImage x:Key="Icon.DatabaseError">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- database cylinder body -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="30,26,40,46"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- top + band ellipses -->
+                <GeometryDrawing Brush="#FF8A5A3C">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="50,26" RadiusX="20" RadiusY="7"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFD9B58A" Thickness="2"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <PathGeometry Figures="M30,42 A20,7 0 0 0 70,42"/>
+                            <PathGeometry Figures="M30,56 A20,7 0 0 0 70,56"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="50,72" RadiusX="20" RadiusY="7"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- warning burst -->
+                <GeometryDrawing Brush="#FFE0B84A">
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M70,8 L78,26 L62,26 Z"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <RectangleGeometry Rect="69,14,2,7"/>
+                            <RectangleGeometry Rect="69,23,2,2"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- rat peeking with tail -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="20,74" RadiusX="11" RadiusY="9"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="14,66" RadiusX="4.5" RadiusY="4.5"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="24,72" RadiusX="1.6" RadiusY="1.6"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FF6B4A3A" Thickness="3" StartLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M10,78 C2,74 6,90 16,86"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <!--KI end-->
+
+    <!--KI start (Claude Opus 4.8, prompt 17): fancy rat mascot for the About window -->
+    <DrawingImage x:Key="Icon.AboutRat">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- glow halo -->
+                <GeometryDrawing Brush="#22C97A4A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="50,52" RadiusX="46" RadiusY="46"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- tail (elegant curl) -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FF6B4A3A" Thickness="4" StartLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M22,78 C2,78 6,44 26,52"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- body -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="46,66" RadiusX="26" RadiusY="20"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- belly -->
+                <GeometryDrawing Brush="#FFD9B58A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="46,72" RadiusX="15" RadiusY="11"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- head -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="64,44" RadiusX="17" RadiusY="15"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- ears -->
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="56,28" RadiusX="8" RadiusY="8"/>
+                            <EllipseGeometry Center="74,28" RadiusX="8" RadiusY="8"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFE8C9A8">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="56,28" RadiusX="4" RadiusY="4"/>
+                            <EllipseGeometry Center="74,28" RadiusX="4" RadiusY="4"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- snout -->
+                <GeometryDrawing Brush="#FFD9B58A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="80,50" RadiusX="8" RadiusY="6"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- nose -->
+                <GeometryDrawing Brush="#FFB85C2A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="87,50" RadiusX="2.6" RadiusY="2.6"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- eye -->
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="68,42" RadiusX="2.6" RadiusY="2.6"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFF6EFE4">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="69,41" RadiusX="0.9" RadiusY="0.9"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- whiskers -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFD9B58A" Thickness="1"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <LineGeometry StartPoint="84,52" EndPoint="98,50"/>
+                            <LineGeometry StartPoint="84,54" EndPoint="98,58"/>
+                            <LineGeometry StartPoint="84,50" EndPoint="98,44"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- little paw -->
+                <GeometryDrawing Brush="#FFD9B58A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="40,84" RadiusX="4" RadiusY="3"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
     <!--KI end-->
 </ResourceDictionary>
 <!--KI end-->

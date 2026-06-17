@@ -485,3 +485,32 @@ re-login works); a normal user editing someone else is **403**; a normal user tr
 is silently ignored (stays non-admin); and an admin with no permission row self-grants See (201) then adds a login
 (201) — the previously-crashing path. UI behaviour (no phantom device, drag over icons, dropdown legibility, the edit
 dialogs) is for the user to confirm on Windows.
+
+---------
+
+## Prompt 17 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** (1) The Access Control `PermUserCombo` binding (`{Binding UserName}`) didn't show anything. (2) Better PC
+logic: a new PC should have normal default stats (not blank), changing only the name shouldn't wipe the other specs,
+and a freshly dragged PC should keep the same settings as a previously deleted one. (3) Add an About window crediting
+Tobias and Claude with his helper Christof, phrased fancy, with a cool rat-themed vector graphic. (4) Give the
+"couldn't talk to the database" popups rat-themed vector graphics too.
+
+**Changes made (AI regions marked `prompt 17`):**
+
+- **Combo binding fix** — `NetworkUser.UserName/ID/CanCreate/Privileges` and `RAT_Data.User.UserName/Password/ID` were
+  public **fields**; WPF only binds to **properties**, so the combo's `{Binding UserName}` silently showed blank rows.
+  Converted them to auto-properties (source-compatible). `PermUserCombo` now shows the user names.
+- **PC specs** — `NetworkObject.ApplyDefaultPcSpecsIfEmpty()` fills empty Os/Cpu/Gpu/Ram from this machine's real
+  values (never clobbers edits). Called when the PC palette item is created and in `LoadOverview` for any PC, so a new
+  or renamed PC always shows real stats instead of blanks. `SaveOverview` now persists the spec values for every
+  device (incl. the live own-PC) so they survive a rename that flips it out of the live view. (Dragging the same
+  palette PC after deleting it already reuses the same instance, so its settings persist.)
+- **About window** — new `AboutWindow.xaml(.cs)`, opened from a new "About RAT" button in `SettingsWindow`; fancy
+  credits to **Tobias** & **Claude** with helper **Christof**, plus a new `Icon.AboutRat` mascot vector.
+- **Rat-themed DB/error popups** — new themed `RatDialog.xaml(.cs)` that shows a message beside a rat vector; new
+  `Icon.DatabaseError` (rat + database cylinder + warning). `ShowDbError` now uses it (`Icon.DatabaseError`), and
+  `ShowNoConnection` / `ShowActionFailed` were routed through it too (`Icon.NoConnection` / `Icon.ConnectionLost`).
+
+**Verified:** builds (0 errors); screenshotted the About window (mascot + credits render) and the DB-error RatDialog
+(database-rat graphic + themed card). Combo fix is structural (field→property); not exercised against a live backend.

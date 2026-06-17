@@ -533,6 +533,26 @@ namespace RAT_Logic
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 17): give a PC sensible default specs (this machine's real values) so a
+        // newly created PC is never blank, and renaming it (which flips it out of the live "own PC" view) keeps real
+        // stored values instead of empty strings. Only fills fields that are still empty — never clobbers user edits.
+        public void ApplyDefaultPcSpecsIfEmpty()
+        {
+            Dictionary<string, string> stats;
+            try { stats = GetOwnDeviceInfos(); }
+            catch { return; } // WMI can fail on some hosts; just leave the fields empty then
+
+            if (string.IsNullOrWhiteSpace(Os)) { Os = stats.GetValueOrDefault("os", ""); }
+            if (string.IsNullOrWhiteSpace(Cpu)) { Cpu = stats.GetValueOrDefault("cpu", ""); }
+            if (string.IsNullOrWhiteSpace(Gpu)) { Gpu = stats.GetValueOrDefault("gpu", ""); }
+            if (string.IsNullOrWhiteSpace(Ram))
+            {
+                string ram = stats.GetValueOrDefault("ram", "");
+                Ram = string.IsNullOrWhiteSpace(ram) ? "" : ram + " GB";
+            }
+        }
+        //KI end
+
         private NetworkObjectInterface? GetInterfaceInSameNetworkAsHost()
         {
 

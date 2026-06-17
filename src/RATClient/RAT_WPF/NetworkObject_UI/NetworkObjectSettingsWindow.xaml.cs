@@ -146,6 +146,13 @@ namespace RAT_WPF.NetworkObject_UI
             }
             else
             {
+                //KI start (Claude Opus 4.8, prompt 17): a PC that isn't the live "own PC" (e.g. renamed, or a 2nd PC)
+                // still gets sensible default specs so the fields are never blank. Only fills empties — keeps edits.
+                if (networkObject.Type == NetworkObjectType.PC)
+                {
+                    networkObject.ApplyDefaultPcSpecsIfEmpty();
+                }
+                //KI end
                 OverviewSubtitle.Text = $"{networkObject.Type} — changes are stored in the software only and are NOT pushed to the device.";
                 NameBox.Text = networkObject.Name;
                 OsBox.Text = networkObject.Os;
@@ -160,13 +167,14 @@ namespace RAT_WPF.NetworkObject_UI
         private async void SaveOverview_Click(object sender, RoutedEventArgs e)
         {
             networkObject.Name = NameBox.Text;
-            if (!isOwnPc)
-            {
-                networkObject.Os = OsBox.Text;
-                networkObject.Cpu = CpuBox.Text;
-                networkObject.Gpu = GpuBox.Text;
-                networkObject.Ram = RamBox.Text;
-            }
+            //KI start (Claude Opus 4.8, prompt 17): always persist the spec values shown in the boxes (for the live
+            // own-PC these are the read-only host specs) so they're stored on the object and survive a later rename
+            // that flips it out of the live "own PC" view — otherwise the stats would go blank.
+            networkObject.Os = OsBox.Text;
+            networkObject.Cpu = CpuBox.Text;
+            networkObject.Gpu = GpuBox.Text;
+            networkObject.Ram = RamBox.Text;
+            //KI end
             networkObject.Specs = SpecsBox.Text;
             Title = $"Device Settings — {networkObject.Name}";
 
@@ -309,27 +317,29 @@ namespace RAT_WPF.NetworkObject_UI
 
         }
 
-        //KI start (Claude Opus 4.8, prompt 2): shared "no connection" popup so every action fails clearly
+        //KI start (Claude Opus 4.8, prompt 2/17): shared rat-themed "no connection" / "action failed" popups.
         private static void ShowNoConnection(string protocol)
         {
-            MessageBox.Show(
+            RatDialog.Show(
+                "No connection",
                 $"There is no open {protocol} connection to this device.\n\n" +
                 "Open a connection first from the Logins tab (add a login and press Connect).",
-                "No connection", MessageBoxButton.OK, MessageBoxImage.Warning);
+                "Icon.NoConnection");
         }
 
         private static void ShowActionFailed(string action, Exception ex)
         {
-            MessageBox.Show($"{action} failed:\n{ex.Message}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            RatDialog.Show($"{action} failed", ex.Message, "Icon.ConnectionLost");
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 14): one consistent popup for backend errors.
+        //KI start (Claude Opus 4.8, prompt 14/17): one consistent, rat-themed popup for backend errors.
         private static void ShowDbError(string action, Exception ex)
         {
-            MessageBox.Show($"Could not {action} on the server:\n{ex.Message}", "Database",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            RatDialog.Show(
+                "Database hiccup",
+                $"The rat couldn't {action} on the server.\n\n{ex.Message}",
+                "Icon.DatabaseError");
         }
         //KI end
 
