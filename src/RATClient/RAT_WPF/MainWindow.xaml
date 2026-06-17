@@ -22,7 +22,14 @@
             </DataTemplate>
         </Grid.Resources>
 
-        <ContentControl Content="{Binding CurrentViewModel}"/>
+        <!--KI start (Claude Opus 4.8, prompt 20): app-wide zoom via a LayoutTransform on the shell content.
+             ZoomManager raises ZoomChanged; the code-behind updates this ScaleTransform. -->
+        <ContentControl Content="{Binding CurrentViewModel}">
+            <ContentControl.LayoutTransform>
+                <ScaleTransform x:Name="ZoomTransform" ScaleX="1" ScaleY="1"/>
+            </ContentControl.LayoutTransform>
+        </ContentControl>
+        <!--KI end-->
 
     </Grid>
     <!--KI end-->

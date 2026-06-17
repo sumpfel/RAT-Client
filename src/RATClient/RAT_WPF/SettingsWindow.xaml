@@ -37,9 +37,16 @@
                               SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
                               Width="160" HorizontalAlignment="Left"/>
 
+                    <!--KI start (Claude Opus 4.8, prompt 20): UI zoom dropdown (50%–300%, default 100%) -->
+                    <TextBlock Text="Zoom" Style="{StaticResource FieldLabel}" Margin="0,12,0,2"/>
+                    <ComboBox ItemsSource="{Binding ZoomLevels}"
+                              SelectedItem="{Binding SelectedZoom, Mode=TwoWay}"
+                              Width="160" HorizontalAlignment="Left"/>
+                    <!--KI end-->
+
                     <TextBlock Margin="0,16,0,0" TextWrapping="Wrap" FontSize="12"
                                Foreground="{DynamicResource Brush.TextMuted}"
-                               Text="Light uses the paper + brown 'rats' palette; Dark uses the same fur tones on a dark base. The change applies instantly across all windows."/>
+                               Text="Light uses the paper + brown 'rats' palette; Dark uses the same fur tones on a dark base. Zoom scales the whole app (50%–300%). Changes apply instantly."/>
 
                     <!--KI start (Claude Opus 4.8, prompt 16): self-service account editing (username + password;
                         admins can also toggle their own admin/can-create flags). Opens the shared EditUserWindow.-->

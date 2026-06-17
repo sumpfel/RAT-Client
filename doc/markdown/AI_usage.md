@@ -564,3 +564,28 @@ but no rat — give it a real rat.
 
 **Verified:** builds (0 errors); re-rendered the Logout icon and confirmed the rat by screenshot. (RatDialog rendering
 itself was verified in prompt 17.)
+
+---------
+
+## Prompt 20 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Implement a zoom feature in the user settings — a dropdown with multiple options, default 100%, min 50%
+(zoomed out), max 300% (3x everything).
+
+**Changes made (AI regions marked `prompt 20`):**
+
+- `RAT_WPF/Themes/ZoomManager.cs` (new) — static app-wide zoom holder mirroring ThemeManager: `Levels`
+  (50/75/100/125/150/200/250/300), `Default=100`, `Min=50`, `Max=300`, `Apply(percent)` (clamped) + a `ZoomChanged`
+  event.
+- `RAT_WPF/MainWindow.xaml(.cs)` — the shell `ContentControl` gets a `ScaleTransform` (via `LayoutTransform`) that the
+  code-behind updates on `ZoomManager.ZoomChanged`, so the whole app scales.
+- `RAT_WPF/ViewModels/SettingsViewModel.cs` — `ZoomLevels` ("50%"…"300%") + `SelectedZoom`; selecting a level applies
+  it instantly via `ZoomManager` and best-effort persists it through `IDatabaseConnection.EditUserSettings`.
+- `RAT_WPF/SettingsWindow.xaml` — a **Zoom** dropdown added under Theme in the Appearance section.
+
+**Verified:** builds (0 errors); screenshotted the Settings window (Zoom dropdown present) and the app forced to 200%
+(logo, toolbar, sidebar + icons all rendered at 2x), confirming the scale transform zooms everything.
+
+**Notes / scope:** there is no client-side *load* of saved user settings yet (no GetUserSettings wiring), so zoom
+starts at 100% each run and changes are saved best-effort to the backend. `EditUserSettings` currently sends the whole
+UserSettings, so it also writes the (unused) show_ports/show_interfaces defaults.
