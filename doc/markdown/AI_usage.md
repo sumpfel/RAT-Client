@@ -441,3 +441,47 @@ cascade-deletes an object's interfaces/connections (KI-11). Verified both agains
 admin-can-edit/delete-others and cascade behaviours were confirmed against the live backend on a throwaway DB. The
 UI behaviour itself (dropdown legibility, logout flow, drawn connections, rat status icons) is for the user to confirm
 on Windows.
+
+---------
+
+## Prompt 16 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request (bug list):** (1) on a 500 the device must NOT be added to the canvas; (2) drag & drop must work when the
+press starts on a device icon (clicking "through" the image); (3) you can't see the user in the Access Control
+dropdown; (4) there must be a way to edit users (change password / username / admin / can_create) — admins may edit
+everyone, a normal user only themselves and only name + password (not admin/can_create); (5) opening a NetworkObject
+as an admin errors out because the admin can act without a permission row, which then breaks logins. Mark everything
+as AI; edit the backend if needed.
+
+**Changes made (all AI regions wrapped in `//KI ... (prompt 16)`):**
+
+- **(1) No phantom device on error:** `RAT_WPF/Views/TopologyView.xaml.cs` — `PersistNewNetworkObject` now returns
+  `Task<bool>` and `NetworkObject_Drop` is `async`: the device is added to the canvas **only after** the backend
+  accepts it. On a 500 (or any error) the popup shows and the node is not added.
+- **(2) Drag over icons:** `RAT_WPF/Views/NetworkObjectView.xaml` + `NetworkObjectListingView.xaml` — the node/palette
+  row got `Background="Transparent"` (whole area hit-testable) and the icon `Image` got `IsHitTestVisible="False"`, so
+  a press on a transparent part of the icon no longer "falls through" and the drag `MouseMove` always fires.
+- **(3) Dropdown text:** `RAT_WPF/NetworkObject_UI/NetworkObjectSettingsWindow.xaml(.cs)` — the user ComboBox now uses
+  an explicit `ItemTemplate` (a `TextBlock` bound with `Foreground="{DynamicResource Brush.Text}"`) instead of
+  `DisplayMemberPath`, so the names are visible in both the dropdown and the closed selection box.
+- **(4) Edit users:** new reusable `RAT_WPF/EditUserWindow.xaml(.cs)` dialog (username + password + optional
+  Admin/Can-create, hidden when the caller may not change them). `RAT_Data/DatabaseConnection.EditUser` now PUTs to
+  `/user/{id}` (empty password = unchanged). Admin path: an **Edit** button per row in `ManageUsersWindow` (all fields).
+  Self path: an **Account → Edit my account** section in the app `SettingsWindow` (everyone), with admin fields shown
+  only to admins; the in-memory `Session.CurrentUser` is updated on save. The backend enforces the real rules.
+- **(5) Admin-without-permission-row logins:** `RAT_Data/DatabaseConnection` — `GetMyPermissionId` was split into
+  `TryGetMyPermissionId` (returns null instead of throwing → reads just show no logins) and `EnsureMyPermissionId`
+  (creates the row by self-granting `See` when missing, which a global admin/Admin/Owner is allowed to do).
+  `GetUserDeviceLogin` no longer throws for an admin with no row; `AddUserDeviceLogin` lazily creates the row.
+
+**Backend (necessary, documented in RAT-Backend/doc/markdown/AI_usage.md, KI-12):** added `PUT /user/{id}` with a
+`UserEdit` model — a global admin may change any user's username/password/is_admin/can_create; a normal user may edit
+only themselves and only username + password (is_admin/can_create are ignored for a non-admin self-edit; editing
+another user is 403). Username uniqueness is enforced.
+
+**Verified:** **full WPF solution builds with 0 errors** (`-p:EnableWindowsTargeting=true`). Backend smoke-tested
+against a throwaway DB: admin edits another user (rename + promote, 200); a normal user self-edits name+password (200,
+re-login works); a normal user editing someone else is **403**; a normal user trying to self-grant is_admin/can_create
+is silently ignored (stays non-admin); and an admin with no permission row self-grants See (201) then adds a login
+(201) — the previously-crashing path. UI behaviour (no phantom device, drag over icons, dropdown legibility, the edit
+dialogs) is for the user to confirm on Windows.

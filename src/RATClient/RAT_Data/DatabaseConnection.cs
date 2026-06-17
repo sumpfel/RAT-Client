@@ -9,8 +9,8 @@
 // /networkObjectPermission (this keeps the backend untouched apart from the small additions
 // documented in RAT-Backend/doc/markdown/AI_usage.md, KI-10).
 //
-// Methods the backend has no endpoint for (EditUser / DeleteUser) throw NotSupportedException
-// with a clear message instead of silently doing nothing.
+// DeleteUser has no backend endpoint and throws NotSupportedException with a clear message
+// instead of silently doing nothing. (EditUser is supported via PUT /user/{id}.)
 using RAT_Logic;
 using System;
 using System.Collections.Generic;
@@ -244,8 +244,22 @@ namespace RAT_Data
                 created.IsAdmin ? 100 : 10, created.CanCreate);
         }
 
-        public Task EditUser(User user) =>
-            throw new NotSupportedException("The backend has no endpoint to edit a user.");
+        //KI start (Claude Opus 4.8, prompt 16): edit a user via PUT /user/{id}. An empty Password means
+        // "leave it unchanged" (so editing a user without resetting their password is possible). The backend
+        // enforces who may change what: an admin may change anyone/any field; a normal user only themselves
+        // (username + password; is_admin/can_create are ignored for a non-admin self-edit).
+        public async Task EditUser(User user)
+        {
+            HttpResponseMessage response = await _http.PutAsJsonAsync($"{BaseUrl}/user/{user.ID}", new
+            {
+                username = user.UserName,
+                password = string.IsNullOrEmpty(user.Password) ? null : user.Password,
+                is_admin = user.Privileges >= 100,
+                can_create = user.CanCreate
+            }, _json);
+            await EnsureOk(response);
+        }
+        //KI end
 
         public Task DeleteUser(User user) =>
             throw new NotSupportedException("The backend has no endpoint to delete a user.");
@@ -505,39 +519,59 @@ namespace RAT_Data
 
         // ----- IDatabaseConnection: UserDeviceLogins ----------------------------
 
-        /// <summary>Resolves the current user's NetworkObjectPermission id for an object.</summary>
-        private async Task<int> GetMyPermissionId(NetworkObject networkObject)
+        //KI start (Claude Opus 4.8, prompt 16): per-user logins are stored against the current user's
+        // NetworkObjectPermission row. A global admin can open an object they have NO permission row on, which
+        // used to throw. Now: looking up the id returns null instead of throwing (reads just show no logins),
+        // and ADDING a login first makes sure a row exists (a global admin / Admin / Owner may self-grant one).
+
+        /// <summary>The current user's permission-row id for an object, or null if they have none.</summary>
+        private async Task<int?> TryGetMyPermissionId(NetworkObject networkObject)
         {
             if (_myPermissionIdByObjectId.TryGetValue(networkObject.ID, out int cached))
             {
                 return cached;
             }
-            // Cache miss (e.g. no graph loaded yet) -> look it up fresh.
             List<PermissionDto> permissions = await GetJson<List<PermissionDto>>("/networkObjectPermission/");
             PermissionDto? mine = permissions.FirstOrDefault(
                 p => p.UserId == User.ID && p.NetworkObjectId == networkObject.ID);
-            if (mine == null)
-            {
-                throw new InvalidOperationException(
-                    $"No permission row for the current user on network object {networkObject.ID}.");
-            }
+            if (mine == null) { return null; }
             _myPermissionIdByObjectId[networkObject.ID] = mine.Id;
             return mine.Id;
         }
 
+        /// <summary>Like <see cref="TryGetMyPermissionId"/> but creates the row (See) if missing.</summary>
+        private async Task<int> EnsureMyPermissionId(NetworkObject networkObject)
+        {
+            int? existing = await TryGetMyPermissionId(networkObject);
+            if (existing is int id) { return id; }
+
+            // No row yet (e.g. a global admin). Grant ourselves at least See so the login has somewhere to live.
+            NetworkUser self = new NetworkUser(User.UserName, User.ID,
+                canCreate: User.CanCreate, privileges: User.Privileges);
+            await SetPermission(networkObject, self, AccesRights.See);
+
+            // re-read to get the new row id
+            _myPermissionIdByObjectId.Remove(networkObject.ID);
+            int? created = await TryGetMyPermissionId(networkObject);
+            if (created is int newId) { return newId; }
+            throw new InvalidOperationException(
+                $"Could not create a permission row for the current user on network object {networkObject.ID}.");
+        }
+
         public async Task<List<Login>> GetUserDeviceLogin(NetworkObject networkObject)
         {
-            int permissionId = await GetMyPermissionId(networkObject);
+            int? permissionId = await TryGetMyPermissionId(networkObject);
+            if (permissionId is not int pid) { return new List<Login>(); } // no row -> no per-user logins yet
             List<LoginDto> dtos = await GetJson<List<LoginDto>>("/login/");
             return dtos
-                .Where(d => d.NetworkObjectPermissionId == permissionId)
+                .Where(d => d.NetworkObjectPermissionId == pid)
                 .Select(d => new Login(d.Username, d.Password, d.Port, ParseLoginType(d.Type)) { ID = d.Id })
                 .ToList();
         }
 
         public async Task<Login> AddUserDeviceLogin(Login login, NetworkObject networkObject)
         {
-            int permissionId = await GetMyPermissionId(networkObject);
+            int permissionId = await EnsureMyPermissionId(networkObject);
             LoginDto created = await PostJson<LoginDto>("/login/", new
             {
                 network_object_permission_id = permissionId,

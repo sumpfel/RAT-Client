@@ -23,7 +23,7 @@ namespace RAT_WPF.Views
     /// </summary>
     public partial class TopologyView : UserControl
     {
-        private void NetworkObject_Drop(object sender, DragEventArgs e)
+        private async void NetworkObject_Drop(object sender, DragEventArgs e)
         {
             object data = e.Data.GetData(DataFormats.Serializable);
 
@@ -75,13 +75,14 @@ namespace RAT_WPF.Views
                         }
                         //KI end
 
-                        //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
-                        // persist the new device to the backend (which also makes the creator its Owner
-                        // server-side and assigns the real id). Saving happens in the helper below.
-                        PersistNewNetworkObject(networkObject);
-                        //KI end
+                        //KI start (Claude Opus 4.8, prompt 16): persist FIRST and only put the device on the canvas
+                        // if the backend accepted it. On a 500 (or any error) we don't add it, so the canvas never
+                        // shows a device that wasn't saved. (AddNetworkObject also makes the creator Owner + sets the id.)
+                        bool saved = await PersistNewNetworkObject(networkObject);
+                        if (!saved) { return; }
 
                         topologyViewModel.AddNetworkObjectViewModelToCanvas(networkObject);
+                        //KI end
                     }
                 }
 
@@ -138,19 +139,24 @@ namespace RAT_WPF.Views
         // style (the caller does not await); failures surface via a MessageBox; no-ops without a connection.
         // (Delete now lives in TopologyViewModel.DeleteNetworkObjectFromCanvasAndDatabase, called by the Delete tool.)
 
-        private async void PersistNewNetworkObject(NetworkObjectViewModel node)
+        //KI start (Claude Opus 4.8, prompt 16): now returns whether the save succeeded, so the caller can avoid
+        // putting a device on the canvas that the backend rejected (e.g. a 500). No connection (dev mode) == ok.
+        private async Task<bool> PersistNewNetworkObject(NetworkObjectViewModel node)
         {
-            if (DatabaseConnectionStore.Current == null) { return; }
+            if (DatabaseConnectionStore.Current == null) { return true; }
             try
             {
                 await DatabaseConnectionStore.Current.AddNetworkObject(node.Model);
+                return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Could not save the new device to the server: {ex.Message}",
                     "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
             }
         }
+        //KI end
 
         private async void PersistMovedNetworkObject(NetworkObjectViewModel node)
         {

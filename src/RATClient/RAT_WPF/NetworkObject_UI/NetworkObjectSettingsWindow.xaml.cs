@@ -586,7 +586,7 @@ namespace RAT_WPF.NetworkObject_UI
                 .Where(u => u.ID != Session.CurrentUser?.ID)
                 .OrderBy(u => u.UserName)
                 .ToList();
-            PermUserCombo.DisplayMemberPath = nameof(NetworkUser.UserName);
+            // KI (prompt 16): names are rendered by the ComboBox's ItemTemplate (Brush.Text) so they stay readable
             if (PermUserCombo.Items.Count > 0) { PermUserCombo.SelectedIndex = 0; }
 
             // which levels the current user may assign

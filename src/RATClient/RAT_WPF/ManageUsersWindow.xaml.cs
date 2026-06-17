@@ -99,6 +99,23 @@ namespace RAT_WPF
             LoadUsers();
         }
 
+        //KI start (Claude Opus 4.8, prompt 16): edit a user (admin -> all fields allowed). Refresh on save.
+        private void EditUser_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe || fe.Tag is not UserRow row) { return; }
+
+            EditUserWindow dialog = new EditUserWindow(
+                row.Id, row.Username, row.IsAdmin, row.CanCreate, allowAdminFields: true)
+            {
+                Owner = this
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                LoadUsers();
+            }
+        }
+        //KI end
+
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
     }
     //KI end

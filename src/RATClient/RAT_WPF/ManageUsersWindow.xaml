@@ -68,6 +68,16 @@
                         <DataGridTextColumn Header="Username"    Binding="{Binding Username}"  Width="*"/>
                         <DataGridTextColumn Header="Admin"       Binding="{Binding IsAdmin}"   Width="Auto"/>
                         <DataGridTextColumn Header="Can create"  Binding="{Binding CanCreate}" Width="Auto"/>
+                        <!--KI start (Claude Opus 4.8, prompt 16): per-row Edit button (admin may edit any field)-->
+                        <DataGridTemplateColumn Header="" Width="Auto">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Edit" Style="{StaticResource SubtleButton}" Padding="8,2"
+                                            Click="EditUser_Click" Tag="{Binding}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <!--KI end-->
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

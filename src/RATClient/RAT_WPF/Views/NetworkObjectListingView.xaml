@@ -20,8 +20,10 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal" Margin="2">
-                            <Image Width="28" Height="28" Margin="0,0,8,0"
+                        <!--KI (prompt 16): Background=Transparent + non-hit-test icon so dragging a palette item
+                            works no matter where (incl. the icon) the press starts-->
+                        <StackPanel Orientation="Horizontal" Margin="2" Background="Transparent">
+                            <Image Width="28" Height="28" Margin="0,0,8,0" IsHitTestVisible="False"
                                    Source="{Binding Type, Converter={StaticResource IconKeyConverter}}"/>
                             <TextBlock Text="{Binding Type}" VerticalAlignment="Center"
                                        Foreground="{DynamicResource Brush.Text}"/>

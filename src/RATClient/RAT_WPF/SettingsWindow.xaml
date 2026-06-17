@@ -40,6 +40,15 @@
                     <TextBlock Margin="0,16,0,0" TextWrapping="Wrap" FontSize="12"
                                Foreground="{DynamicResource Brush.TextMuted}"
                                Text="Light uses the paper + brown 'rats' palette; Dark uses the same fur tones on a dark base. The change applies instantly across all windows."/>
+
+                    <!--KI start (Claude Opus 4.8, prompt 16): self-service account editing (username + password;
+                        admins can also toggle their own admin/can-create flags). Opens the shared EditUserWindow.-->
+                    <TextBlock Text="Account" Style="{StaticResource Header3}" Margin="0,20,0,2"/>
+                    <TextBlock x:Name="AccountLabel" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"
+                               TextWrapping="Wrap" Margin="0,0,0,8" Text=""/>
+                    <Button Content="Edit my account" Style="{StaticResource ModernButton}"
+                            HorizontalAlignment="Left" Click="EditMyAccount_Click"/>
+                    <!--KI end-->
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
