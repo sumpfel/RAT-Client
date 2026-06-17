@@ -514,3 +514,53 @@ Tobias and Claude with his helper Christof, phrased fancy, with a cool rat-theme
 
 **Verified:** builds (0 errors); screenshotted the About window (mascot + credits render) and the DB-error RatDialog
 (database-rat graphic + themed card). Combo fix is structural (field→property); not exercised against a live backend.
+
+---------
+
+## Prompt 18 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Make sure the (JWT bearer) token gets renewed in the client.
+
+**Problem:** `DatabaseConnection.Login()` fetched the JWT once and set it on the HttpClient forever. The backend
+issues a short-lived token with no refresh endpoint, so once it expired every request returned 401 and the client was
+stuck until a manual logout + re-login.
+
+**Changes made (AI region marked `prompt 18`, all in `RAT_Data/DatabaseConnection.cs`):**
+
+- Track the token + its expiry, parsed from the JWT `exp` claim (`ReadJwtExpiry`, base64url-decodes the payload; falls
+  back to a 5-minute lifetime if unparseable).
+- `AuthenticateAsync(force)` re-runs the OAuth2 password login with the stored credentials and refreshes the bearer
+  token; serialised with a `SemaphoreSlim` so a burst of parallel requests triggers only one re-login.
+- `EnsureAuthenticatedAsync()` proactively renews when the token is within a 30s margin of expiring.
+- New central `SendAsync(requestFactory)` that every authenticated call now goes through: it ensures the token is
+  fresh first and, as a safety net, re-authenticates + retries once on a 401. Refactored `GetJson`/`PostJson` and all
+  the `Put`/`Delete`/`Post` call sites (NetworkObject, interface, connection, permission, login, user, user-settings)
+  to build their request via a factory so the retry can reissue it. The `/user/login` call itself stays direct (it
+  *is* the token endpoint). `Login()` now just calls `AuthenticateAsync` then reads `/user/me`.
+
+**Verified:** builds (0 errors). The renewal path needs a live backend with an expiring token to exercise end-to-end,
+so it wasn't runtime-tested here; the logic (proactive renew + reactive 401 retry, single-flight) is in place and the
+existing login flow is unchanged on the happy path.
+
+---------
+
+## Prompt 19 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Some error popups still used the old system MessageBox (yellow-triangle), e.g. when adding a network
+object to the database fails. Every such popup should use rat-themed vector art. Also the Logout vector had a rat tail
+but no rat — give it a real rat.
+
+**Changes made (AI regions marked `prompt 19`):**
+
+- **Logout icon** (`Themes/Icons.xaml`) — replaced the lone tail with an actual little rat scurrying out the door
+  (body, head, ear, eye, nose, curled tail). Re-exported `doc/assets/vectorgraphics/Logout.png`.
+- **All remaining `MessageBox.Show` calls converted to `RatDialog`** (themed popup with a rat vector). Files: 
+  `Views/TopologyView.xaml.cs` (incl. the add-device DB error the user hit), `ViewModels/TopologyViewModel.cs`,
+  `NetworkObject_UI/NetworkObjectSettingsWindow.xaml.cs` (SNMP + access control), `NetworkObject_UI/LoginControl.xaml.cs`,
+  `SelectInterfaceWindow`, `UpdateInterfaceWindow`, `UpdateLoginWindow`, `InterfaceControl`, `ManageUsersWindow`,
+  `EditUserWindow`, `SettingsWindow`, `EnterPasswordWindow`. Icon picked per case: `Icon.DatabaseError` for backend/DB
+  failures, `Icon.NoConnection`/`Icon.ConnectionLost` for connection issues, `Icon.LoginFailed` for permission/validation,
+  `Icon.Connected`/`Icon.LoginSuccess` for success, `Icon.Ethernet` for interface info. No `MessageBox.Show` remains.
+
+**Verified:** builds (0 errors); re-rendered the Logout icon and confirmed the rat by screenshot. (RatDialog rendering
+itself was verified in prompt 17.)

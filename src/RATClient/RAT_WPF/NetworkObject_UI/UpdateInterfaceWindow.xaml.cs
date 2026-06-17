@@ -36,8 +36,7 @@ namespace RAT_WPF.NetworkObject_UI
             string name = InterfaceNameTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
-                MessageBox.Show("Please enter an interface name.", "Name required",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Name required", "Please enter an interface name.", "Icon.Ethernet");
                 return;
             }
 

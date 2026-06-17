@@ -36,7 +36,7 @@ namespace RAT_WPF
             }
             else
             {
-                MessageBox.Show("Wrong!");
+                RatDialog.Show("Wrong password", "That password is not correct.", "Icon.LoginFailed");
             }
             
 

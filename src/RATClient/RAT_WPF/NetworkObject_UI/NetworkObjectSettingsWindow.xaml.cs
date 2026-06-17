@@ -519,7 +519,7 @@ namespace RAT_WPF.NetworkObject_UI
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"SNMP GET failed:\n{ex.Message}");
+                RatDialog.Show("SNMP GET failed", ex.Message, "Icon.ConnectionLost");
             }
         }
 
@@ -531,12 +531,12 @@ namespace RAT_WPF.NetworkObject_UI
                 ShowSnmpResults(result);
                 if (result.Count == 0)
                 {
-                    MessageBox.Show("Walk returned no variables.");
+                    RatDialog.Show("SNMP Walk", "Walk returned no variables.", "Icon.NoConnection");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"SNMP WALK failed:\n{ex.Message}");
+                RatDialog.Show("SNMP WALK failed", ex.Message, "Icon.ConnectionLost");
             }
         }
 
@@ -545,11 +545,11 @@ namespace RAT_WPF.NetworkObject_UI
             try
             {
                 networkObject.SetSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SnmpSetValue.Text, SelectedSnmpVersion());
-                MessageBox.Show("SET sent. Use Get to confirm the new value.");
+                RatDialog.Show("SNMP", "SET sent. Use Get to confirm the new value.", "Icon.LoginSuccess");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"SNMP SET failed:\n{ex.Message}");
+                RatDialog.Show("SNMP SET failed", ex.Message, "Icon.ConnectionLost");
             }
         }
         //KI end
@@ -624,28 +624,28 @@ namespace RAT_WPF.NetworkObject_UI
         {
             if (Session.CurrentUser == null)
             {
-                MessageBox.Show("No current user.");
+                RatDialog.Show("Access Control", "No current user.", "Icon.LoginFailed");
                 return;
             }
             if (PermUserCombo.SelectedItem is not NetworkUser target)
             {
-                MessageBox.Show("Select a user to set access for.");
+                RatDialog.Show("Access Control", "Select a user to set access for.", "Icon.LoginFailed");
                 return;
             }
             if (RightLevel.SelectedItem is not AccesRights newRight)
             {
-                MessageBox.Show("Select an access level.");
+                RatDialog.Show("Access Control", "Select an access level.", "Icon.LoginFailed");
                 return;
             }
 
             // client-side rule check first (mirrors the backend's rules; gives an instant, clear message)
             if (!networkObject.CanChangeRight(Session.CurrentUser, target, newRight))
             {
-                MessageBox.Show(
+                RatDialog.Show("Not allowed",
                     "You're not allowed to set that access for this user.\n\n" +
                     "Admins can only set Hidden/See/Edit on users below them; only an Owner can change Admins/Owners " +
                     "or grant Admin/Owner.",
-                    "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    "Icon.LoginFailed");
                 return;
             }
 

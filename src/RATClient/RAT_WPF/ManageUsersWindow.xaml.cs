@@ -51,8 +51,7 @@ namespace RAT_WPF
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not load the users:\n{ex.Message}", "Database",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't load the users from the server.\n\n{ex.Message}", "Icon.DatabaseError");
             }
         }
 
@@ -60,8 +59,7 @@ namespace RAT_WPF
         {
             if (Db == null)
             {
-                MessageBox.Show("Not connected to a server.", "Manage Users",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Manage Users", "Not connected to a server.", "Icon.NoConnection");
                 return;
             }
 
@@ -69,8 +67,7 @@ namespace RAT_WPF
             string password = NewUserPassword.Password;
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                MessageBox.Show("Enter a username and a password.", "Manage Users",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Manage Users", "Enter a username and a password.", "Icon.LoginFailed");
                 return;
             }
 
@@ -86,8 +83,7 @@ namespace RAT_WPF
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not create the user:\n{ex.Message}", "Manage Users",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't create the user on the server.\n\n{ex.Message}", "Icon.DatabaseError");
                 return;
             }
 

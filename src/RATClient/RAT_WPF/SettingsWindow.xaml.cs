@@ -25,7 +25,7 @@ namespace RAT_WPF
             NetworkUser? me = Session.CurrentUser;
             if (me == null)
             {
-                MessageBox.Show("Not signed in.", "Account", MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Account", "Not signed in.", "Icon.LoginFailed");
                 return;
             }
 

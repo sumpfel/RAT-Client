@@ -1,4 +1,5 @@
 ﻿using RAT_Logic;
+using RAT_WPF;
 using RAT_WPF.Commands;
 using RAT_WPF.Stores;
 using RAT_WPF.Views;
@@ -163,8 +164,7 @@ namespace RAT_WPF.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not load the topology from the server: {ex.Message}",
-                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't load the topology from the server.\n\n{ex.Message}", "Icon.DatabaseError");
             }
         }
         //KI end
@@ -182,8 +182,7 @@ namespace RAT_WPF.ViewModels
         {
             if (!node.Model.CanBeDeletedBy(Session.CurrentUser))
             {
-                MessageBox.Show("Only an owner of this device (or a global admin) can delete it.",
-                    "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Not allowed", "Only an owner of this device (or a global admin) can delete it.", "Icon.LoginFailed");
                 return;
             }
 
@@ -195,8 +194,7 @@ namespace RAT_WPF.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Could not delete the device on the server: {ex.Message}",
-                        "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    RatDialog.Show("Database hiccup", $"The rat couldn't delete the device on the server.\n\n{ex.Message}", "Icon.DatabaseError");
                     return; // keep the node if the server refused
                 }
             }
@@ -268,10 +266,10 @@ namespace RAT_WPF.ViewModels
             if (DatabaseConnectionStore.Current == null) { return; }
             if (a.ID <= 0 || b.ID <= 0)
             {
-                MessageBox.Show(
+                RatDialog.Show("Database hiccup",
                     "Both interfaces must be saved on the server before they can be connected.\n" +
                     "Open each device's settings and add/save the interface first.",
-                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    "Icon.DatabaseError");
                 return;
             }
             try
@@ -280,8 +278,7 @@ namespace RAT_WPF.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not save the connection to the server: {ex.Message}",
-                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't save the connection on the server.\n\n{ex.Message}", "Icon.DatabaseError");
             }
         }
         //KI end

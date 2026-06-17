@@ -20,6 +20,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RAT_Data
@@ -53,6 +54,18 @@ namespace RAT_Data
         // One HttpClient for the lifetime of the connection; the bearer token is set after Login().
         private readonly HttpClient _http = new HttpClient();
 
+        //KI start (Claude Opus 4.8, prompt 18): keep the JWT renewed so the client doesn't die when it expires.
+        // The backend issues a short-lived bearer token with no refresh endpoint, so we transparently re-login
+        // with the stored credentials: proactively before the token expires, and reactively on any 401.
+        private string? _accessToken;
+        private DateTime _tokenExpiresUtc = DateTime.MinValue;       // from the JWT "exp" claim
+        private bool _credentialsKnown;                              // true once a successful Login() happened
+        // serialise re-auth so a burst of parallel requests only triggers one re-login
+        private readonly SemaphoreSlim _authLock = new SemaphoreSlim(1, 1);
+        // renew this long before the real expiry to cover clock skew + request latency
+        private static readonly TimeSpan _renewMargin = TimeSpan.FromSeconds(30);
+        //KI end
+
         // JSON: the backend uses snake_case, so map every DTO property explicitly via [JsonPropertyName].
         private static readonly JsonSerializerOptions _json = new JsonSerializerOptions
         {
@@ -80,9 +93,40 @@ namespace RAT_Data
                 $"Backend returned {(int)response.StatusCode} {response.ReasonPhrase}: {body}");
         }
 
+        //KI start (Claude Opus 4.8, prompt 18): every authenticated request goes through SendAsync, which makes
+        // sure the token is fresh first and, as a safety net, re-authenticates + retries once on a 401. Each call
+        // site passes a *factory* (not a built request) so the retry can build a brand new HttpRequestMessage.
+        private async Task<HttpResponseMessage> SendAsync(Func<HttpRequestMessage> requestFactory)
+        {
+            await EnsureAuthenticatedAsync();
+
+            HttpRequestMessage request = requestFactory();
+            HttpResponseMessage response = await _http.SendAsync(request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && _credentialsKnown)
+            {
+                // token likely expired between the check and the send -> force a re-login and try once more
+                response.Dispose();
+                await AuthenticateAsync(force: true);
+                response = await _http.SendAsync(requestFactory());
+            }
+
+            return response;
+        }
+
+        private static HttpRequestMessage Req(HttpMethod method, string url, object? jsonPayload = null)
+        {
+            HttpRequestMessage request = new HttpRequestMessage(method, url);
+            if (jsonPayload != null)
+            {
+                request.Content = JsonContent.Create(jsonPayload, options: _json);
+            }
+            return request;
+        }
+
         private async Task<T> GetJson<T>(string path)
         {
-            HttpResponseMessage response = await _http.GetAsync($"{BaseUrl}{path}");
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Get, $"{BaseUrl}{path}"));
             await EnsureOk(response);
             string body = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<T>(body, _json)!;
@@ -90,11 +134,12 @@ namespace RAT_Data
 
         private async Task<T> PostJson<T>(string path, object payload)
         {
-            HttpResponseMessage response = await _http.PostAsJsonAsync($"{BaseUrl}{path}", payload, _json);
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Post, $"{BaseUrl}{path}", payload));
             await EnsureOk(response);
             string body = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<T>(body, _json)!;
         }
+        //KI end
 
         // ----- DTOs that mirror the backend pydantic models ----------------------
 
@@ -197,30 +242,91 @@ namespace RAT_Data
 
         public async Task<User> Login()
         {
-            // OAuth2 password flow expects an application/x-www-form-urlencoded body.
-            FormUrlEncodedContent form = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("username", User.UserName),
-                new KeyValuePair<string, string>("password", User.Password)
-            });
-
-            HttpResponseMessage response = await _http.PostAsync($"{BaseUrl}/user/login", form);
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                throw new AccessViolationException("Wrong user or password for the server.");
-            }
-            await EnsureOk(response);
-
-            TokenDto token = JsonSerializer.Deserialize<TokenDto>(
-                await response.Content.ReadAsStringAsync(), _json)!;
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            await AuthenticateAsync(force: true);
 
             // Pull the full account (id / is_admin / can_create) now that we are authenticated.
             UserDto me = await GetJson<UserDto>("/user/me");
             User = new User(me.Username, User.Password, me.Id, me.IsAdmin ? 100 : 10, me.CanCreate);
             return User;
         }
+
+        //KI start (Claude Opus 4.8, prompt 18): (re)authenticate with the stored credentials and refresh the bearer
+        // token. Used by Login(), proactively before expiry, and reactively on a 401. Serialised so a burst of
+        // parallel requests triggers only one re-login.
+        private async Task AuthenticateAsync(bool force)
+        {
+            await _authLock.WaitAsync();
+            try
+            {
+                // another request may have already refreshed the token while we waited for the lock
+                if (!force && !TokenNeedsRenewal()) { return; }
+
+                // OAuth2 password flow expects an application/x-www-form-urlencoded body.
+                FormUrlEncodedContent form = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("username", User.UserName),
+                    new KeyValuePair<string, string>("password", User.Password)
+                });
+
+                HttpResponseMessage response = await _http.PostAsync($"{BaseUrl}/user/login", form);
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new AccessViolationException("Wrong user or password for the server.");
+                }
+                await EnsureOk(response);
+
+                TokenDto token = JsonSerializer.Deserialize<TokenDto>(
+                    await response.Content.ReadAsStringAsync(), _json)!;
+
+                _accessToken = token.AccessToken;
+                _tokenExpiresUtc = ReadJwtExpiry(token.AccessToken);
+                _credentialsKnown = true;
+                _http.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            }
+            finally
+            {
+                _authLock.Release();
+            }
+        }
+
+        /// <summary>True if there is no token yet, or it is within the renew margin of expiring.</summary>
+        private bool TokenNeedsRenewal() =>
+            string.IsNullOrEmpty(_accessToken) || DateTime.UtcNow >= _tokenExpiresUtc - _renewMargin;
+
+        /// <summary>Renew the token before it expires. No-op until the first successful login.</summary>
+        private async Task EnsureAuthenticatedAsync()
+        {
+            if (!_credentialsKnown) { return; }   // before login: let the call fail/behave as before
+            if (TokenNeedsRenewal()) { await AuthenticateAsync(force: false); }
+        }
+
+        /// <summary>
+        /// Reads the "exp" (seconds since epoch) claim out of a JWT without verifying its signature.
+        /// Falls back to a conservative 5-minute lifetime if the token can't be parsed.
+        /// </summary>
+        private static DateTime ReadJwtExpiry(string jwt)
+        {
+            try
+            {
+                string[] parts = jwt.Split('.');
+                if (parts.Length >= 2)
+                {
+                    string payload = parts[1].Replace('-', '+').Replace('_', '/');
+                    switch (payload.Length % 4) { case 2: payload += "=="; break; case 3: payload += "="; break; }
+                    byte[] bytes = Convert.FromBase64String(payload);
+                    using JsonDocument doc = JsonDocument.Parse(bytes);
+                    if (doc.RootElement.TryGetProperty("exp", out JsonElement exp) && exp.TryGetInt64(out long seconds))
+                    {
+                        return DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime;
+                    }
+                }
+            }
+            catch { /* unparseable token -> use the fallback below */ }
+
+            return DateTime.UtcNow.AddMinutes(5);
+        }
+        //KI end
 
         public async Task<List<User>> GetAllUsers()
         {
@@ -250,13 +356,13 @@ namespace RAT_Data
         // (username + password; is_admin/can_create are ignored for a non-admin self-edit).
         public async Task EditUser(User user)
         {
-            HttpResponseMessage response = await _http.PutAsJsonAsync($"{BaseUrl}/user/{user.ID}", new
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Put, $"{BaseUrl}/user/{user.ID}", new
             {
                 username = user.UserName,
                 password = string.IsNullOrEmpty(user.Password) ? null : user.Password,
                 is_admin = user.Privileges >= 100,
                 can_create = user.CanCreate
-            }, _json);
+            }));
             await EnsureOk(response);
         }
         //KI end
@@ -388,15 +494,15 @@ namespace RAT_Data
 
         public async Task EditNetworkObject(NetworkObject networkObject)
         {
-            HttpResponseMessage response = await _http.PutAsJsonAsync(
-                $"{BaseUrl}/networkObject/{networkObject.ID}", ToNetworkObjectPayload(networkObject), _json);
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Put,
+                $"{BaseUrl}/networkObject/{networkObject.ID}", ToNetworkObjectPayload(networkObject)));
             await EnsureOk(response);
         }
 
         public async Task DeleteNetworkObject(NetworkObject networkObject)
         {
-            HttpResponseMessage response = await _http.DeleteAsync(
-                $"{BaseUrl}/networkObject/{networkObject.ID}");
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Delete,
+                $"{BaseUrl}/networkObject/{networkObject.ID}"));
             await EnsureOk(response);
         }
 
@@ -429,16 +535,16 @@ namespace RAT_Data
 
         public async Task EditInterface(NetworkObjectInterface networkObjectInterface)
         {
-            HttpResponseMessage response = await _http.PutAsJsonAsync(
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Put,
                 $"{BaseUrl}/networkObjectInterface/{networkObjectInterface.ID}",
-                ToInterfacePayload(networkObjectInterface, networkObjectInterface.NetworkObjectId), _json);
+                ToInterfacePayload(networkObjectInterface, networkObjectInterface.NetworkObjectId)));
             await EnsureOk(response);
         }
 
         public async Task DeleteInterface(NetworkObjectInterface networkObjectInterface)
         {
-            HttpResponseMessage response = await _http.DeleteAsync(
-                $"{BaseUrl}/networkObjectInterface/{networkObjectInterface.ID}");
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Delete,
+                $"{BaseUrl}/networkObjectInterface/{networkObjectInterface.ID}"));
             await EnsureOk(response);
         }
         //KI end
@@ -463,8 +569,8 @@ namespace RAT_Data
 
         public async Task DeleteConnection(NetworkConnection networkConnection)
         {
-            HttpResponseMessage response = await _http.DeleteAsync(
-                $"{BaseUrl}/networkObjectConnection/{networkConnection.ID}");
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Delete,
+                $"{BaseUrl}/networkObjectConnection/{networkConnection.ID}"));
             await EnsureOk(response);
         }
         //KI end
@@ -499,20 +605,20 @@ namespace RAT_Data
                 return;
             }
 
-            HttpResponseMessage response = await _http.PostAsJsonAsync($"{BaseUrl}/networkObjectPermission/", new
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Post, $"{BaseUrl}/networkObjectPermission/", new
             {
                 network_object_id = networkObject.ID,
                 target_user_id = targetUser.ID,
                 permissions = (int)right
-            }, _json);
+            }));
             await EnsureOk(response);
         }
 
         public async Task DeletePermission(NetworkObject networkObject, AccessRight accessRight)
         {
             if (accessRight.ID <= 0) { return; } // nothing persisted to remove
-            HttpResponseMessage response = await _http.DeleteAsync(
-                $"{BaseUrl}/networkObjectPermission/{accessRight.ID}");
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Delete,
+                $"{BaseUrl}/networkObjectPermission/{accessRight.ID}"));
             await EnsureOk(response);
         }
         //KI end
@@ -594,20 +700,20 @@ namespace RAT_Data
             {
                 throw new InvalidOperationException($"Login {login.ID} not found for the current user.");
             }
-            HttpResponseMessage response = await _http.PutAsJsonAsync($"{BaseUrl}/login/{login.ID}", new
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Put, $"{BaseUrl}/login/{login.ID}", new
             {
                 network_object_permission_id = existing.NetworkObjectPermissionId,
                 port = login.Port,
                 type = login.Type.ToString(),
                 username = login.Username,
                 password = login.Password
-            }, _json);
+            }));
             await EnsureOk(response);
         }
 
         public async Task DeletetUserDeviceLogin(Login login)
         {
-            HttpResponseMessage response = await _http.DeleteAsync($"{BaseUrl}/login/{login.ID}");
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Delete, $"{BaseUrl}/login/{login.ID}"));
             await EnsureOk(response);
         }
 
@@ -615,12 +721,12 @@ namespace RAT_Data
 
         public async Task EditUserSettings(UserSettings userSettings)
         {
-            HttpResponseMessage response = await _http.PutAsJsonAsync($"{BaseUrl}/user/settings/", new
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Put, $"{BaseUrl}/user/settings/", new
             {
                 zoom = userSettings.Zoom,
                 show_ports = userSettings.ShowPorts,
                 show_interfaces = userSettings.ShowInterfaces
-            }, _json);
+            }));
             await EnsureOk(response);
         }
     }

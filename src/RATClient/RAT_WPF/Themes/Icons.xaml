@@ -477,11 +477,33 @@
                 <GeometryDrawing Brush="#FFC97A4A">
                     <GeometryDrawing.Geometry><PathGeometry Figures="M76,38 L92,50 L76,62 Z"/></GeometryDrawing.Geometry>
                 </GeometryDrawing>
-                <!-- little rat tail by the door -->
+                <!--KI start (Claude Opus 4.8, prompt 19): an actual little rat scurrying out, not just a tail -->
+                <!-- tail -->
                 <GeometryDrawing>
-                    <GeometryDrawing.Pen><Pen Brush="#FF6B4A3A" Thickness="3" StartLineCap="Round"/></GeometryDrawing.Pen>
-                    <GeometryDrawing.Geometry><PathGeometry Figures="M30,74 C22,70 26,86 36,82"/></GeometryDrawing.Geometry>
+                    <GeometryDrawing.Pen><Pen Brush="#FF6B4A3A" Thickness="2.5" StartLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M22,82 C12,80 14,68 22,72"/></GeometryDrawing.Geometry>
                 </GeometryDrawing>
+                <!-- body -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="33,80" RadiusX="11" RadiusY="7.5"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- head -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="44,77" RadiusX="6.5" RadiusY="6"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- ear -->
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="41,71" RadiusX="3.2" RadiusY="3.2"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- nose -->
+                <GeometryDrawing Brush="#FFD9B58A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="50,78" RadiusX="2.4" RadiusY="2"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- eye -->
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="45,76" RadiusX="1.2" RadiusY="1.2"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!--KI end-->
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>

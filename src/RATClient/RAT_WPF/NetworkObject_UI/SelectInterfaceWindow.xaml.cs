@@ -55,8 +55,7 @@ namespace RAT_WPF.NetworkObject_UI
         {
             if (InterfaceList.SelectedItem is not ListBoxItem { Tag: NetworkObjectInterface chosen })
             {
-                MessageBox.Show("Please select an interface.", "No selection",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("No selection", "Please select an interface.", "Icon.Ethernet");
                 return;
             }
 

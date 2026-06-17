@@ -38,16 +38,14 @@ namespace RAT_WPF
         {
             if (Db == null)
             {
-                MessageBox.Show("Not connected to a server.", "Edit user",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Edit user", "Not connected to a server.", "Icon.NoConnection");
                 return;
             }
 
             string username = UserNameBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(username))
             {
-                MessageBox.Show("Enter a username.", "Edit user",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Edit user", "Enter a username.", "Icon.LoginFailed");
                 return;
             }
 
@@ -66,8 +64,7 @@ namespace RAT_WPF
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not save the user:\n{ex.Message}", "Edit user",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't save the user on the server.\n\n{ex.Message}", "Icon.DatabaseError");
                 return;
             }
 

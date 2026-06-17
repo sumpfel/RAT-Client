@@ -34,8 +34,7 @@ namespace RAT_WPF.Views
                     //KI start (Claude Opus 4.8, prompt 11): only users with CanCreate may add network objects
                     if (RAT_Logic.Session.CurrentUser?.CanCreate != true)
                     {
-                        MessageBox.Show("You don't have permission to create network objects.",
-                            "Not allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        RatDialog.Show("Not allowed", "You don't have permission to create network objects.", "Icon.LoginFailed");
                         return;
                     }
                     //KI end
@@ -151,8 +150,7 @@ namespace RAT_WPF.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not save the new device to the server: {ex.Message}",
-                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't save the new device on the server.\n\n{ex.Message}", "Icon.DatabaseError");
                 return false;
             }
         }
@@ -168,8 +166,7 @@ namespace RAT_WPF.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not save the device position to the server: {ex.Message}",
-                    "Database", MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("Database hiccup", $"The rat couldn't save the device position on the server.\n\n{ex.Message}", "Icon.DatabaseError");
             }
         }
 

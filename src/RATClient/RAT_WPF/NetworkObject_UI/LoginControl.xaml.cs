@@ -66,28 +66,24 @@ namespace RAT_WPF.NetworkObject_UI
                         networkObject.OpenSCP(login);
                         break;
                     case LoginType.Telnet:
-                        MessageBox.Show("Telnet is not implemented yet.", "Not supported",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        RatDialog.Show("Not supported", "Telnet is not implemented yet.", "Icon.NoConnection");
                         return;
                 }
 
                 UpdateStatus();
                 if (networkObject.IsConnected(login.Type))
                 {
-                    MessageBox.Show($"{login.Type} connected to {login.Username}.", "Connected",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    RatDialog.Show("Connected", $"{login.Type} connected to {login.Username}.", "Icon.Connected");
                 }
             }
             catch (EntryPointNotFoundException ex)
             {
                 // no route / no interface in same network as host
-                MessageBox.Show(ex.Message, "No connection",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                RatDialog.Show("No connection", ex.Message, "Icon.NoConnection");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not connect:\n{ex.Message}", "Connection failed",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                RatDialog.Show("Connection failed", ex.Message, "Icon.ConnectionLost");
             }
             //KI end
         }

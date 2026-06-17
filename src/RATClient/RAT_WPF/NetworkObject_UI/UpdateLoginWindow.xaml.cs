@@ -47,7 +47,7 @@ namespace RAT_WPF.NetworkObject_UI
             }
             catch
             {
-                MessageBox.Show("please check your input.");
+                RatDialog.Show("Check your input", "Please check your input.", "Icon.LoginFailed");
             }
             
         }

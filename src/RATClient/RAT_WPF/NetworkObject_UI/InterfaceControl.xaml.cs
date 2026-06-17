@@ -136,7 +136,7 @@ namespace RAT_WPF.NetworkObject_UI
                 return;
             }
 
-            MessageBox.Show(details, title, MessageBoxButton.OK, MessageBoxImage.Information);
+            RatDialog.Show(title, details, "Icon.Ethernet");
         }
     }
     //KI end
