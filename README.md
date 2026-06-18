@@ -22,6 +22,47 @@ Backend gespeichert; ein Offline-Modus ist ebenfalls vorhanden.
 
 ---
 
+## ⚡ Schnellstart (Quickstart Guide)
+
+Mit diesem Guide kannst du RAT und das dazugehörige Backend in wenigen Minuten lokal starten.
+
+### 1. Backend klonen und starten (erforderlich für alle Features)
+Das Backend persistiert die Topologie und Benutzerdaten. Ohne Backend kannst du RAT zwar im Offline-Modus starten, es stehen dir aber weniger Features zur Verfügung.
+
+Öffne eine **Eingabeaufforderung (CMD)** unter Windows und führe diesen Befehl aus, um das Backend zu klonen, einzurichten und zu starten:
+
+```cmd
+git clone https://github.com/sumpfel/RAT-Backend.git && cd RAT-Backend && set HOST=0.0.0.0 && set PORT=8080 && run.bat
+```
+
+> [!TIP]
+> **Zukünftige Starts:** Nach der Erstinstallation über `run.bat` musst du zukünftig nur noch die Datei `Main.py` starten (z. B. via `python Main.py` oder `python src/Main.py` im Backend-Ordner).
+
+Das Backend läuft nun unter `http://127.0.0.1:8080` (oder über die IP deines Rechners).
+
+### 2. Frontend (Client) herunterladen und ausführen
+Für den WPF-Client wird Windows 10/11 benötigt.
+
+1. Lade das fertige Paket der Version **[v1.0.0](https://github.com/sumpfel/RAT-Client/releases/tag/v1.0.0)** herunter (oder nutze den Ordner `bin/` direkt aus diesem Repository).
+2. Starte die **`RAT_WPF.exe`**.
+3. **Erststart-Einrichtung:**
+   * Beim ersten Start fragt dich RAT, ob eine **Desktop-Verknüpfung** angelegt werden soll.
+   * Zudem wirst du gefragt, ob **NMAP** installiert werden soll (wird beim ersten Start von RAT installiert, falls nicht vorhanden). Bestätige dies, da NMAP zwingend für die automatische Netzwerk-Erkennung (Discovery) und Port-Scans benötigt wird.
+
+### 3. Verbinden und Einloggen
+
+Wenn das Backend und der Client laufen, melde dich im Client-Login-Screen mit folgenden Daten an:
+
+* **Server-Adresse:** `http://127.0.0.1:8080`
+* **Automatischer Admin-Benutzer (wird automatisch angelegt):**
+  * **Username:** `admin`
+  * **Password:** `admin`
+
+> [!NOTE]
+> **Offline-Modus:** Alternativ kannst du auf dem Login-Screen auf **„Use locally only“** (Ohne Backend ausführen) klicken. Beachte jedoch, dass im Offline-Modus deine Topologien und Einstellungen nach dem Schließen der App nicht gespeichert werden.
+
+---
+
 ## ✨ Funktionen
 
 ### Für alle Benutzer
@@ -87,7 +128,7 @@ dotnet publish src/RATClient/RAT_WPF/RAT_WPF.csproj -c Release -r win-x64 --self
 ### Backend
 
 Für den Mehrbenutzerbetrieb wird das **RAT-Backend** (FastAPI) benötigt
-(<https://github.com/sumpfel/RAT-Backend>). Standard-Adresse im Client: `http://127.0.0.1:8000`.
+(<https://github.com/sumpfel/RAT-Backend>). Standard-Adresse im Client: `http://127.0.0.1:8000` (bzw. `http://127.0.0.1:8080` falls über den CMD-Schnellstart ausgeführt).
 Ohne Backend funktioniert der **Offline-Modus** („Use locally only“).
 
 ---
