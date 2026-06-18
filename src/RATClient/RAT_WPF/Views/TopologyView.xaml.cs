@@ -118,6 +118,9 @@ namespace RAT_WPF.Views
             //KI start (Claude Opus 4.8, prompt 22): reflect the loaded showInterfaces setting in the toggle
             ShowInterfacesToggle.IsChecked = RAT_WPF.Themes.DisplaySettings.ShowInterfaces;
             //KI end
+            //KI start (Claude Opus 4.8, prompt 26): reflect the loaded showPorts setting in the toggle
+            ShowPortsToggle.IsChecked = RAT_WPF.Themes.DisplaySettings.ShowPorts;
+            //KI end
 
             //KI start (Claude Opus 4.8, prompt 25): the Discover button needs nmap. Grey it out (with a hint) when
             // nmap isn't installed or the user declined installing it during first-run setup.
@@ -169,6 +172,31 @@ namespace RAT_WPF.Views
             catch
             {
                 // saving the preference is best-effort
+            }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 26): toggle the open-ports view + persist the choice
+        private async void ShowPortsToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool on = ShowPortsToggle.IsChecked == true;
+            RAT_WPF.Themes.DisplaySettings.ShowPorts = on;
+
+            if (DatabaseConnectionStore.Current == null) { return; }
+            try
+            {
+                RAT_Data.UserSettings settings;
+                try { settings = await DatabaseConnectionStore.Current.GetUserSettings(); }
+                catch { settings = new RAT_Data.UserSettings(); }
+
+                settings.ShowPorts = on;
+                settings.ShowInterfaces = RAT_WPF.Themes.DisplaySettings.ShowInterfaces; // keep the others in sync
+                settings.Zoom = RAT_WPF.Themes.ZoomManager.Current;
+                await DatabaseConnectionStore.Current.EditUserSettings(settings);
+            }
+            catch
+            {
+                // best-effort
             }
         }
         //KI end

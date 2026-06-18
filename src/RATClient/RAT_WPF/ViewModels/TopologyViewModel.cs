@@ -175,40 +175,132 @@ namespace RAT_WPF.ViewModels
             OnPropertyChanged(nameof(NetworkConnectionViewModels));
         }
 
-        //KI start (Claude Opus 4.8, prompt 25): nmap discovery.
+        //KI start (Claude Opus 4.8, prompt 25/26): nmap discovery.
         // 1) make sure the user's own PC is on the canvas (with its real interfaces);
-        // 2) scan the local subnet; for each live host:
-        //      - if no device already has an interface with that IP -> add a Client with that interface;
-        //      - if such a device exists but isn't cabled to the PC -> draw a cable from the PC to it.
+        // 2) scan the local subnet (with open ports if ShowPorts is on);
+        // 3) topology:
+        //      - existing devices that aren't cabled to the PC -> cable them (directly or via the switch, see below);
+        //      - brand-new hosts become Clients;
+        //      - ONE new client and nothing else to wire -> a single 1:1 cable PC<->client;
+        //      - MULTIPLE devices to wire -> create a Switch with enough interfaces and wire the PC + every device to it.
         // Everything created is persisted through the active connection (mock = local-only).
         public async Task DiscoverDevicesAsync()
         {
-            // (1) ensure the own-PC node exists on the canvas
             NetworkObjectViewModel pcVm = await EnsureOwnPcOnCanvasAsync();
 
-            // (2) scan
-            List<Discovery.DiscoveredHost> hosts = await Discovery.NmapService.ScanLocalSubnetAsync();
+            bool withPorts = RAT_WPF.Themes.DisplaySettings.ShowPorts; // KI (prompt 26): port scan only if asked
+            List<Discovery.DiscoveredHost> hosts = await Discovery.NmapService.ScanLocalSubnetAsync(withPorts);
 
             string? ownIp = Discovery.NmapService.GetLocalSubnet()?.ip;
+
+            // split the scan results into "new hosts to add" and "already-modelled but not yet cabled to the PC"
+            List<Discovery.DiscoveredHost> newHosts = new List<Discovery.DiscoveredHost>();
+            List<NetworkObjectViewModel> existingToWire = new List<NetworkObjectViewModel>();
 
             foreach (Discovery.DiscoveredHost host in hosts)
             {
                 if (string.IsNullOrWhiteSpace(host.Ip)) { continue; }
-                if (ownIp != null && host.Ip == ownIp) { continue; } // that's our own PC
+                if (ownIp != null && host.Ip == ownIp) { continue; } // our own PC
 
                 NetworkObjectViewModel? existing = FindDeviceByIp(host.Ip);
                 if (existing == null)
                 {
-                    await AddDiscoveredClientAsync(host, pcVm);
+                    newHosts.Add(host);
                 }
-                else if (!IsCabledTo(pcVm, existing))
+                else
                 {
-                    await CableAsync(pcVm, existing);
+                    // annotate the existing interface's ports too, and wire it if needed
+                    AnnotatePorts(existing, host);
+                    if (!IsCabledTo(pcVm, existing)) { existingToWire.Add(existing); }
+                }
+            }
+
+            // create the new client devices first (not cabled yet)
+            List<NetworkObjectViewModel> newClients = new List<NetworkObjectViewModel>();
+            foreach (Discovery.DiscoveredHost host in newHosts)
+            {
+                newClients.Add(await AddDiscoveredClientAsync(host));
+            }
+
+            // everything that still needs a wire to the PC
+            List<NetworkObjectViewModel> toWire = new List<NetworkObjectViewModel>();
+            toWire.AddRange(newClients);
+            toWire.AddRange(existingToWire);
+
+            if (toWire.Count == 0)
+            {
+                // nothing new to connect
+            }
+            else if (toWire.Count == 1)
+            {
+                // exactly one device -> a direct 1:1 cable from the PC
+                await CableAsync(pcVm, toWire[0]);
+            }
+            else
+            {
+                // multiple devices -> a switch with enough interfaces, PC + every device wired to it
+                NetworkObjectViewModel switchVm = await AddSwitchAsync(toWire.Count + 1); // +1 for the PC uplink
+                int portIndex = 0;
+                await CableViaSwitchAsync(pcVm, switchVm, portIndex++);
+                foreach (NetworkObjectViewModel device in toWire)
+                {
+                    await CableViaSwitchAsync(device, switchVm, portIndex++);
                 }
             }
 
             OnPropertyChanged(nameof(NetworkConnectionViewModels));
         }
+
+        //KI start (Claude Opus 4.8, prompt 26): create a Switch with the given number of interfaces.
+        private async Task<NetworkObjectViewModel> AddSwitchAsync(int interfaceCount)
+        {
+            NetworkObject model = new NetworkObject
+            {
+                Type = NetworkObjectType.Switch,
+                Name = "Switch",
+                X = 360,
+                Y = 140
+            };
+            for (int i = 0; i < interfaceCount; i++)
+            {
+                model.NetworkInterfaces.Add(new NetworkObjectInterface { Name = $"port{i}", IsUp = true });
+            }
+            if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
+
+            await PersistObjectWithInterfacesAsync(model);
+
+            NetworkObjectViewModel vm = new NetworkObjectViewModel(model);
+            AddNetworkObjectViewModelToCanvas(vm);
+            return vm;
+        }
+
+        // cable a device's first interface to a specific switch port
+        private async Task CableViaSwitchAsync(NetworkObjectViewModel device, NetworkObjectViewModel switchVm, int switchPort)
+        {
+            NetworkObjectInterface? deviceIface = device.Model.NetworkInterfaces.FirstOrDefault();
+            if (deviceIface == null || switchPort >= switchVm.Model.NetworkInterfaces.Count) { return; }
+            NetworkObjectInterface switchIface = switchVm.Model.NetworkInterfaces[switchPort];
+
+            NetworkConnection connection = new NetworkConnection(
+                deviceIface, switchIface, 1_000_000_000, NetworkConnectionType.Wired, "auto-discovered", "Kablex");
+            deviceIface.Connection = connection;
+            switchIface.Connection = connection;
+            _networkConnectionViewModels.Add(new NetworkConnectionViewModel(connection, device, switchVm));
+
+            if (DatabaseConnectionStore.Current != null && deviceIface.ID > 0 && switchIface.ID > 0)
+            {
+                try { await DatabaseConnectionStore.Current.AddConnection(connection, deviceIface, switchIface); }
+                catch (Exception ex) { RatDialog.Show("Database hiccup", $"The rat couldn't save a discovered cable.\n\n{ex.Message}", "Icon.DatabaseError"); }
+            }
+        }
+
+        // copy the host's open ports onto its (first) interface so the ShowPorts view can list them
+        private static void AnnotatePorts(NetworkObjectViewModel vm, Discovery.DiscoveredHost host)
+        {
+            NetworkObjectInterface? iface = vm.Model.NetworkInterfaces.FirstOrDefault();
+            if (iface != null && host.OpenPorts.Count > 0) { iface.OpenPorts = new List<int>(host.OpenPorts); }
+        }
+        //KI end
 
         private async Task<NetworkObjectViewModel> EnsureOwnPcOnCanvasAsync()
         {
@@ -230,7 +322,8 @@ namespace RAT_WPF.ViewModels
             return vm;
         }
 
-        private async Task AddDiscoveredClientAsync(Discovery.DiscoveredHost host, NetworkObjectViewModel pcVm)
+        //KI (prompt 25/26): create a Client for a discovered host (cabling is decided by the caller). Returns the VM.
+        private async Task<NetworkObjectViewModel> AddDiscoveredClientAsync(Discovery.DiscoveredHost host)
         {
             string name = string.IsNullOrWhiteSpace(host.Hostname) ? host.Ip : host.Hostname;
             NetworkObject model = new NetworkObject
@@ -244,7 +337,8 @@ namespace RAT_WPF.ViewModels
             {
                 Name = "eth0",
                 IsUp = true,
-                IP = new IP { IPv4 = host.Ip }
+                IP = new IP { IPv4 = host.Ip },
+                OpenPorts = new List<int>(host.OpenPorts) // KI (prompt 26): keep the scanned ports for the ShowPorts view
             });
             if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
 
@@ -252,8 +346,7 @@ namespace RAT_WPF.ViewModels
 
             NetworkObjectViewModel vm = new NetworkObjectViewModel(model);
             AddNetworkObjectViewModelToCanvas(vm);
-
-            await CableAsync(pcVm, vm);
+            return vm;
         }
 
         private NetworkObjectViewModel? FindDeviceByIp(string ip) =>

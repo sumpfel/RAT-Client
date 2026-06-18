@@ -11,11 +11,13 @@ using System.Threading.Tasks;
 namespace RAT_WPF.Discovery
 {
     //KI start (Claude Opus 4.8, prompt 25): nmap integration — detect / install nmap and scan the local subnet.
-    /// <summary>A host found by an nmap ping scan.</summary>
+    /// <summary>A host found by an nmap scan (ports filled only when a port scan was requested).</summary>
     public class DiscoveredHost
     {
         public string Ip = "";
         public string Hostname = "";
+        //KI (prompt 26): open TCP ports found (when scanWithPorts was used)
+        public List<int> OpenPorts = new List<int>();
     }
 
     public static class NmapService
@@ -105,7 +107,11 @@ namespace RAT_WPF.Discovery
         /// <summary>
         /// Runs an nmap ping scan over the host's local /24 and returns the live hosts (IP + hostname).
         /// </summary>
-        public static async Task<List<DiscoveredHost>> ScanLocalSubnetAsync()
+        /// <summary>
+        /// Scans the host's local /24. With <paramref name="scanPorts"/> a fast top-ports scan is run so each host's
+        /// open TCP ports are filled (slower); otherwise a quick ping scan (-sn) is used.
+        /// </summary>
+        public static async Task<List<DiscoveredHost>> ScanLocalSubnetAsync(bool scanPorts = false)
         {
             string? nmap = FindNmap();
             if (nmap == null) { throw new InvalidOperationException("nmap is not installed."); }
@@ -114,11 +120,14 @@ namespace RAT_WPF.Discovery
             if (subnet == null) { throw new InvalidOperationException("Could not determine the local network."); }
 
             string target = subnet.Value.subnetBase + "0/24";
+            // -sn = ping scan (hosts only); -F = fast scan of the ~100 most common ports (hosts + open ports)
+            string args = scanPorts ? $"-F {target}" : $"-sn {target}";
+            int timeoutMs = scanPorts ? 300000 : 120000;
 
             string output = await Task.Run(() =>
             {
                 using Process p = new Process();
-                p.StartInfo = new ProcessStartInfo(nmap, $"-sn {target}")
+                p.StartInfo = new ProcessStartInfo(nmap, args)
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -127,7 +136,7 @@ namespace RAT_WPF.Discovery
                 };
                 p.Start();
                 string o = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(120000);
+                p.WaitForExit(timeoutMs);
                 return o;
             });
 
@@ -137,17 +146,36 @@ namespace RAT_WPF.Discovery
         // "Nmap scan report for hostname (192.168.1.10)" or "Nmap scan report for 192.168.1.10"
         private static readonly Regex ReportLine =
             new(@"Nmap scan report for (?:(?<host>[^\s()]+) \()?(?<ip>\d{1,3}(?:\.\d{1,3}){3})\)?");
+        // "22/tcp   open  ssh"
+        private static readonly Regex PortLine =
+            new(@"^(?<port>\d+)/tcp\s+open\b");
 
         public static List<DiscoveredHost> ParseScan(string nmapOutput)
         {
+            //KI (prompt 26): line-based so each "x/tcp open" attaches to the host of the preceding report block.
             List<DiscoveredHost> hosts = new List<DiscoveredHost>();
-            foreach (Match m in ReportLine.Matches(nmapOutput))
+            DiscoveredHost? current = null;
+
+            foreach (string raw in nmapOutput.Split('\n'))
             {
-                hosts.Add(new DiscoveredHost
+                string line = raw.Trim();
+                Match report = ReportLine.Match(line);
+                if (report.Success)
                 {
-                    Ip = m.Groups["ip"].Value,
-                    Hostname = m.Groups["host"].Success ? m.Groups["host"].Value : ""
-                });
+                    current = new DiscoveredHost
+                    {
+                        Ip = report.Groups["ip"].Value,
+                        Hostname = report.Groups["host"].Success ? report.Groups["host"].Value : ""
+                    };
+                    hosts.Add(current);
+                    continue;
+                }
+
+                Match port = PortLine.Match(line);
+                if (port.Success && current != null && int.TryParse(port.Groups["port"].Value, out int p))
+                {
+                    current.OpenPorts.Add(p);
+                }
             }
             return hosts;
         }

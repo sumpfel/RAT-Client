@@ -68,6 +68,12 @@
                               VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
                               Click="ShowInterfacesToggle_Click"/>
                     <!--KI end-->
+                    <!--KI start (Claude Opus 4.8, prompt 26): toggle open-port display + nmap port scanning-->
+                    <CheckBox x:Name="ShowPortsToggle" Content="Show ports" Margin="12,0,0,0"
+                              VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
+                              ToolTip="Show open ports on devices; the Discover scan also probes ports when this is on"
+                              Click="ShowPortsToggle_Click"/>
+                    <!--KI end-->
                 </StackPanel>
             </DockPanel>
         </Border>

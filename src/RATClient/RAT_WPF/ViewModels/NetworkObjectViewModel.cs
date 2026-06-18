@@ -72,12 +72,38 @@ namespace RAT_WPF.ViewModels
 
         public NetworkObjectOpenSettingsCommand NetworkObjectOpenSettings { get; set; }
 
+        //KI start (Claude Opus 4.8, prompt 26): open-ports label (friendly names, e.g. "22 - SSH"), shown on the
+        // node when the global ShowPorts toggle is on. Aggregates the open ports across this device's interfaces.
+        public bool ShowPorts => RAT_WPF.Themes.DisplaySettings.ShowPorts;
 
-		public NetworkObjectViewModel(RAT_Logic.NetworkObject networkObject) 
+        public string PortsText
+        {
+            get
+            {
+                var ports = _networkObject.NetworkInterfaces
+                    .SelectMany(i => i.OpenPorts)
+                    .Distinct()
+                    .OrderBy(p => p)
+                    .Select(RAT_Logic.PortNames.Describe);
+                return string.Join("\n", ports);
+            }
+        }
+        //KI end
+
+
+		public NetworkObjectViewModel(RAT_Logic.NetworkObject networkObject)
 		{
             _networkObject = networkObject;
 
             NetworkObjectOpenSettings = new NetworkObjectOpenSettingsCommand(this);
+
+            //KI start (Claude Opus 4.8, prompt 26): refresh the ports view when the global toggle flips
+            RAT_WPF.Themes.DisplaySettings.ShowPortsChanged += _ =>
+            {
+                OnPropertyChanged(nameof(ShowPorts));
+                OnPropertyChanged(nameof(PortsText));
+            };
+            //KI end
         }
 
         public void RefreshUI()

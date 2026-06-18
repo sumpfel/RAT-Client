@@ -10,9 +10,13 @@
          Background="Transparent" makes the WHOLE node area hit-testable, so dragging works even when the
          press starts on a transparent part of the device icon (previously transparent icon pixels let the
          click "fall through" and the drag MouseMove never fired).-->
-    <Grid Width="90" Height="96" Background="Transparent" MouseMove="Grid_MouseMove" MouseLeftButtonUp="Grid_MouseLeftButtonUp">
+    <Grid Width="90" MinHeight="96" Background="Transparent" MouseMove="Grid_MouseMove" MouseLeftButtonUp="Grid_MouseLeftButtonUp">
+        <Grid.Resources>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="56"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -25,6 +29,14 @@
                    MaxWidth="88" Foreground="{DynamicResource Brush.Text}" FontSize="11"/>
         <Button Grid.Row="2" Content="Settings" Command="{Binding NetworkObjectOpenSettings}"
                 Style="{StaticResource SubtleButton}" Padding="6,2" FontSize="11"/>
+        <!--KI start (Claude Opus 4.8, prompt 26): open ports (friendly names), shown when the ShowPorts toggle is on-->
+        <Border Grid.Row="3" Margin="0,3,0,0" Padding="4,2" CornerRadius="4"
+                Background="{DynamicResource Brush.SurfaceAlt}" IsHitTestVisible="False"
+                Visibility="{Binding ShowPorts, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding PortsText}" FontSize="9" FontFamily="Consolas"
+                       Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
+        </Border>
+        <!--KI end-->
     </Grid>
     <!--KI end-->
 </UserControl>

@@ -23,6 +23,27 @@ namespace RAT_WPF.Themes
 
         /// <summary>Raised when <see cref="ShowInterfaces"/> changes (canvas re-renders cable labels).</summary>
         public static event Action<bool>? ShowInterfacesChanged;
+
+        //KI start (Claude Opus 4.8, prompt 26): ShowPorts — when on, nmap discovery also scans open ports and the
+        // device nodes show their open ports (with friendly names, e.g. "22 - SSH"). Backed by the same UserSettings
+        // field (show_ports) so it loads/saves with the other display prefs.
+        private static bool _showPorts;
+
+        /// <summary>Whether device nodes show their discovered open ports, and discovery does a port scan.</summary>
+        public static bool ShowPorts
+        {
+            get => _showPorts;
+            set
+            {
+                if (_showPorts == value) { return; }
+                _showPorts = value;
+                ShowPortsChanged?.Invoke(value);
+            }
+        }
+
+        /// <summary>Raised when <see cref="ShowPorts"/> changes.</summary>
+        public static event Action<bool>? ShowPortsChanged;
+        //KI end
     }
     //KI end
 }

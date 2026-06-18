@@ -75,6 +75,7 @@ namespace RAT_WPF.Commands
                 UserSettings settings = await connection.GetUserSettings();
                 RAT_WPF.Themes.ZoomManager.Apply(settings.Zoom);
                 RAT_WPF.Themes.DisplaySettings.ShowInterfaces = settings.ShowInterfaces;
+                RAT_WPF.Themes.DisplaySettings.ShowPorts = settings.ShowPorts; // KI (prompt 26)
             }
             catch
             {

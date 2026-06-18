@@ -36,6 +36,7 @@ namespace RAT_Logic
             NetworkObjectType.Switch => new SwitchDescriptor(),
             NetworkObjectType.Server => new ServerDescriptor(),
             NetworkObjectType.Client => new ClientDescriptor(),
+            NetworkObjectType.Hub => new HubDescriptor(), // KI (prompt 26)
             _ => new ClientDescriptor()
         };
     }
@@ -80,5 +81,15 @@ namespace RAT_Logic
         public override string IconKey => "Icon.Client";
         public override string DisplayLabel => "Client";
     }
+
+    //KI start (Claude Opus 4.8, prompt 26): a hub (reuses the switch icon).
+    /// <summary>A hub.</summary>
+    public sealed class HubDescriptor : DeviceDescriptor
+    {
+        public override NetworkObjectType Type => NetworkObjectType.Hub;
+        public override string IconKey => "Icon.Switch";
+        public override string DisplayLabel => "Hub";
+    }
+    //KI end
     //KI end
 }

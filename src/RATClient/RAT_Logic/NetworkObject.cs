@@ -13,13 +13,17 @@ using System.Management;
 
 namespace RAT_Logic
 {
-    public enum NetworkObjectType 
+    public enum NetworkObjectType
     {
         PC,
         Router,
         Switch,
         Server,
-        Client
+        Client,
+        //KI start (Claude Opus 4.8, prompt 26): Hub type (nmap discovery uses a Switch for many devices; Hub added
+        // as a sibling so it can be created/persisted like the others). Backend stores type as a free string.
+        Hub
+        //KI end
     }
     public class NetworkObject
     {

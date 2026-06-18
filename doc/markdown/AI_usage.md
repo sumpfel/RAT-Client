@@ -741,3 +741,32 @@ can't delete yourself). Edit (name/password/admin/can_create) was already there 
 the logic compiles and the button correctly greys out when nmap is absent. Telnet has a session (Connect) but still no
 dedicated Telnet *shell* tab — the shell tab remains SSH-only. Turning the app exe itself into a standalone installer
 was done as in-app first-run setup (per the chosen option), not a separate installer executable.
+
+---------
+
+## Prompt 26 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** nmap discovery should add a **Switch** with enough interfaces when multiple devices are found (1:1
+direct cable when only one); add a **Hub** network-object type (Switch already existed); make the existing backend
+**show_ports** a toolbar option and integrate it with nmap; show friendly names for common ports ("22 - SSH",
+"80 - HTTP", …).
+
+**Changes made (marked `KI start/end (Claude Opus 4.8, prompt 26)`):**
+- **Hub type** — `RAT_Logic/NetworkObject.cs` `NetworkObjectType.Hub`; `DeviceDescriptor.cs` `HubDescriptor`
+  (reuses the switch icon). Backend stores `type` as a free string, so no backend change needed.
+- **Port names** — `RAT_Logic/PortNames.cs` (new): `Describe(port)` → "22 - SSH" etc. for ~35 well-known ports.
+- **nmap topology** — `Discovery/NmapService.cs`: `ScanLocalSubnetAsync(scanPorts)` now optionally runs `-F`
+  (fast port scan) and a line-based parser attaches each "x/tcp open" to its host (`DiscoveredHost.OpenPorts`).
+  `TopologyViewModel.DiscoverDevicesAsync` reworked: collects new hosts + existing-uncabled devices; **1 device →
+  direct PC↔device cable**; **multiple → a Switch with (N+1) ports, PC + every device wired to it** (`AddSwitchAsync`,
+  `CableViaSwitchAsync`). New clients carry their scanned open ports.
+- **ShowPorts** — `Themes/DisplaySettings.cs` `ShowPorts` (+ change event), loaded/saved with the other user
+  settings (`LoginCommand`, `TopologyView.ShowPortsToggle_Click`); a "Show ports" checkbox in the topbar. Discovery
+  does a port scan only when it's on. `NetworkObjectInterface.OpenPorts` holds the ports; `NetworkObjectViewModel`
+  exposes `PortsText` (friendly names) shown on the device node when ShowPorts is on.
+
+**Verified:** solution builds (0 errors); 10/10 tests pass; app launches with the new toolbar + node port panel.
+
+**Notes / scope:** the actual nmap scan (ping + `-F` port scan) needs a real machine/network and wasn't run
+end-to-end here — the parsing/topology logic compiles and is unit-reachable. Open ports are a discovery-time
+annotation shown on the node; they aren't persisted to the backend (no column for them).
