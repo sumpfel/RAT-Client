@@ -29,7 +29,8 @@ Sketches für Icons (Logo, Processing, Signal lost, Sending data)
 
 ## UML Klassendiagramm
 
-![alt text](../assets/images/screenshots/uml.jpg)
+> Die ursprüngliche Plan-UML (vor Projektbeginn) wurde durch das **aktuelle** Mermaid-Klassendiagramm
+> ersetzt: siehe [`ClassDiagram.md`](ClassDiagram.md).
 
 ## Projektplan
 

@@ -4,7 +4,7 @@
   No external packages required (uses Microsoft Edge's --headless --print-to-pdf).
 
 .USAGE
-  powershell -ExecutionPolicy Bypass -File doc/tools/md-to-pdf.ps1 -InputMd doc/markdown/Dokumentation.md -OutPdf doc/markdown/Dokumentation.pdf
+  powershell -ExecutionPolicy Bypass -File doc/tools/md-to-pdf.ps1 -InputMd doc/markdown/Dokumentation.md -OutPdf doc/pdf/Dokumentation.pdf
 
   Supports: ATX headings (#..######), fenced code blocks (``` ), tables (| .. |),
   blockquotes (>), ordered/unordered lists, **bold**, *italic*, `inline code`,
@@ -27,6 +27,17 @@ function Inline([string]$t) {
     $t = HtmlEncode $t
     # inline code first (so * inside code isn't treated as italic)
     $t = [regex]::Replace($t, '`([^`]+)`', { param($m) '<code>' + $m.Groups[1].Value + '</code>' })
+    # images ![alt](path) — MUST run before links (an image literally contains a [..](..)).
+    # relative paths are resolved against the markdown file's folder and turned into file:// URIs.
+    $t = [regex]::Replace($t, '!\[([^\]]*)\]\(([^)]+)\)', {
+        param($m)
+        $src = $m.Groups[2].Value.Trim()
+        if ($src -notmatch '^(https?:|file:|data:)') {
+            $full = [System.IO.Path]::GetFullPath((Join-Path $script:baseDir $src))
+            if (Test-Path $full) { $src = ([System.Uri]$full).AbsoluteUri }
+        }
+        '<img src="' + $src + '" alt="' + $m.Groups[1].Value + '"/>'
+    })
     # links [text](url)
     $t = [regex]::Replace($t, '\[([^\]]+)\]\(([^)]+)\)', { param($m) '<a href="' + $m.Groups[2].Value + '">' + $m.Groups[1].Value + '</a>' })
     # bold then italic
@@ -36,6 +47,7 @@ function Inline([string]$t) {
 }
 
 $lines = Get-Content -LiteralPath $InputMd -Encoding UTF8
+$script:baseDir = Split-Path -Parent ([System.IO.Path]::GetFullPath($InputMd))
 $sb = [System.Text.StringBuilder]::new()
 $inCode = $false
 $inList = $false; $listTag = $null
@@ -143,6 +155,7 @@ $css = @'
   ul, ol { margin: 8px 0 8px 4px; }
   li { margin: 3px 0; }
   div[align="center"] { text-align: center; }
+  img { max-width: 100%; height: auto; border: 1px solid #D9B58A; border-radius: 6px; margin: 8px 0; display: block; }
 </style>
 '@
 
@@ -161,7 +174,7 @@ if (-not $edge) { throw "Microsoft Edge not found; cannot render PDF." }
 
 $uri = ([System.Uri](Resolve-Path $htmlPath).Path).AbsoluteUri
 $pdfFull = [System.IO.Path]::GetFullPath($OutPdf)
-& $edge --headless --disable-gpu --no-pdf-header-footer "--print-to-pdf=$pdfFull" $uri | Out-Null
-Start-Sleep -Milliseconds 1500
+& $edge --headless --disable-gpu --no-pdf-header-footer "--virtual-time-budget=15000" "--print-to-pdf=$pdfFull" $uri | Out-Null
+Start-Sleep -Milliseconds 2500
 if (Test-Path $pdfFull) { Write-Host "Wrote PDF:  $pdfFull ($([math]::Round((Get-Item $pdfFull).Length/1kb)) KB)" }
 else { throw "PDF was not produced." }

@@ -1,115 +1,226 @@
-# Generating a class diagram automatically
+<div align="center">
 
-A few ways to auto-generate a UML class diagram for the RAT client (`src/RATClient`). Pick whichever fits
-your toolchain — the Visual Studio Class Designer is the zero-install option; Mermaid/PlantUML produce
-diagrams you can commit and render in Markdown.
+# 🐀 RAT — Klassendiagramm (Logikschicht)
 
----
+UML-Klassendiagramm der `RAT_Logic`-Schicht (Domänenmodell), gezeichnet mit **Mermaid**.
+Spiegelt den **aktuellen** Code-Stand wider (ersetzt die Vorab-Plan-UML aus der Planungsphase).
 
-## Option A — Visual Studio "Class Designer" (built-in, no install)
-
-1. Visual Studio Installer → make sure the **Class Designer** individual component is installed
-   (under "Individual components" → search "Class Designer").
-2. In Solution Explorer, right-click the **`RAT_Logic`** project → **Add → New Item… → Class Diagram**
-   (`*.cd`). (Repeat per project; one diagram can only show one project's types directly.)
-3. Drag classes from Solution Explorer / Class View onto the surface, or right-click the project →
-   **View → View Class Diagram** to drop them all in at once.
-4. It auto-draws classes, fields, methods and **inheritance/association arrows** (e.g.
-   `PcDescriptor → DeviceDescriptor`, `NetworkObject → DeviceDescriptor`). Export via
-   **right-click surface → Export Diagram as Image**.
-
-Good for a quick, accurate picture; the `.cd` file can be committed but only opens in Visual Studio.
+</div>
 
 ---
 
-## Option B — Mermaid `classDiagram` (commit-friendly, renders on GitHub)
+## Überblick
 
-Mermaid blocks render directly in GitHub/most Markdown viewers and live next to the code. There's no
-official C#→Mermaid extractor, so either hand-write it or generate it (see Option D). A hand-written
-snapshot of the abstract hierarchy added in this project:
+`NetworkObjectGraph` hält die gesamte Topologie. Ein `NetworkObject` (Gerät) besitzt
+mehrere `NetworkObjectInterface` (Schnittstellen); je zwei Interfaces werden durch eine
+`NetworkConnection` (Kabel/Funkstrecke) verbunden. Pro Gerät gibt es `NetworkObjectSettings`
+mit `Login`s und `SnmpSettings` sowie `AccessRight`s, die einem `NetworkUser` eine Rechtestufe
+zuordnen. Der Gerätetyp wird über die abstrakte `DeviceDescriptor`-Hierarchie aufgelöst.
 
 ```mermaid
 classDiagram
+    direction LR
+
+    class NetworkObjectGraph {
+        +List~NetworkObject~ networkObjects
+    }
+
+    class NetworkObject {
+        +int ID
+        +string Name
+        +NetworkObjectType Type
+        +int X
+        +int Y
+        +string Os
+        +string Cpu
+        +string Gpu
+        +string Ram
+        +string Specs
+        +List~NetworkObjectInterface~ NetworkInterfaces
+        +NetworkObjectSettings Settings
+        +List~AccessRight~ AccessRights
+        +DeviceDescriptor Descriptor
+        +GetRight(NetworkUser) AccesRights
+        +CanChangeRight(actor, target, AccesRights) bool
+        +OpenSSH(Login) void
+        +OpenTelnet(Login) void
+        +EnsureConnected(LoginType) bool
+        +GetSnmp(SnmpSettings, oid) IList~Variable~
+        +SetSnmp(SnmpSettings, oid, value) void
+        +WalkSnmp(SnmpSettings, oid) IList~Variable~
+    }
+
+    class NetworkObjectInterface {
+        +int ID
+        +int NetworkObjectId
+        +string Name
+        +int MaxSpeed
+        +bool IsUp
+        +List~int~ OpenPorts
+        +IP IP
+        +NetworkConnection Connection
+    }
+
+    class NetworkConnection {
+        +int ID
+        +string Name
+        +int Speed
+        +NetworkConnectionType Type
+        +string Note
+        +NetworkObjectInterface[2] networkObectInterfaces
+    }
+
+    class IP {
+        +string IPv4
+        +string IPv6
+        +string IPv4SubnetMask
+        +int IPv6PrefixLength
+        +string IPv4Gateway
+        +IsIpv4Valid(string)$ bool
+        +IsPortVlaid(int)$ bool
+    }
+
+    class NetworkObjectSettings {
+        +List~Login~ Logins
+        +SnmpSettings Snmp
+        +AddLogin(Login) void
+        +RemoveLogin(Login) void
+        +FindLoginFor(LoginType) Login
+    }
+
+    class Login {
+        +int ID
+        +int Port
+        +LoginType Type
+        +string Username
+        +string Password
+        +Covers(LoginType) bool
+    }
+
+    class SnmpSettings {
+        +int ID
+        +string ReadCommunity
+        +string WriteCommunity
+        +int Port
+    }
+
+    class AccessRight {
+        +int ID
+        +NetworkUser User
+        +AccesRights Rights
+    }
+
+    class NetworkUser {
+        +int ID
+        +string UserName
+        +bool CanCreate
+        +int Privileges
+    }
+
+    class Session {
+        +NetworkUser CurrentUser$
+    }
+
+    %% --- abstract device-type hierarchy ---
     class DeviceDescriptor {
         <<abstract>>
-        +NetworkObjectType Type
-        +string IconKey
-        +string DisplayLabel
+        +NetworkObjectType Type*
+        +string IconKey*
+        +string DisplayLabel*
         +bool CanUseHostSpecs
-        +For(NetworkObjectType) DeviceDescriptor
+        +For(NetworkObjectType)$ DeviceDescriptor
     }
     class PcDescriptor
     class RouterDescriptor
     class SwitchDescriptor
     class ServerDescriptor
     class ClientDescriptor
+    class HubDescriptor
+    class CloudDescriptor
+    class AccessPointDescriptor
+
+    class DeviceClassifier {
+        <<static>>
+        +CiscoInterfaceName(int)$ string
+        +ClassifyByPorts(IEnumerable~int~)$ NetworkObjectType
+    }
+
+    %% --- enums ---
+    class NetworkObjectType {
+        <<enumeration>>
+        PC
+        Router
+        Switch
+        Server
+        Client
+        Hub
+        Cloud
+        AccessPoint
+    }
+    class NetworkConnectionType {
+        <<enumeration>>
+        Wireless
+        Wired
+    }
+    class LoginType {
+        <<enumeration>>
+        SSH
+        Telnet
+        SFTP
+        SCP
+    }
+    class AccesRights {
+        <<enumeration>>
+        Hidden
+        See
+        Edit
+        Admin
+        Owner
+    }
+
+    %% --- relationships ---
+    NetworkObjectGraph "1" o-- "*" NetworkObject : enthält
+    NetworkObject "1" *-- "*" NetworkObjectInterface : hat
+    NetworkObject "1" *-- "1" NetworkObjectSettings : hat
+    NetworkObject "1" *-- "*" AccessRight : vergibt
+    NetworkObjectInterface "1" o-- "0..1" IP : hat
+    NetworkObjectInterface "2" -- "1" NetworkConnection : verbunden über
+    NetworkObjectSettings "1" *-- "*" Login : speichert
+    NetworkObjectSettings "1" o-- "0..1" SnmpSettings : hat
+    AccessRight "1" --> "1" NetworkUser : für
+    Session ..> NetworkUser : referenziert
+
+    NetworkObject ..> DeviceDescriptor : Descriptor
     DeviceDescriptor <|-- PcDescriptor
     DeviceDescriptor <|-- RouterDescriptor
     DeviceDescriptor <|-- SwitchDescriptor
     DeviceDescriptor <|-- ServerDescriptor
     DeviceDescriptor <|-- ClientDescriptor
+    DeviceDescriptor <|-- HubDescriptor
+    DeviceDescriptor <|-- CloudDescriptor
+    DeviceDescriptor <|-- AccessPointDescriptor
 
-    class NetworkObject {
-        +NetworkObjectType Type
-        +string Name
-        +List~NetworkObjectInterface~ NetworkInterfaces
-        +List~AccessRight~ AccessRights
-        +DeviceDescriptor Descriptor
-        +GetRight(NetworkUser) AccesRights
-        +CanChangeRight(...) bool
-        +OpenSSH(Login) void
-    }
-    NetworkObject --> DeviceDescriptor : Descriptor
-    NetworkObject "1" o-- "*" NetworkObjectInterface
-    NetworkObject "1" o-- "*" AccessRight
-    AccessRight --> NetworkUser
-
-    class CommandBase {
-        <<abstract>>
-        +CanExecute(object) bool
-        +Execute(object)* void
-    }
-    CommandBase <|-- LoginCommand
-    CommandBase <|-- ChangeThemeCommand
-    CommandBase <|-- NetworkObjectDeleteCommand
+    NetworkObject ..> NetworkObjectType
+    NetworkConnection ..> NetworkConnectionType
+    Login ..> LoginType
+    AccessRight ..> AccesRights
+    DeviceDescriptor ..> NetworkObjectType
+    DeviceClassifier ..> NetworkObjectType
 ```
 
 ---
 
-## Option C — PlantUML (richer UML, image export)
+## Legende
 
-PlantUML can read C# and emit a full diagram. Quickest path with no Java setup is the
-[C#-to-PlantUML](https://github.com/pierre3/PlantUmlClassDiagramGenerator) global tool:
+| Symbol | Bedeutung |
+|--------|-----------|
+| `*--` | Komposition (Teil-Ganzes, Lebensdauer gebunden) |
+| `o--` | Aggregation (lose Zugehörigkeit) |
+| `-->` | gerichtete Assoziation |
+| `..>` | Abhängigkeit / Nutzung |
+| `<|--` | Vererbung (Sub- erbt von Superklasse) |
+| `$` | statisches Member · `*` | abstraktes Member |
 
-```powershell
-dotnet tool install --global PlantUmlClassDiagramGenerator
-# generate one .puml per source file (or a combined one) for the logic project:
-puml-gen src\RATClient\RAT_Logic doc\assets\uml\rat_logic -dir -createAssociation
-```
-
-Then render the `.puml` with the PlantUML jar, the VS Code "PlantUML" extension, or the public server:
-
-```powershell
-# if you have Java + plantuml.jar:
-java -jar plantuml.jar doc\assets\uml\rat_logic\*.puml
-```
-
-`-createAssociation` draws the association edges (e.g. `NetworkObject → DeviceDescriptor`); inheritance is
-detected automatically.
-
----
-
-## Option D — Roslyn / scripted extraction (fully automatic, CI-friendly)
-
-For a diagram that regenerates from source on every build/CI run, parse the code with **Roslyn**
-(`Microsoft.CodeAnalysis.CSharp`): walk each `ClassDeclarationSyntax`, read its base list for
-inheritance, and emit Mermaid/PlantUML text. The `PlantUmlClassDiagramGenerator` tool in Option C is
-exactly this, pre-built — wire its `puml-gen` call into a build step or a GitHub Action and commit/upload
-the output so the diagram never goes stale.
-
----
-
-### Recommendation
-- **One-off / presentation:** Option A (Class Designer) or Option C (PlantUML image).
-- **Lives in the repo and renders on GitHub:** Option B (Mermaid), regenerated via Option C/D when the
-  model changes.
+> Hinweis: Querschnittsklassen der Daten- und UI-Schicht (`IDatabaseConnection`,
+> `DatabaseConnection`, ViewModels usw.) sind hier bewusst weggelassen — siehe
+> [Architektur in der Dokumentation](Dokumentation.md#5-funktionsblöcke-bzw-architektur).

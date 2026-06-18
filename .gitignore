@@ -125,3 +125,6 @@ Thumbs.db
 desktop.ini
 *~
 *.swp
+
+# release ZIPs (GitHub release assets, not tracked in git history)
+/dist/
