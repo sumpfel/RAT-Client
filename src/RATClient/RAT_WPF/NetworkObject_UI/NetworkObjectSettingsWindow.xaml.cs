@@ -343,23 +343,37 @@ namespace RAT_WPF.NetworkObject_UI
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 24): auto-connect helper. If a session of the given type isn't open yet,
+        // try to open it automatically (needs a cable from the user's PC + a stored login). Returns true if connected.
+        private bool EnsureConnected(LoginType type)
+        {
+            try
+            {
+                return networkObject.EnsureConnected(type);
+            }
+            catch (EntryPointNotFoundException ex) { ShowNoConnection(type.ToString() + " — " + ex.Message); return false; }
+            catch (InvalidOperationException ex) { ShowNoConnection(type.ToString() + " — " + ex.Message); return false; }
+            catch (Exception ex) { ShowActionFailed($"auto-connect {type}", ex); return false; }
+        }
+        //KI end
+
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            if (!networkObject.IsSftpConnected) { ShowNoConnection("SFTP"); return; }
+            if (!EnsureConnected(LoginType.SFTP)) { return; } // KI (prompt 24): auto-connect
             try { networkObject.DownloadSFTP(SftpLocalPath.Text, SftpRemotePath.Text); }
             catch (Exception ex) { ShowActionFailed("SFTP download", ex); }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            if (!networkObject.IsSftpConnected) { ShowNoConnection("SFTP"); return; }
+            if (!EnsureConnected(LoginType.SFTP)) { return; } // KI (prompt 24)
             try { networkObject.UploadSFTP(SftpLocalPath.Text, SftpRemotePath.Text); }
             catch (Exception ex) { ShowActionFailed("SFTP upload", ex); }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            if (!networkObject.IsSftpConnected) { ShowNoConnection("SFTP"); return; }
+            if (!EnsureConnected(LoginType.SFTP)) { return; } // KI (prompt 24)
             try
             {
                 SftpDirList.Text = "";
@@ -374,22 +388,22 @@ namespace RAT_WPF.NetworkObject_UI
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            if (!networkObject.IsScpConnected) { ShowNoConnection("SCP"); return; }
+            if (!EnsureConnected(LoginType.SCP)) { return; } // KI (prompt 24)
             try { networkObject.DownloadSCP(ScpLocalPath.Text, ScpRemotePath.Text); }
             catch (Exception ex) { ShowActionFailed("SCP download", ex); }
         }
 
         private void Button_Click_5(object sender, RoutedEventArgs e)
         {
-            if (!networkObject.IsScpConnected) { ShowNoConnection("SCP"); return; }
+            if (!EnsureConnected(LoginType.SCP)) { return; } // KI (prompt 24)
             try { networkObject.UploadSCP(ScpLocalPath.Text, ScpRemotePath.Text); }
             catch (Exception ex) { ShowActionFailed("SCP upload", ex); }
         }
 
         private async void Button_Click_6(object sender, RoutedEventArgs e)
         {
-            //KI start (Claude Opus 4.8, prompt 2): pop up "no connection" instead of a generic message
-            if (!networkObject.IsSshConnected) { ShowNoConnection("SSH"); return; }
+            //KI start (Claude Opus 4.8, prompt 2/24): auto-connect SSH if a cable + login exist, then run the command
+            if (!EnsureConnected(LoginType.SSH)) { return; }
             try
             {
                 string result = await networkObject.ExecuteSSH(sshInputBox.Text);
@@ -423,10 +437,9 @@ namespace RAT_WPF.NetworkObject_UI
                 return;
             }
 
-            //KI start (Claude Opus 4.8, prompt 2): don't try to open a shell stream with no SSH connection
-            if (!networkObject.IsSshConnected)
+            //KI start (Claude Opus 4.8, prompt 2/24): auto-connect SSH (cable + stored login) before opening a shell
+            if (!networkObject.IsSshConnected && !EnsureConnected(LoginType.SSH))
             {
-                ShowNoConnection("SSH");
                 SshShellsTabControl.SelectedIndex = 0; // bounce back off the "+" tab
                 return;
             }

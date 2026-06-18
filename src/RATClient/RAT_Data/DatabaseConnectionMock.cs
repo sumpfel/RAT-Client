@@ -1,4 +1,4 @@
-﻿using RAT_Logic;
+using RAT_Logic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,168 +7,97 @@ using System.Threading.Tasks;
 
 namespace RAT_Data
 {
+    //KI start (Claude Opus 4.8, prompt 24): local-only / offline connection. Used by the "Use locally only" button
+    // on the login screen: NOTHING is sent to a server. Every call just succeeds in memory (assigns a fake id where
+    // a real backend would). The topology starts empty and changes live only for this session.
     public class DatabaseConnectionMock : IDatabaseConnection
     {
-        private string _ip;
+        private string _ip = "127.0.0.1";
         public string Ip
         {
             get => _ip;
-            set
-            {
-                if (IP.IsIpv4Valid(value)) {_ip = value;}
-                else { throw new FormatException("this is not an IP"); }
-            }
+            set { _ip = value; } // accept anything in local mode
         }
-        private int _port;
+        private int _port = 0;
         public int Port
         {
             get => _port;
-            set
-            {
-                if (IP.IsPortVlaid(value)){ _port = value; }
-                else { throw new FormatException("this is not a Port"); }
-            }
+            set { _port = value; }
         }
         public User User { get; set; }
 
-        DatabaseConnectionMock(User user,string ip, int port)
+        // fake auto-increment ids so created objects look "saved"
+        private int _nextId = 1;
+        private int NextId() => _nextId++;
+
+        public DatabaseConnectionMock()
         {
-            User = user;
-            Ip = ip;
-            Port = port;
+            // a local-only user that can do everything (no real account exists offline)
+            User = new User("local", "", 0, 100, true);
         }
 
-        //Graph
-        /*public async Task<NetworkObjectGraph> GetNetworkGraph()
-        {
-            throw new NotImplementedException();
-        }
+        //Graph — local mode starts with an empty canvas
+        public Task<NetworkObjectGraph> GetNetworkGraph() =>
+            Task.FromResult(new NetworkObjectGraph { networkObjects = new List<NetworkObject>() });
 
         //NetworkObject
-        public async Task<NetworkObject> AddNetworkObject(NetworkObject networkObject)
+        public Task<NetworkObject> AddNetworkObject(NetworkObject networkObject)
         {
-            networkObject.ID = 1;
+            if (networkObject.ID <= 0) { networkObject.ID = NextId(); }
             return Task.FromResult(networkObject);
-        }*/
-
-        public async Task<NetworkObjectGraph> GetNetworkGraph()
-        {
-
-            // TODO: actual Data not empty
-            throw new NotImplementedException();
         }
+        public Task EditNetworkObject(NetworkObject networkObject) => Task.CompletedTask;
+        public Task DeleteNetworkObject(NetworkObject networkObject) => Task.CompletedTask;
 
-        //NetworkObject
-        public async Task<NetworkObject> AddNetworkObject(NetworkObject networkObject)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task EditNetworkObject(NetworkObject networkObject)
-        {
-            throw new NotImplementedException();
-        }
-        public Task DeleteNetworkObject(NetworkObject networkObject)
-        {
-            throw new NotImplementedException();
-        }
-
-        //KI start (Claude Opus 4.8, prompt 14): stubs for the new interface/connection/permission methods so the
-        // mock still implements IDatabaseConnection (real behaviour lives in DatabaseConnection).
+        //NetworkObjectInterface
         public Task<NetworkObjectInterface> AddInterface(NetworkObjectInterface networkObjectInterface, NetworkObject networkObject)
         {
-            throw new NotImplementedException();
+            if (networkObjectInterface.ID <= 0) { networkObjectInterface.ID = NextId(); }
+            networkObjectInterface.NetworkObjectId = networkObject.ID;
+            return Task.FromResult(networkObjectInterface);
         }
-        public Task EditInterface(NetworkObjectInterface networkObjectInterface)
-        {
-            throw new NotImplementedException();
-        }
-        public Task DeleteInterface(NetworkObjectInterface networkObjectInterface)
-        {
-            throw new NotImplementedException();
-        }
+        public Task EditInterface(NetworkObjectInterface networkObjectInterface) => Task.CompletedTask;
+        public Task DeleteInterface(NetworkObjectInterface networkObjectInterface) => Task.CompletedTask;
+
+        //NetworkConnection
         public Task<NetworkConnection> AddConnection(NetworkConnection networkConnection, NetworkObjectInterface interface1, NetworkObjectInterface interface2)
         {
-            throw new NotImplementedException();
+            if (networkConnection.ID <= 0) { networkConnection.ID = NextId(); }
+            return Task.FromResult(networkConnection);
         }
-        public Task DeleteConnection(NetworkConnection networkConnection)
-        {
-            throw new NotImplementedException();
-        }
-        public Task<List<AccessRight>> GetNetworkObjectPermissions(NetworkObject networkObject)
-        {
-            throw new NotImplementedException();
-        }
-        public Task SetPermission(NetworkObject networkObject, NetworkUser targetUser, AccesRights right)
-        {
-            throw new NotImplementedException();
-        }
-        public Task DeletePermission(NetworkObject networkObject, AccessRight accessRight)
-        {
-            throw new NotImplementedException();
-        }
-        //KI end
+        public Task DeleteConnection(NetworkConnection networkConnection) => Task.CompletedTask;
 
-        //UserDeviceLogins (ssh, telnet, etc)
-        public Task<List<Login>> GetUserDeviceLogin(NetworkObject networkObject)
-        {
-            throw new NotImplementedException();
-        }
+        //Permissions — in local mode the single local user owns everything
+        public Task<List<AccessRight>> GetNetworkObjectPermissions(NetworkObject networkObject) =>
+            Task.FromResult(new List<AccessRight>());
+        public Task SetPermission(NetworkObject networkObject, NetworkUser targetUser, AccesRights right) => Task.CompletedTask;
+        public Task DeletePermission(NetworkObject networkObject, AccessRight accessRight) => Task.CompletedTask;
+
+        //UserDeviceLogins
+        public Task<List<Login>> GetUserDeviceLogin(NetworkObject networkObject) =>
+            Task.FromResult(new List<Login>());
         public Task<Login> AddUserDeviceLogin(Login login, NetworkObject networkObject)
         {
-            throw new NotImplementedException();
+            if (login.ID <= 0) { login.ID = NextId(); }
+            return Task.FromResult(login);
         }
-        public Task EditUserDeviceLogin(Login login)
-        {
-            throw new NotImplementedException();
-        }
-        public Task DeletetUserDeviceLogin(Login login)
-        {
-            throw new NotImplementedException();
-        }
+        public Task EditUserDeviceLogin(Login login) => Task.CompletedTask;
+        public Task DeletetUserDeviceLogin(Login login) => Task.CompletedTask;
 
         //User
-        public Task<List<User>> GetAllUsers()
-        {
-            throw new NotImplementedException();
-        }
-        public Task<User> Login()
-        {
-            string userName = "RAT";
-            string password = "password";
-            if (User.UserName == userName && User.Password == password)
-            {
-                return Task.FromResult(new User(userName, password, 0,100,true)); // TODO ask DATABASE for canCreate and privilege level
-            }
-            else
-            {
-                throw new AccessViolationException("Wrong User or Password to connecto to the server.");
-            }
-        }
+        public Task<List<User>> GetAllUsers() => Task.FromResult(new List<User> { User });
+        public Task<User> Login() => Task.FromResult(User);
         public Task<User> AddUser(User user)
         {
-            throw new NotImplementedException();
+            if (user.ID <= 0) { user.ID = NextId(); }
+            return Task.FromResult(user);
         }
-        public Task EditUser(User user)
-        {
-            throw new NotImplementedException();
-        }
-        public Task DeleteUser(User user)
-        {
-            throw new NotImplementedException();
-        }
-        
-        //UserSettings
-        public Task EditUserSettings(UserSettings userSettings)
-        {
-            throw new NotImplementedException();
-        }
+        public Task EditUser(User user) => Task.CompletedTask;
+        public Task DeleteUser(User user) => Task.CompletedTask;
 
-        //KI start (Claude Opus 4.8, prompt 22): mock stub for the new GetUserSettings interface member
-        public Task<UserSettings> GetUserSettings()
-        {
-            return Task.FromResult(new UserSettings());
-        }
-        //KI end
+        //UserSettings
+        public Task EditUserSettings(UserSettings userSettings) => Task.CompletedTask;
+        public Task<UserSettings> GetUserSettings() => Task.FromResult(new UserSettings());
     }
+    //KI end
 }

@@ -51,7 +51,8 @@ namespace RAT_WPF.NetworkObject_UI
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            //KI start (Claude Opus 4.8, prompt 2): error handling — show a popup when the connection can't be opened
+            //KI start (Claude Opus 4.8, prompt 2/24): open the session; Telnet is now supported, and an SSH/SFTP
+            // login opens that transport (it serves both). Errors show a popup.
             try
             {
                 switch (login.Type)
@@ -66,14 +67,16 @@ namespace RAT_WPF.NetworkObject_UI
                         networkObject.OpenSCP(login);
                         break;
                     case LoginType.Telnet:
-                        RatDialog.Show("Not supported", "Telnet is not implemented yet.", "Icon.NoConnection");
-                        return;
+                        networkObject.OpenTelnet(login);
+                        break;
                 }
 
                 UpdateStatus();
                 if (networkObject.IsConnected(login.Type))
                 {
-                    RatDialog.Show("Connected", $"{login.Type} connected to {login.Username}.", "Icon.Connected");
+                    string extra = (login.Type == LoginType.SSH || login.Type == LoginType.SFTP)
+                        ? " (this login serves both SSH and SFTP)" : "";
+                    RatDialog.Show("Connected", $"{login.Type} connected to {login.Username}.{extra}", "Icon.Connected");
                 }
             }
             catch (EntryPointNotFoundException ex)

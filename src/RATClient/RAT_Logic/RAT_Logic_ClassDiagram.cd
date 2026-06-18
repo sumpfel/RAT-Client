@@ -1,0 +1,193 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="RAT_Logic.AccessRight" Collapsed="true">
+    <Position X="22.25" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAAAAgAAAAAAAAAAAAAAAAAAAAACAAAAAAAA=</HashCode>
+      <FileName>AccessRight.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.DeviceDescriptor" Collapsed="true">
+    <Position X="16" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAoAAAAAAAAQAAAABAAAA=</HashCode>
+      <FileName>DeviceDescriptor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.PcDescriptor" Collapsed="true">
+    <Position X="18.25" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAgAAAAAAAAQAAAABAAAA=</HashCode>
+      <FileName>DeviceDescriptor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.RouterDescriptor" Collapsed="true">
+    <Position X="20.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAgAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>DeviceDescriptor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.SwitchDescriptor" Collapsed="true">
+    <Position X="11.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAgAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>DeviceDescriptor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.ServerDescriptor" Collapsed="true">
+    <Position X="13.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAgAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>DeviceDescriptor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.ClientDescriptor" Collapsed="true">
+    <Position X="16" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAgAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>DeviceDescriptor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.HostInterfaceInfo" Collapsed="true">
+    <Position X="24" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CgAAAAAAABBgAAACAABAAAQAAAAAAAAAAAAAIAAAAAA=</HashCode>
+      <FileName>HostInterfaceInfo.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.IP" Collapsed="true">
+    <Position X="25.75" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CiAAIAAAAAAAAAAAAAIAAAAAAAAAAQAAAAAAABAAAAA=</HashCode>
+      <FileName>IP.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.Login" Collapsed="true">
+    <Position X="27.5" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAQAAAAAACAAAAAACAQAAAAAAAAA=</HashCode>
+      <FileName>Login.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.MainController" Collapsed="true">
+    <Position X="22.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>MainController.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.MibNode" Collapsed="true">
+    <Position X="25.75" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAEQAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>MibCatalog.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.MibCatalog" Collapsed="true">
+    <Position X="24" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA=</HashCode>
+      <FileName>MibCatalog.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.NetworkConnection" Collapsed="true">
+    <Position X="27.5" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAAAAAEAgAAAAAAAAAQBAAAAAAAAAQAAAAEAAAA=</HashCode>
+      <FileName>NetworkConnection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.NetworkObject" Collapsed="true">
+    <Position X="22.25" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BgDAMAAIOFAEiKDAKAAAAoQUBIIAEwAgiUBUAAiIYAA=</HashCode>
+      <FileName>NetworkObject.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.NetworkObjectGraph" Collapsed="true">
+    <Position X="24" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>NetworkObjectGraph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.NetworkObjectInterface" Collapsed="true">
+    <Position X="25.75" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAgAgAEAAABEAAQAIAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>NetworkObjectInterface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.NetworkObjectSettings" Collapsed="true">
+    <Position X="27.5" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAgAAAAAAAAAAAABAACAAAAAAAAAAAAQAAIIAAA=</HashCode>
+      <FileName>NetworkObjectSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.PasswordPolicy" Collapsed="true">
+    <Position X="24" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAACAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>PasswordPolicy.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.NetworkUser" Collapsed="true">
+    <Position X="22.25" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAgAAEAAAAAAAAAAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>Permission.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.Session" Collapsed="true">
+    <Position X="25.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Session.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RAT_Logic.SnmpSettings" Collapsed="true">
+    <Position X="27.5" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAQAAAACAAAAAAAAAABAAAAAAA=</HashCode>
+      <FileName>SnmpSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="RAT_Logic.AccesRights" Collapsed="true">
+    <Position X="22.25" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAAAAABAAAAAAAAQAAAAAAAAACAAAAAAAEAAA=</HashCode>
+      <FileName>AccessRight.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="RAT_Logic.HostInterfaceKind" Collapsed="true">
+    <Position X="24" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAgAAAAAAAAAAAAAAACAAAAAAAAAACAAAAAAAA=</HashCode>
+      <FileName>HostInterfaceInfo.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="RAT_Logic.LoginType" Collapsed="true">
+    <Position X="25.75" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAAAEAAAAAAgAAAAAAEAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Login.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="RAT_Logic.NetworkConnectionType" Collapsed="true">
+    <Position X="27.5" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA=</HashCode>
+      <FileName>NetworkConnection.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="RAT_Logic.NetworkObjectType" Collapsed="true">
+    <Position X="22.25" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAIIAAAEAAAAAAAAAAAAAAAAAAAgAAAAQ=</HashCode>
+      <FileName>NetworkObject.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

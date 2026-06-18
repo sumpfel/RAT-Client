@@ -110,6 +110,11 @@
             <Button
                 Content="Confirm" Command="{Binding ConfirmCommand}" Style="{StaticResource ModernButton}"/>
 
+            <!--KI start (Claude Opus 4.8, prompt 24): start without a server (in-memory only, nothing saved)-->
+            <Button Content="Use locally only" Command="{Binding LocalOnlyCommand}"
+                    Style="{StaticResource SubtleButton}" Margin="10,0,0,0"/>
+            <!--KI end-->
+
             <!--KI start (Claude Opus 4.8, prompt 15): rat login-status (happy rat on success, sad rat on failure)-->
             <Image Source="{Binding StatusIcon}" Visibility="{Binding StatusVisible}"
                    Width="32" Height="32" Margin="16,0,8,0" VerticalAlignment="Center"/>

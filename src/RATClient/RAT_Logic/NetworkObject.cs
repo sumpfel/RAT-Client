@@ -134,11 +134,17 @@ namespace RAT_Logic
         private List<ShellStream> sshShellStreams = new List<ShellStream>();
         private SftpClient? sftpClient = null;
         private ScpClient? scpClient = null;
+        //KI start (Claude Opus 4.8, prompt 24): a raw TCP Telnet session (SSH.NET has no Telnet support)
+        private System.Net.Sockets.TcpClient? telnetClient = null;
+        //KI end
 
         //KI start (Claude Opus 4.8, prompt 2): live connection status for the UI (connected / not connected)
         public bool IsSshConnected => sshClient != null && sshClient.IsConnected;
         public bool IsSftpConnected => sftpClient != null && sftpClient.IsConnected;
         public bool IsScpConnected => scpClient != null && scpClient.IsConnected;
+        //KI start (Claude Opus 4.8, prompt 24): telnet connection status
+        public bool IsTelnetConnected => telnetClient != null && telnetClient.Connected;
+        //KI end
 
         /// <summary>True if there is an open, connected session for the given login protocol.</summary>
         public bool IsConnected(LoginType type) => type switch
@@ -146,6 +152,7 @@ namespace RAT_Logic
             LoginType.SSH => IsSshConnected,
             LoginType.SFTP => IsSftpConnected,
             LoginType.SCP => IsScpConnected,
+            LoginType.Telnet => IsTelnetConnected, // KI (prompt 24)
             _ => false
         };
         //KI end
@@ -332,12 +339,119 @@ namespace RAT_Logic
             scpClient.Download(remotePath, new FileInfo(localPath));
         }
 
-        /// <summary>Opens a Telnet session to this device. Not implemented yet.</summary>
+        //KI start (Claude Opus 4.8, prompt 24): minimal raw-TCP Telnet (SSH.NET has none). Connects to the device's
+        // reachable interface on the login port (default 23), then best-effort logs in by sending the username and
+        // password when the server prompts. Output is read via ReadTelnet; commands sent via SendTelnet.
+        /// <summary>Opens a Telnet session to this device. No-op if one is already open.</summary>
+        /// <exception cref="EntryPointNotFoundException">No reachable interface for this device.</exception>
         public void OpenTelnet(Login login)
         {
-            // TODO
-            throw new NotImplementedException();
+            if (IsTelnetConnected) { return; }
+            NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
+            if (networkObjectInterface == null || networkObjectInterface.IP == null
+                || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
+            {
+                throw new EntryPointNotFoundException("No path to Remote Device Available");
+            }
+
+            int port = login.Port > 0 ? login.Port : 23;
+            System.Net.Sockets.TcpClient client = new System.Net.Sockets.TcpClient();
+            client.Connect(networkObjectInterface.IP.IPv4, port);
+            telnetClient = client;
+
+            // best-effort auto-login: many telnet servers prompt for login/password
+            try
+            {
+                System.Net.Sockets.NetworkStream stream = client.GetStream();
+                System.Threading.Thread.Sleep(300); // let the banner/login prompt arrive
+                byte[] user = Encoding.ASCII.GetBytes(login.Username + "\r\n");
+                stream.Write(user, 0, user.Length);
+                System.Threading.Thread.Sleep(300);
+                byte[] pass = Encoding.ASCII.GetBytes(login.Password + "\r\n");
+                stream.Write(pass, 0, pass.Length);
+            }
+            catch { /* a server that doesn't prompt is fine; the session is still open */ }
         }
+
+        /// <summary>Sends a command line over the open Telnet session.</summary>
+        public void SendTelnet(string command)
+        {
+            if (!IsTelnetConnected) { throw new EntryPointNotFoundException("Open a telnet connection first!"); }
+            System.Net.Sockets.NetworkStream stream = telnetClient!.GetStream();
+            byte[] data = Encoding.ASCII.GetBytes(command + "\r\n");
+            stream.Write(data, 0, data.Length);
+        }
+
+        /// <summary>Reads whatever Telnet output is currently available (Telnet IAC control bytes stripped).</summary>
+        public string ReadTelnet()
+        {
+            if (!IsTelnetConnected) { return ""; }
+            System.Net.Sockets.NetworkStream stream = telnetClient!.GetStream();
+            StringBuilder sb = new StringBuilder();
+            byte[] buffer = new byte[4096];
+            while (stream.DataAvailable)
+            {
+                int read = stream.Read(buffer, 0, buffer.Length);
+                for (int i = 0; i < read; i++)
+                {
+                    byte b = buffer[i];
+                    if (b == 0xFF) { i += 2; continue; } // skip IAC + the following 2 negotiation bytes
+                    if (b >= 32 || b == '\n' || b == '\r' || b == '\t') { sb.Append((char)b); }
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Closes the Telnet session if open.</summary>
+        public void CloseTelnet()
+        {
+            try { telnetClient?.Close(); } catch { }
+            telnetClient = null;
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 24): reachability + auto-connect.
+        /// <summary>True if this device has an interface reachable from the host (i.e. a cable/route exists).</summary>
+        public bool IsReachableFromHost()
+        {
+            NetworkObjectInterface? iface = GetInterfaceInSameNetworkAsHost();
+            return iface != null && iface.IP != null && !string.IsNullOrWhiteSpace(iface.IP.IPv4);
+        }
+
+        /// <summary>
+        /// Makes sure a session of <paramref name="type"/> is open: if already connected, does nothing; otherwise,
+        /// when the device is reachable (a cable from the user's PC exists) and a covering login is stored, it opens
+        /// the right session automatically (SSH↔SFTP share a login). Returns true if connected afterwards.
+        /// </summary>
+        /// <exception cref="EntryPointNotFoundException">No reachable path to the device.</exception>
+        /// <exception cref="InvalidOperationException">No stored login that can serve this protocol.</exception>
+        public bool EnsureConnected(LoginType type)
+        {
+            if (IsConnected(type)) { return true; }
+
+            if (!IsReachableFromHost())
+            {
+                throw new EntryPointNotFoundException(
+                    "No cable/route from your PC to this device. Connect them with the Connection tool first.");
+            }
+
+            Login? login = Settings.FindLoginFor(type);
+            if (login == null)
+            {
+                throw new InvalidOperationException(
+                    $"No stored {type} login for this device. Add one in the Logins tab.");
+            }
+
+            switch (type)
+            {
+                case LoginType.SSH: OpenSSH(login); break;
+                case LoginType.SFTP: OpenSFTP(login); break;
+                case LoginType.SCP: OpenSCP(login); break;
+                case LoginType.Telnet: OpenTelnet(login); break;
+            }
+            return IsConnected(type);
+        }
+        //KI end
 
         /// <summary>Writes a value to an SNMP OID on this device (SNMP SET) using the write community.</summary>
         /// <param name="snmpSettings">Community strings + port.</param>

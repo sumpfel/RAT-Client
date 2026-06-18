@@ -33,5 +33,17 @@ namespace RAT_Logic
             this.Port = Port;
             this.Type = type;
         }
+
+        //KI start (Claude Opus 4.8, prompt 24): SSH and SFTP ride the same transport (same port + credentials),
+        // so a login of either type also serves the other. SCP and Telnet stay distinct. This lets one stored
+        // SSH login open an SFTP session (and vice versa) without the user adding a second login.
+        public bool Covers(LoginType wanted)
+        {
+            if (Type == wanted) { return true; }
+            bool sshOrSftp = Type == LoginType.SSH || Type == LoginType.SFTP;
+            bool wantSshOrSftp = wanted == LoginType.SSH || wanted == LoginType.SFTP;
+            return sshOrSftp && wantSshOrSftp;
+        }
+        //KI end
     }
 }

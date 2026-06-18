@@ -675,3 +675,30 @@ own interfaces, write them to the backend (together with the PC, which already s
   are persisted server-side instead of living only in the client.
 
 **Verified:** solution builds (0 errors).
+
+---------
+
+## Prompt 24 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Implement Telnet; make SSH and SFTP one login (entering SSH also covers SFTP and vice versa, since
+same port/creds); if a cable exists from the user's PC to a device that has the matching login, auto-connect
+before opening a shell / transferring; add a "use locally only" button on the login screen that skips login +
+DB (nothing saved — use the mock, every op succeeds) with a reminder popup.
+
+**Changes made (AI regions marked `KI start/end (Claude Opus 4.8, prompt 24)`):**
+- **SSH/SFTP unified** — `RAT_Logic/Login.cs` `Covers(LoginType)`: an SSH *or* SFTP login serves both (SCP/Telnet
+  stay distinct). `NetworkObjectSettings.GetAllLoginsByType` uses it; new `FindLoginFor(type)`.
+- **Telnet** — `RAT_Logic/NetworkObject.cs`: real raw-TCP Telnet (`OpenTelnet`/`SendTelnet`/`ReadTelnet`/`CloseTelnet`,
+  `IsTelnetConnected`, best-effort auto-login, IAC byte stripping); `IsConnected` now includes Telnet. LoginControl's
+  Connect button now opens Telnet (was "not implemented").
+- **Auto-connect** — `NetworkObject.IsReachableFromHost()` + `EnsureConnected(type)`: if not connected, and the device
+  is reachable (a cable from the user's PC) and a covering login is stored, it opens the right session automatically
+  (SSH↔SFTP share the login). The settings window's shell-open, SSH command, and SFTP/SCP transfer buttons call it
+  (with clear popups when there's no cable or no login).
+- **Local-only mode** — `RAT_WPF/Commands/LocalOnlyCommand.cs` (new) + a "Use locally only" button on `LoginView`
+  (`LoginViewModel.LocalOnlyCommand`): shows a reminder that nothing is saved, installs the rewritten
+  `DatabaseConnectionMock` as the active connection (every op just succeeds in memory, fake ids), seeds a local
+  user, and navigates to the topology. `RAT_Data/DatabaseConnectionMock.cs` rewritten from throw-stubs into a
+  working offline no-op connection.
+
+**Verified:** solution builds (0 errors); 10/10 tests pass; the login screen shows the "Use locally only" button.

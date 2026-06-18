@@ -78,9 +78,15 @@ namespace RAT_WPF.ViewModels
 
 		public ICommand ConfirmCommand { get; }
 
+		//KI start (Claude Opus 4.8, prompt 24): "Use locally only" — skip login + DB, use the in-memory mock
+		public ICommand LocalOnlyCommand { get; }
+		//KI end
+
 		public LoginViewModel(NavigationStore navigationStore)
 		{
 			ConfirmCommand = new LoginCommand(this, navigationStore);
+
+			LocalOnlyCommand = new LocalOnlyCommand(navigationStore); // KI (prompt 24)
 
             this.PropertyChanged += OnLoginViewModelPropertyChanged;
 

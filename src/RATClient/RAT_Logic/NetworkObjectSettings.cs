@@ -42,8 +42,16 @@ namespace RAT_Logic
 
         public List<Login> GetAllLoginsByType(LoginType type)
         {
-
-            return Logins.Where(l => l.Type == type).ToList();
+            //KI start (Claude Opus 4.8, prompt 24): use Covers() so an SSH login also matches SFTP (and vice versa)
+            return Logins.Where(l => l.Covers(type)).ToList();
+            //KI end
         }
+
+        //KI start (Claude Opus 4.8, prompt 24): first stored login that can serve the wanted protocol, or null.
+        public Login? FindLoginFor(LoginType type)
+        {
+            return Logins.FirstOrDefault(l => l.Covers(type));
+        }
+        //KI end
     }
 }
