@@ -52,12 +52,12 @@
                 Text="Password" 
                 Style="{StaticResource Header2}"/>
             
-            <!--TODO: Make Password hidden, using PasswordBox doesn't work, because Binding like TextBox doesn't work-->
-            <TextBox
+            <PasswordBox
                 Grid.Row="1"
                 Margin="0 10 0 0"
-                Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
+                x:Name="PasswordBoxLogin"
                 Background="{Binding TextBoxPasswordColor}"
+                PasswordChanged="PasswordBoxLogin_PasswordChanged"
                 />
         </Grid>
 
