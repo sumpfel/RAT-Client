@@ -63,8 +63,9 @@ namespace RAT_WPF.Views
                         Point dropPosition = e.GetPosition(canvas);
                         // Canvas.SetLeft(view, dropPosition.X);
                         // Canvas.SetTop(view, dropPosition.Y);
-                        networkObject.X = (int)dropPosition.X;
-                        networkObject.Y = (int)dropPosition.Y;
+                        //KI (prompt 28): clamp inside the canvas so a node can't land in unreachable void
+                        networkObject.X = CanvasLayout.ClampX(dropPosition.X);
+                        networkObject.Y = CanvasLayout.ClampY(dropPosition.Y);
 
                         //KI start (Claude Opus 4.8, prompt 11): the creator owns the object they just created
                         if (RAT_Logic.Session.CurrentUser != null
@@ -89,8 +90,9 @@ namespace RAT_WPF.Views
                 {
                     Point dropPosition = e.GetPosition(canvas);
 
-                    networkObjectViewModel.X = (int)dropPosition.X;
-                    networkObjectViewModel.Y = (int)dropPosition.Y;
+                    //KI (prompt 28): clamp inside the canvas so a moved node can't be dragged into unreachable void
+                    networkObjectViewModel.X = CanvasLayout.ClampX(dropPosition.X);
+                    networkObjectViewModel.Y = CanvasLayout.ClampY(dropPosition.Y);
 
                     //KI start (Claude Opus 4.8, prompt: link the C# frontend with the RAT-Backend database):
                     // a moved device already exists in the DB -> persist its new X/Y.
@@ -104,6 +106,55 @@ namespace RAT_WPF.Views
         {
 
         }
+
+        //KI start (Claude Opus 4.8, prompt 27): drag-to-pan the canvas left/right (and up/down). We only start a pan
+        // when the press lands on empty canvas — if it lands on a device node (NetworkObjectView) or a clickable
+        // cable line we leave it alone so dragging devices / clicking cables keeps working. The horizontal scroll
+        // bar comes from the ScrollViewer in XAML.
+        private bool _panning;
+        private Point _panStart;
+        private double _panStartH, _panStartV;
+
+        private void PanCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (IsOnInteractiveElement(e.OriginalSource as DependencyObject)) { return; }
+
+            _panning = true;
+            _panStart = e.GetPosition(CanvasScroll);
+            _panStartH = CanvasScroll.HorizontalOffset;
+            _panStartV = CanvasScroll.VerticalOffset;
+            CanvasScroll.Cursor = Cursors.ScrollAll;
+            CanvasScroll.CaptureMouse();
+        }
+
+        private void PanCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_panning) { return; }
+            Point now = e.GetPosition(CanvasScroll);
+            CanvasScroll.ScrollToHorizontalOffset(_panStartH - (now.X - _panStart.X));
+            CanvasScroll.ScrollToVerticalOffset(_panStartV - (now.Y - _panStart.Y));
+        }
+
+        private void PanCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_panning) { return; }
+            _panning = false;
+            CanvasScroll.Cursor = Cursors.Arrow;
+            CanvasScroll.ReleaseMouseCapture();
+        }
+
+        // walk up the visual tree: a press inside a device node or on a clickable cable line is NOT a pan
+        private static bool IsOnInteractiveElement(DependencyObject? source)
+        {
+            while (source != null)
+            {
+                if (source is NetworkObjectView) { return true; }
+                if (source is System.Windows.Shapes.Line) { return true; } // the clickable cable hit line
+                source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            }
+            return false;
+        }
+        //KI end
         public TopologyView()
         {
             InitializeComponent();
@@ -251,6 +302,7 @@ namespace RAT_WPF.Views
         // putting a device on the canvas that the backend rejected (e.g. a 500). No connection (dev mode) == ok.
         private async Task<bool> PersistNewNetworkObject(NetworkObjectViewModel node)
         {
+            RAT_WPF.Logging.AppLogger.Info($"Create device '{node.Model.Name}' ({node.Model.Type}) at {node.X},{node.Y}"); // KI (prompt 28)
             if (DatabaseConnectionStore.Current == null) { return true; }
             try
             {
@@ -270,6 +322,7 @@ namespace RAT_WPF.Views
             }
             catch (Exception ex)
             {
+                RAT_WPF.Logging.AppLogger.Error($"Create device '{node.Model.Name}' failed", ex); // KI (prompt 28)
                 RatDialog.Show("Database hiccup", $"The rat couldn't save the new device on the server.\n\n{ex.Message}", "Icon.DatabaseError");
                 return false;
             }

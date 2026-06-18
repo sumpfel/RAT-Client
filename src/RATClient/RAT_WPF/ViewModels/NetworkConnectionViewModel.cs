@@ -104,6 +104,14 @@ namespace RAT_WPF.ViewModels
         public bool ShowInterfaceLabels => RAT_WPF.Themes.DisplaySettings.ShowInterfaces;
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 28): wireless links are drawn dashed. StrokeDashArray binds straight onto
+        // the cable Line; null = solid (wired). (4,3) = short dashes for a Wi-Fi "cable".
+        public bool IsWireless => _networkConnection.Type == NetworkConnectionType.Wireless;
+
+        public System.Windows.Media.DoubleCollection? StrokeDashArray =>
+            IsWireless ? new System.Windows.Media.DoubleCollection { 4, 3 } : null;
+        //KI end
+
 
         // Making a viewmodel where currently only networkConnection and networkObjectViewModelSource are known, networkObjectViewModelTarget filled in later
         public NetworkConnectionViewModel(NetworkConnection networkConnection, NetworkObjectViewModel networkObjectViewModelSource)

@@ -46,6 +46,16 @@ namespace RAT_WPF
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 28): open the rolling log folder in Explorer
+        private void OpenLogFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (!RAT_WPF.Logging.AppLogger.OpenLogFolder())
+            {
+                RatDialog.Show("Logs", $"Couldn't open the log folder.\n\n{RAT_WPF.Logging.AppLogger.LogDirectory}", "Icon.NoConnection");
+            }
+        }
+        //KI end
+
         //KI start (Claude Opus 4.8, prompt 17): open the About window
         private void About_Click(object sender, RoutedEventArgs e)
         {

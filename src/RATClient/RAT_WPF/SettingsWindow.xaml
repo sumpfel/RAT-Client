@@ -57,6 +57,14 @@
                             HorizontalAlignment="Left" Click="EditMyAccount_Click"/>
                     <!--KI end-->
 
+                    <!--KI start (Claude Opus 4.8, prompt 28): Diagnostics — open the rolling log folder -->
+                    <TextBlock Text="Diagnostics" Style="{StaticResource Header3}" Margin="0,20,0,2"/>
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" Margin="0,0,0,8"
+                               Text="RAT writes a new log file each start (keeps the newest 3). Open the folder to inspect or attach them when reporting a problem."/>
+                    <Button Content="Open log folder" Style="{StaticResource SubtleButton}"
+                            HorizontalAlignment="Left" Click="OpenLogFolder_Click"/>
+                    <!--KI end-->
+
                     <!--KI start (Claude Opus 4.8, prompt 17): About entry -->
                     <TextBlock Text="About" Style="{StaticResource Header3}" Margin="0,20,0,2"/>
                     <Button Content="About RAT" Style="{StaticResource SubtleButton}"

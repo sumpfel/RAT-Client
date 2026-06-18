@@ -38,6 +38,7 @@ namespace RAT_WPF.Commands
         // show the error and stay on the login screen.
         public override async void Execute(object? parameter)
         {
+            RAT_WPF.Logging.AppLogger.Info($"Login: attempting '{_loginViewModel.Username}' @ {_loginViewModel.ServerIp}:{_loginViewModel.ServerPort}"); // KI (prompt 28)
             User user = new User(_loginViewModel.Username, _loginViewModel.Password, 0, 10, false);
             DatabaseConnection connection = new DatabaseConnection(user, _loginViewModel.ServerIp, _loginViewModel.ServerPort);
 
@@ -76,10 +77,12 @@ namespace RAT_WPF.Commands
                 RAT_WPF.Themes.ZoomManager.Apply(settings.Zoom);
                 RAT_WPF.Themes.DisplaySettings.ShowInterfaces = settings.ShowInterfaces;
                 RAT_WPF.Themes.DisplaySettings.ShowPorts = settings.ShowPorts; // KI (prompt 26)
+                RAT_WPF.Logging.AppLogger.Info($"Login: restored settings zoom={settings.Zoom} showInterfaces={settings.ShowInterfaces} showPorts={settings.ShowPorts}"); // KI (prompt 28)
             }
-            catch
+            catch (Exception ex)
             {
                 // settings are a nice-to-have; a failure here must not block login
+                RAT_WPF.Logging.AppLogger.Warn($"Login: could not restore user settings: {ex.Message}"); // KI (prompt 28)
             }
             //KI end
 

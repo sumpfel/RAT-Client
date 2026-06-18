@@ -37,6 +37,8 @@ namespace RAT_Logic
             NetworkObjectType.Server => new ServerDescriptor(),
             NetworkObjectType.Client => new ClientDescriptor(),
             NetworkObjectType.Hub => new HubDescriptor(), // KI (prompt 26)
+            NetworkObjectType.Cloud => new CloudDescriptor(), // KI (prompt 27)
+            NetworkObjectType.AccessPoint => new AccessPointDescriptor(), // KI (prompt 28)
             _ => new ClientDescriptor()
         };
     }
@@ -89,6 +91,26 @@ namespace RAT_Logic
         public override NetworkObjectType Type => NetworkObjectType.Hub;
         public override string IconKey => "Icon.Switch";
         public override string DisplayLabel => "Hub";
+    }
+    //KI end
+
+    //KI start (Claude Opus 4.8, prompt 27): the internet, drawn as a cloud (added by tracert-based discovery).
+    /// <summary>The internet / an external network, reached through the router.</summary>
+    public sealed class CloudDescriptor : DeviceDescriptor
+    {
+        public override NetworkObjectType Type => NetworkObjectType.Cloud;
+        public override string IconKey => "Icon.Cloud";
+        public override string DisplayLabel => "Internet";
+    }
+    //KI end
+
+    //KI start (Claude Opus 4.8, prompt 28): a Wi-Fi access point.
+    /// <summary>A wireless access point.</summary>
+    public sealed class AccessPointDescriptor : DeviceDescriptor
+    {
+        public override NetworkObjectType Type => NetworkObjectType.AccessPoint;
+        public override string IconKey => "Icon.AccessPoint";
+        public override string DisplayLabel => "Access Point";
     }
     //KI end
     //KI end

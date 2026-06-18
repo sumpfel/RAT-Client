@@ -72,22 +72,47 @@ namespace RAT_WPF.ViewModels
 
         public NetworkObjectOpenSettingsCommand NetworkObjectOpenSettings { get; set; }
 
-        //KI start (Claude Opus 4.8, prompt 26): open-ports label (friendly names, e.g. "22 - SSH"), shown on the
+        //KI start (Claude Opus 4.8, prompt 26/27): open-ports list (friendly names, e.g. "22 - SSH"), shown on the
         // node when the global ShowPorts toggle is on. Aggregates the open ports across this device's interfaces.
+        // A port is shown RED when a login is configured for it but nmap found it closed/no-response (prompt 27).
         public bool ShowPorts => RAT_WPF.Themes.DisplaySettings.ShowPorts;
 
-        public string PortsText
+        /// <summary>One open/expected port for the node display: its friendly text + whether to draw it red.</summary>
+        public sealed class PortEntry
+        {
+            public string Text { get; init; } = "";
+            public bool IsUnreachableLogin { get; init; } // login configured but nmap gave no response -> red
+        }
+
+        public IEnumerable<PortEntry> Ports
         {
             get
             {
-                var ports = _networkObject.NetworkInterfaces
+                HashSet<int> open = _networkObject.NetworkInterfaces
                     .SelectMany(i => i.OpenPorts)
-                    .Distinct()
-                    .OrderBy(p => p)
-                    .Select(RAT_Logic.PortNames.Describe);
-                return string.Join("\n", ports);
+                    .ToHashSet();
+
+                // ports a login is configured for (so we can flag the ones nmap didn't see)
+                HashSet<int> loginPorts = (_networkObject.Settings?.Logins ?? new List<RAT_Logic.Login>())
+                    .Select(l => l.Port)
+                    .Where(p => p > 0)
+                    .ToHashSet();
+
+                // union, sorted: every open port + every configured-login port
+                foreach (int port in open.Union(loginPorts).OrderBy(p => p))
+                {
+                    bool unreachableLogin = loginPorts.Contains(port) && !open.Contains(port);
+                    yield return new PortEntry
+                    {
+                        Text = RAT_Logic.PortNames.Describe(port),
+                        IsUnreachableLogin = unreachableLogin
+                    };
+                }
             }
         }
+
+        /// <summary>Re-raise the ports list (after discovery annotates an existing device).</summary>
+        public void RefreshPorts() => OnPropertyChanged(nameof(Ports));
         //KI end
 
 
@@ -101,7 +126,7 @@ namespace RAT_WPF.ViewModels
             RAT_WPF.Themes.DisplaySettings.ShowPortsChanged += _ =>
             {
                 OnPropertyChanged(nameof(ShowPorts));
-                OnPropertyChanged(nameof(PortsText));
+                OnPropertyChanged(nameof(Ports));
             };
             //KI end
         }

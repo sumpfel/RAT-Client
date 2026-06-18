@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:RAT_WPF.Views"
+             xmlns:converters="clr-namespace:RAT_WPF.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="90" d:DesignWidth="90" x:Name="grid">
     <!--KI start (Claude Opus 4.8, prompt 2/16): canvas node with device icon.
@@ -13,6 +14,7 @@
     <Grid Width="90" MinHeight="96" Background="Transparent" MouseMove="Grid_MouseMove" MouseLeftButtonUp="Grid_MouseLeftButtonUp">
         <Grid.Resources>
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+            <converters:PortColorConverter x:Key="PortColor"/>
         </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="56"/>
@@ -29,12 +31,19 @@
                    MaxWidth="88" Foreground="{DynamicResource Brush.Text}" FontSize="11"/>
         <Button Grid.Row="2" Content="Settings" Command="{Binding NetworkObjectOpenSettings}"
                 Style="{StaticResource SubtleButton}" Padding="6,2" FontSize="11"/>
-        <!--KI start (Claude Opus 4.8, prompt 26): open ports (friendly names), shown when the ShowPorts toggle is on-->
+        <!--KI start (Claude Opus 4.8, prompt 26/27): open ports (friendly names), shown when the ShowPorts toggle is
+             on. Each port is its own line; a configured login that nmap didn't see open is drawn in red.-->
         <Border Grid.Row="3" Margin="0,3,0,0" Padding="4,2" CornerRadius="4"
                 Background="{DynamicResource Brush.SurfaceAlt}" IsHitTestVisible="False"
                 Visibility="{Binding ShowPorts, Converter={StaticResource BoolToVis}}">
-            <TextBlock Text="{Binding PortsText}" FontSize="9" FontFamily="Consolas"
-                       Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
+            <ItemsControl ItemsSource="{Binding Ports}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Text}" FontSize="9" FontFamily="Consolas" TextWrapping="Wrap"
+                                   Foreground="{Binding IsUnreachableLogin, Converter={StaticResource PortColor}}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </Border>
         <!--KI end-->
     </Grid>

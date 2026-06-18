@@ -22,7 +22,15 @@ namespace RAT_Logic
         Client,
         //KI start (Claude Opus 4.8, prompt 26): Hub type (nmap discovery uses a Switch for many devices; Hub added
         // as a sibling so it can be created/persisted like the others). Backend stores type as a free string.
-        Hub
+        Hub,
+        //KI end
+        //KI start (Claude Opus 4.8, prompt 27): Cloud = "the internet" reached through the router (added by tracert
+        // discovery). Backend stores type as a free string, so a new type just works.
+        Cloud,
+        //KI end
+        //KI start (Claude Opus 4.8, prompt 28): AccessPoint = a Wi-Fi access point. When the host PC reaches the
+        // network over Wi-Fi, discovery inserts PC -(wifi)- AP - Switch - devices.
+        AccessPoint
         //KI end
     }
     public class NetworkObject
@@ -465,15 +473,15 @@ namespace RAT_Logic
         public void SetSnmp(SnmpSettings snmpSettings, string objectIdentifier, string newValue, VersionCode version = VersionCode.V1)
         {
             NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
-            if (networkObjectInterface == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
+            if (networkObjectInterface?.IP == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
             {
                 throw new EntryPointNotFoundException("No path to Remote Device Available");
             }
-            var result = Messenger.Set(version,
+            Messenger.Set(version,
                            new IPEndPoint(IPAddress.Parse(networkObjectInterface.IP.IPv4), snmpSettings.Port),
                            new OctetString(snmpSettings.WriteCommunity),
                            new List<Variable> { new Variable(new ObjectIdentifier(objectIdentifier), new OctetString(newValue)) },
-                           60000);
+                           8000); // KI (prompt 28): was 60000 — 8s is plenty and keeps the UI from hanging
         }
 
         /// <summary>Reads a single SNMP OID from this device (SNMP GET) using the read community.</summary>
@@ -481,7 +489,7 @@ namespace RAT_Logic
         public IList<Lextm.SharpSnmpLib.Variable> GetSnmp(SnmpSettings snmpSettings, string objectIdentifier, VersionCode version = VersionCode.V1)
         {
             NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
-            if (networkObjectInterface == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
+            if (networkObjectInterface?.IP == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
             {
                 throw new EntryPointNotFoundException("No path to Remote Device Available");
             }
@@ -489,7 +497,7 @@ namespace RAT_Logic
                            new IPEndPoint(IPAddress.Parse(networkObjectInterface.IP.IPv4), snmpSettings.Port),
                            new OctetString(snmpSettings.ReadCommunity),
                            new List<Variable> { new Variable(new ObjectIdentifier(objectIdentifier))},
-                           60000);
+                           8000); // KI (prompt 28): was 60000
             return result;
         }
 
@@ -501,7 +509,7 @@ namespace RAT_Logic
         public IList<Lextm.SharpSnmpLib.Variable> WalkSnmp(SnmpSettings snmpSettings, string objectIdentifier, VersionCode version = VersionCode.V1)
         {
             NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
-            if (networkObjectInterface == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
+            if (networkObjectInterface?.IP == null || string.IsNullOrWhiteSpace(networkObjectInterface.IP.IPv4))
             {
                 throw new EntryPointNotFoundException("No path to Remote Device Available");
             }
@@ -512,7 +520,7 @@ namespace RAT_Logic
                            new OctetString(snmpSettings.ReadCommunity),
                            new ObjectIdentifier(objectIdentifier),
                            results,
-                           60000,
+                           10000, // KI (prompt 28): was 60000 — a walk is several round-trips so allow a bit more
                            WalkMode.WithinSubtree);
             return results;
         }
@@ -712,47 +720,56 @@ namespace RAT_Logic
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 28): rewritten — the old version matched on subnet-MASK string equality
+        // (so any /24 device matched any /24 host NIC, regardless of the actual network) and dereferenced a possibly
+        // null IP (NRE) plus a possibly null IPv4Mask. Now it:
+        //  1) collects the host's (network address, mask) pairs from each up IPv4 NIC,
+        //  2) returns the modelled interface whose IPv4 falls in the SAME network (ip & mask == networkAddress),
+        //  3) failing that (e.g. the modelled iface has no mask), falls back to the first interface that has an IPv4
+        //     so SNMP still has a target to try instead of throwing "No path to Remote Device Available".
         private NetworkObjectInterface? GetInterfaceInSameNetworkAsHost()
         {
-
-            //GET OWN SUBNETMASK
-            List<string> ownIpv4subnet = new List<string>();
-            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (NetworkInterface interf in interfaces)
+            List<(uint network, uint mask)> hostNetworks = new List<(uint, uint)>();
+            foreach (NetworkInterface interf in NetworkInterface.GetAllNetworkInterfaces())
             {
-                if (interf.OperationalStatus == OperationalStatus.Up)
-                {
-                    var unicastIPAddresses = interf.GetIPProperties().UnicastAddresses;
+                if (interf.OperationalStatus != OperationalStatus.Up) { continue; }
+                if (interf.NetworkInterfaceType == NetworkInterfaceType.Loopback) { continue; }
 
-                    foreach (var kp in unicastIPAddresses)
-                    {
-                        ownIpv4subnet.Add(kp.IPv4Mask.ToString());
-                    }
+                foreach (var ua in interf.GetIPProperties().UnicastAddresses)
+                {
+                    if (ua.Address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork) { continue; }
+                    if (ua.IPv4Mask == null) { continue; }
+                    if (!TryToUInt(ua.Address.ToString(), out uint hostIp)) { continue; }
+                    if (!TryToUInt(ua.IPv4Mask.ToString(), out uint mask)) { continue; }
+                    hostNetworks.Add((hostIp & mask, mask));
                 }
             }
 
-            NetworkObjectInterface? interface_ = null;
-            // Get remote machine interface with same subnetmask and physical connection
-            // TODO: physical connection check
-            foreach (string ipv4subnet in ownIpv4subnet)
+            // 1) a modelled interface whose IP is in one of the host's networks
+            foreach (NetworkObjectInterface iface in NetworkInterfaces)
             {
-                foreach (NetworkObjectInterface networkObjectInterface in NetworkInterfaces)
+                string? ip = iface.IP?.IPv4;
+                if (string.IsNullOrWhiteSpace(ip) || !TryToUInt(ip, out uint ifaceIp)) { continue; }
+                foreach (var (network, mask) in hostNetworks)
                 {
-                    if (networkObjectInterface.IP.IPv4SubnetMask != ipv4subnet) { continue; }
-
-                    //TODO: check if there is a wire connection aka: own machine interface -cable- switch -cable- remote machine interface (also wifi to AccessPoint)
-
-                    interface_ = networkObjectInterface;
+                    if ((ifaceIp & mask) == network) { return iface; }
                 }
             }
 
-            return interface_;
-            /*return new NetworkObjectInterface()
-            {
-                Name = "eth0",
-                IP = new IP() { IPv4 = "192.168.66.13", IPv4SubnetMask = "255.255.255.0", IPv4Gateway = "192.168.66.253", IPv6 = "ABC::ABC", IPv6PrefixLength = 16 }
-            };*/
+            // 2) fallback: any interface that at least has an IPv4 to aim SNMP at
+            return NetworkInterfaces.FirstOrDefault(i => !string.IsNullOrWhiteSpace(i.IP?.IPv4));
         }
+
+        // dotted IPv4 / mask -> big-endian uint; false if not a valid dotted quad
+        private static bool TryToUInt(string dotted, out uint value)
+        {
+            value = 0;
+            if (!System.Net.IPAddress.TryParse(dotted, out System.Net.IPAddress? addr)) { return false; }
+            if (addr.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork) { return false; }
+            byte[] b = addr.GetAddressBytes();
+            value = ((uint)b[0] << 24) | ((uint)b[1] << 16) | ((uint)b[2] << 8) | b[3];
+            return true;
+        }
+        //KI end
     }
 }

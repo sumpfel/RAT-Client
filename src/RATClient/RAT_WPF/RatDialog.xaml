@@ -16,6 +16,12 @@
     <Border Margin="16" Background="{DynamicResource Brush.Surface}" CornerRadius="8" Padding="18">
         <DockPanel>
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <!--KI start (Claude Opus 4.8, prompt 27): Yes/No buttons for confirm dialogs (hidden by default) -->
+                <Button x:Name="NoButton" Content="No" Style="{StaticResource SubtleButton}" MinWidth="80"
+                        Margin="0,0,8,0" Visibility="Collapsed" Click="No_Click" IsCancel="True"/>
+                <Button x:Name="YesButton" Content="Yes" Style="{StaticResource ModernButton}" MinWidth="80"
+                        Margin="0,0,8,0" Visibility="Collapsed" Click="Yes_Click"/>
+                <!--KI end-->
                 <Button x:Name="OkButton" Content="OK" Style="{StaticResource ModernButton}" MinWidth="80"
                         Click="Ok_Click" IsDefault="True"/>
             </StackPanel>

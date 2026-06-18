@@ -72,6 +72,11 @@ namespace RAT_WPF.ViewModels
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Switch , Name = "New Switch", Settings = new NetworkObjectSettings()});
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Server , Name = "New Server", Settings = new NetworkObjectSettings()});
             defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Client , Name = "New Client", Settings = new NetworkObjectSettings()});
+            //KI start (Claude Opus 4.8, prompt 28): the internet Cloud and the Wi-Fi Access Point are now draggable
+            // sidebar objects too (like PC/Client).
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.AccessPoint, Name = "New Access Point", Settings = new NetworkObjectSettings()});
+            defaultItems.AddNetworkObject(new NetworkObject() { Type = NetworkObjectType.Cloud, Name = "Internet", Settings = new NetworkObjectSettings()});
+            //KI end
             //KI start (Claude Opus 4.8, prompt 4/12): default PC name = this machine's name (still changeable);
             // and the PC carries this machine's real interfaces so they can be selected in the SelectInterfaceWindow.
             NetworkObject ownPc = new NetworkObject() { Type = NetworkObjectType.PC, Name = Environment.MachineName, Settings = new NetworkObjectSettings() };
@@ -108,6 +113,7 @@ namespace RAT_WPF.ViewModels
         // needs the username + password again.
         public void Logout()
         {
+            RAT_WPF.Logging.AppLogger.Info($"Logout: user '{Session.CurrentUser?.UserName}'"); // KI (prompt 28)
             DatabaseConnectionStore.Current = null;
             Session.CurrentUser = null;
             if (_navigationStore != null)
@@ -125,8 +131,10 @@ namespace RAT_WPF.ViewModels
 
             try
             {
+                RAT_WPF.Logging.AppLogger.Info("Topology: loading graph from database"); // KI (prompt 28)
                 NetworkObjectGraph graph = await DatabaseConnectionStore.Current.GetNetworkGraph();
-                if (graph?.networkObjects == null) { return; }
+                if (graph?.networkObjects == null) { RAT_WPF.Logging.AppLogger.Info("Topology: empty graph"); return; }
+                RAT_WPF.Logging.AppLogger.Info($"Topology: loaded {graph.networkObjects.Count} device(s)"); // KI (prompt 28)
 
                 // first the devices; keep a model -> view-model map so connections can find their endpoints
                 Dictionary<NetworkObject, NetworkObjectViewModel> vmByModel = new Dictionary<NetworkObject, NetworkObjectViewModel>();
@@ -186,12 +194,45 @@ namespace RAT_WPF.ViewModels
         // Everything created is persisted through the active connection (mock = local-only).
         public async Task DiscoverDevicesAsync()
         {
+            RAT_WPF.Logging.AppLogger.Info("Discovery: starting"); // KI (prompt 28)
+
+            //KI start (Claude Opus 4.8, prompt 29): only run discovery when nmap is actually installed.
+            if (!Discovery.NmapService.IsInstalled())
+            {
+                RAT_WPF.Logging.AppLogger.Warn("Discovery: nmap is not installed — aborting");
+                RatDialog.Show("nmap not installed",
+                    "Network discovery needs nmap, which isn't installed. Install it from first-run setup to enable the Discover button.",
+                    "Icon.NoConnection");
+                return;
+            }
+            //KI end
+
             NetworkObjectViewModel pcVm = await EnsureOwnPcOnCanvasAsync();
 
-            bool withPorts = RAT_WPF.Themes.DisplaySettings.ShowPorts; // KI (prompt 26): port scan only if asked
-            List<Discovery.DiscoveredHost> hosts = await Discovery.NmapService.ScanLocalSubnetAsync(withPorts);
+            //KI (prompt 29): draw the topology from a FAST ping-only sweep (-sn). Port + OS probing is slow, so it's
+            // done per-device in the background afterwards (see ScanPortsInBackground), and only when "Show ports"
+            // is on — so the canvas appears quickly instead of waiting for a full -F -O scan of the whole subnet.
+            List<Discovery.DiscoveredHost> hosts = await Discovery.NmapService.ScanLocalSubnetAsync(scanPorts: false);
 
-            string? ownIp = Discovery.NmapService.GetLocalSubnet()?.ip;
+            var subnetInfo = Discovery.NmapService.GetLocalSubnetInfo();
+            string? ownIp = subnetInfo?.ip;
+            //KI (prompt 28): log what the scan saw
+            RAT_WPF.Logging.AppLogger.Info(
+                $"Discovery: own ip={ownIp ?? "?"} mask={subnetInfo?.subnetMask ?? "?"} gateway={subnetInfo?.gateway ?? "?"} " +
+                $"wireless={Discovery.NmapService.IsActiveConnectionWireless()}; nmap found {hosts.Count} host(s)");
+            foreach (var h in hosts)
+            {
+                RAT_WPF.Logging.AppLogger.Debug($"Discovery: host {h.Ip} '{h.Hostname}' os='{h.Os}' ports=[{string.Join(",", h.OpenPorts)}]");
+            }
+
+            //KI start (Claude Opus 4.8, prompt 27): use tracert to find which discovered IP is the local router
+            // (first hop towards the internet). That host becomes a Router, and — if the trace reached past it —
+            // we also add an "internet" Cloud behind the router.
+            (string routerIp, bool reachedInternet) route;
+            try { route = await Discovery.NmapService.FindRouterAsync(); }
+            catch (Exception ex) { RAT_WPF.Logging.AppLogger.Warn($"Discovery: tracert failed: {ex.Message}"); route = ("", false); }
+            RAT_WPF.Logging.AppLogger.Info($"Discovery: router={route.routerIp} reachedInternet={route.reachedInternet}"); // KI (prompt 28)
+            //KI end
 
             // split the scan results into "new hosts to add" and "already-modelled but not yet cabled to the PC"
             List<Discovery.DiscoveredHost> newHosts = new List<Discovery.DiscoveredHost>();
@@ -209,23 +250,49 @@ namespace RAT_WPF.ViewModels
                 }
                 else
                 {
-                    // annotate the existing interface's ports too, and wire it if needed
-                    AnnotatePorts(existing, host);
+                    // annotate the existing interface's ports/OS/mask too, and wire it if needed
+                    AnnotateFromHost(existing, host);
                     if (!IsCabledTo(pcVm, existing)) { existingToWire.Add(existing); }
                 }
             }
 
-            // create the new client devices first (not cabled yet)
-            List<NetworkObjectViewModel> newClients = new List<NetworkObjectViewModel>();
+            // create the new devices first (not cabled yet); the router IP becomes a Router, the rest a typed device.
+            List<NetworkObjectViewModel> newDevices = new List<NetworkObjectViewModel>();
+            NetworkObjectViewModel? routerVm = null;
             foreach (Discovery.DiscoveredHost host in newHosts)
             {
-                newClients.Add(await AddDiscoveredClientAsync(host));
+                bool isRouter = !string.IsNullOrEmpty(route.routerIp) && host.Ip == route.routerIp;
+                NetworkObjectViewModel vm = await AddDiscoveredDeviceAsync(host, isRouter ? NetworkObjectType.Router : (NetworkObjectType?)null);
+                if (isRouter) { routerVm = vm; }
+                newDevices.Add(vm);
+            }
+
+            // an already-modelled device might be the router too
+            if (routerVm == null && !string.IsNullOrEmpty(route.routerIp))
+            {
+                routerVm = FindDeviceByIp(route.routerIp);
             }
 
             // everything that still needs a wire to the PC
             List<NetworkObjectViewModel> toWire = new List<NetworkObjectViewModel>();
-            toWire.AddRange(newClients);
+            toWire.AddRange(newDevices);
             toWire.AddRange(existingToWire);
+
+            //KI start (Claude Opus 4.8, prompt 28): if the host reaches the network over Wi-Fi, the PC's uplink is
+            // wireless: model PC -(wifi)- AccessPoint, then the AccessPoint is what plugs into the switch (or the
+            // single device). So the "uplink" node the rest of the topology hangs off is the AP, not the PC directly.
+            bool wireless = Discovery.NmapService.IsActiveConnectionWireless();
+            NetworkObjectViewModel uplink = pcVm;
+            if (wireless && toWire.Count >= 1)
+            {
+                NetworkObjectViewModel apVm = await AddAccessPointAsync();
+                apVm.X = pcVm.X + 160;
+                apVm.Y = pcVm.Y;
+                PersistMovedPosition(apVm);
+                await CableWirelessAsync(pcVm, apVm); // dashed Wi-Fi link PC <-> AP
+                uplink = apVm;
+            }
+            //KI end
 
             if (toWire.Count == 0)
             {
@@ -233,25 +300,103 @@ namespace RAT_WPF.ViewModels
             }
             else if (toWire.Count == 1)
             {
-                // exactly one device -> a direct 1:1 cable from the PC
-                await CableAsync(pcVm, toWire[0]);
+                // exactly one device -> a direct 1:1 cable from the uplink (PC, or the AP on Wi-Fi)
+                PlaceAround(uplink, new[] { toWire[0] });
+                await CableAsync(uplink, toWire[0]);
             }
             else
             {
-                // multiple devices -> a switch with enough interfaces, PC + every device wired to it
-                NetworkObjectViewModel switchVm = await AddSwitchAsync(toWire.Count + 1); // +1 for the PC uplink
+                // multiple devices -> a switch with enough interfaces, uplink + every device in a circle around it
+                NetworkObjectViewModel switchVm = await AddSwitchAsync(toWire.Count + 1); // +1 for the uplink
+                PlaceAround(switchVm, new[] { uplink }.Concat(toWire).ToList());
+
                 int portIndex = 0;
-                await CableViaSwitchAsync(pcVm, switchVm, portIndex++);
+                await CableViaSwitchAsync(uplink, switchVm, portIndex++);
                 foreach (NetworkObjectViewModel device in toWire)
                 {
                     await CableViaSwitchAsync(device, switchVm, portIndex++);
                 }
             }
 
+            //KI start (Claude Opus 4.8, prompt 27): if we found a router and the trace reached the internet, add an
+            // "internet" Cloud behind the router and cable it to a spare router interface.
+            if (routerVm != null && route.reachedInternet)
+            {
+                await EnsureCloudBehindRouterAsync(routerVm);
+            }
+            //KI end
+
+            RAT_WPF.Logging.AppLogger.Info( // KI (prompt 28)
+                $"Discovery: done — {newDevices.Count} new device(s), {existingToWire.Count} existing wired, " +
+                $"{toWire.Count} total wired, wireless={wireless}");
             OnPropertyChanged(nameof(NetworkConnectionViewModels));
+
+            //KI start (Claude Opus 4.8, prompt 29): the topology is drawn now — probe each discovered device's ports
+            // (and OS) in the background, ONE at a time, only when "Show ports" is on. Each device's node updates as
+            // its scan finishes, so the user isn't blocked and the slow per-host nmap work happens after the draw.
+            if (RAT_WPF.Themes.DisplaySettings.ShowPorts)
+            {
+                List<NetworkObjectViewModel> scanTargets = new List<NetworkObjectViewModel>(newDevices);
+                scanTargets.AddRange(existingToWire);
+                _ = ScanPortsInBackgroundAsync(scanTargets);
+            }
+            //KI end
         }
 
-        //KI start (Claude Opus 4.8, prompt 26): create a Switch with the given number of interfaces.
+        //KI start (Claude Opus 4.8, prompt 29): scan each device's ports/OS one at a time and annotate its node as
+        // results arrive. Best-effort: a failure on one host is logged and skipped, the rest continue.
+        private async Task ScanPortsInBackgroundAsync(IList<NetworkObjectViewModel> devices)
+        {
+            foreach (NetworkObjectViewModel vm in devices)
+            {
+                string? ip = vm.Model.NetworkInterfaces.FirstOrDefault(i => !string.IsNullOrWhiteSpace(i.IP?.IPv4))?.IP?.IPv4;
+                if (string.IsNullOrWhiteSpace(ip)) { continue; }
+
+                try
+                {
+                    RAT_WPF.Logging.AppLogger.Debug($"Discovery: background port scan of {ip} ('{vm.Model.Name}')");
+                    (List<int> openPorts, string os) = await Discovery.NmapService.ScanHostPortsAsync(ip);
+
+                    NetworkObjectInterface? iface = vm.Model.NetworkInterfaces.FirstOrDefault(i => i.IP?.IPv4 == ip);
+                    if (iface != null && openPorts.Count > 0) { iface.OpenPorts = new List<int>(openPorts); }
+                    if (!string.IsNullOrEmpty(os) && string.IsNullOrEmpty(vm.Model.Os)) { vm.Model.Os = os; }
+                    vm.RefreshPorts();
+                    RAT_WPF.Logging.AppLogger.Info($"Discovery: {ip} open ports=[{string.Join(",", openPorts)}] os='{os}'");
+                }
+                catch (Exception ex)
+                {
+                    RAT_WPF.Logging.AppLogger.Warn($"Discovery: background port scan of {ip} failed: {ex.Message}");
+                }
+            }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 27): arrange devices evenly on a circle around a centre node.
+        private void PlaceAround(NetworkObjectViewModel center, IList<NetworkObjectViewModel> around)
+        {
+            const int radius = 220;
+            int cx = center.X, cy = center.Y;
+            int n = around.Count;
+            for (int i = 0; i < n; i++)
+            {
+                double angle = (2 * Math.PI * i) / Math.Max(1, n) - Math.PI / 2; // start at the top
+                // KI (prompt 28): clamp onto the canvas so circle nodes never land in unreachable void
+                around[i].X = Views.CanvasLayout.ClampX(cx + radius * Math.Cos(angle));
+                around[i].Y = Views.CanvasLayout.ClampY(cy + radius * Math.Sin(angle));
+                PersistMovedPosition(around[i]);
+            }
+        }
+
+        // a position update for an already-saved device (fire-and-forget; no-op without a connection / unsaved)
+        private async void PersistMovedPosition(NetworkObjectViewModel vm)
+        {
+            if (DatabaseConnectionStore.Current == null || vm.Model.ID <= 0) { return; }
+            try { await DatabaseConnectionStore.Current.EditNetworkObject(vm.Model); } catch { /* best-effort */ }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 26/27): create a Switch with the given number of interfaces, named
+        // Cisco-style (GigabitEthernet0/1, 0/2, ...).
         private async Task<NetworkObjectViewModel> AddSwitchAsync(int interfaceCount)
         {
             NetworkObject model = new NetworkObject
@@ -259,11 +404,15 @@ namespace RAT_WPF.ViewModels
                 Type = NetworkObjectType.Switch,
                 Name = "Switch",
                 X = 360,
-                Y = 140
+                Y = 240
             };
             for (int i = 0; i < interfaceCount; i++)
             {
-                model.NetworkInterfaces.Add(new NetworkObjectInterface { Name = $"port{i}", IsUp = true });
+                model.NetworkInterfaces.Add(new NetworkObjectInterface
+                {
+                    Name = DeviceClassifier.CiscoInterfaceName(i), // KI (prompt 27): GigabitEthernet0/<n>
+                    IsUp = true
+                });
             }
             if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
 
@@ -273,6 +422,86 @@ namespace RAT_WPF.ViewModels
             AddNetworkObjectViewModelToCanvas(vm);
             return vm;
         }
+
+        //KI start (Claude Opus 4.8, prompt 28): add a Wi-Fi AccessPoint (a wlan radio + a wired uplink interface).
+        private async Task<NetworkObjectViewModel> AddAccessPointAsync()
+        {
+            NetworkObject model = new NetworkObject
+            {
+                Type = NetworkObjectType.AccessPoint,
+                Name = "Access Point",
+                X = 200,
+                Y = 120
+            };
+            model.NetworkInterfaces.Add(new NetworkObjectInterface { Name = "wlan0", IsUp = true });
+            model.NetworkInterfaces.Add(new NetworkObjectInterface { Name = "uplink", IsUp = true });
+            if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
+
+            await PersistObjectWithInterfacesAsync(model);
+
+            NetworkObjectViewModel vm = new NetworkObjectViewModel(model);
+            AddNetworkObjectViewModelToCanvas(vm);
+            return vm;
+        }
+
+        // cable two devices with a WIRELESS (dashed) link on their first free interfaces
+        private async Task CableWirelessAsync(NetworkObjectViewModel a, NetworkObjectViewModel b)
+        {
+            NetworkObjectInterface? ifaceA = a.Model.NetworkInterfaces.FirstOrDefault(i => i.Connection == null)
+                                             ?? a.Model.NetworkInterfaces.FirstOrDefault();
+            NetworkObjectInterface? ifaceB = b.Model.NetworkInterfaces.FirstOrDefault(i => i.Connection == null)
+                                             ?? b.Model.NetworkInterfaces.FirstOrDefault();
+            if (ifaceA == null || ifaceB == null) { return; }
+
+            NetworkConnection connection = new NetworkConnection(
+                ifaceA, ifaceB, 866_000_000, NetworkConnectionType.Wireless, "auto-discovered Wi-Fi", "Wi-Fi");
+            ifaceA.Connection = connection;
+            ifaceB.Connection = connection;
+            _networkConnectionViewModels.Add(new NetworkConnectionViewModel(connection, a, b));
+
+            if (DatabaseConnectionStore.Current != null && ifaceA.ID > 0 && ifaceB.ID > 0)
+            {
+                try { await DatabaseConnectionStore.Current.AddConnection(connection, ifaceA, ifaceB); }
+                catch (Exception ex) { RatDialog.Show("Database hiccup", $"The rat couldn't save the Wi-Fi link.\n\n{ex.Message}", "Icon.DatabaseError"); }
+            }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 27): add the "internet" Cloud behind the router (once), cabled to a
+        // free router interface (adding one if the router has none spare).
+        private async Task EnsureCloudBehindRouterAsync(NetworkObjectViewModel routerVm)
+        {
+            if (_networkObjects.Any(n => n.Model.Type == NetworkObjectType.Cloud)) { return; }
+
+            NetworkObject cloudModel = new NetworkObject
+            {
+                Type = NetworkObjectType.Cloud,
+                Name = "Internet",
+                X = routerVm.X,
+                Y = routerVm.Y - 200
+            };
+            cloudModel.NetworkInterfaces.Add(new NetworkObjectInterface { Name = "wan", IsUp = true });
+            if (Session.CurrentUser != null) { cloudModel.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
+            await PersistObjectWithInterfacesAsync(cloudModel);
+
+            NetworkObjectViewModel cloudVm = new NetworkObjectViewModel(cloudModel);
+            AddNetworkObjectViewModelToCanvas(cloudVm);
+
+            // make sure the router has a spare interface (its WAN uplink)
+            NetworkObjectInterface? routerFree = routerVm.Model.NetworkInterfaces.FirstOrDefault(i => i.Connection == null);
+            if (routerFree == null)
+            {
+                routerFree = new NetworkObjectInterface { Name = "wan", IsUp = true };
+                routerVm.Model.NetworkInterfaces.Add(routerFree);
+                if (DatabaseConnectionStore.Current != null && routerVm.Model.ID > 0)
+                {
+                    try { await DatabaseConnectionStore.Current.AddInterface(routerFree, routerVm.Model); } catch { }
+                }
+            }
+
+            await CableAsync(cloudVm, routerVm);
+        }
+        //KI end
 
         // cable a device's first interface to a specific switch port
         private async Task CableViaSwitchAsync(NetworkObjectViewModel device, NetworkObjectViewModel switchVm, int switchPort)
@@ -294,11 +523,21 @@ namespace RAT_WPF.ViewModels
             }
         }
 
-        // copy the host's open ports onto its (first) interface so the ShowPorts view can list them
-        private static void AnnotatePorts(NetworkObjectViewModel vm, Discovery.DiscoveredHost host)
+        // copy the host's open ports / OS / subnet mask onto its (first) interface + device so the views can show them
+        private static void AnnotateFromHost(NetworkObjectViewModel vm, Discovery.DiscoveredHost host)
         {
             NetworkObjectInterface? iface = vm.Model.NetworkInterfaces.FirstOrDefault();
-            if (iface != null && host.OpenPorts.Count > 0) { iface.OpenPorts = new List<int>(host.OpenPorts); }
+            if (iface != null)
+            {
+                if (host.OpenPorts.Count > 0) { iface.OpenPorts = new List<int>(host.OpenPorts); }
+                if (!string.IsNullOrEmpty(host.SubnetMask))
+                {
+                    iface.IP ??= new IP { IPv4 = host.Ip };
+                    if (string.IsNullOrEmpty(iface.IP.IPv4SubnetMask)) { iface.IP.IPv4SubnetMask = host.SubnetMask; }
+                }
+            }
+            if (!string.IsNullOrEmpty(host.Os) && string.IsNullOrEmpty(vm.Model.Os)) { vm.Model.Os = host.Os; }
+            vm.RefreshPorts(); // KI (prompt 27): refresh the ShowPorts label for a device already on the canvas
         }
         //KI end
 
@@ -322,14 +561,18 @@ namespace RAT_WPF.ViewModels
             return vm;
         }
 
-        //KI (prompt 25/26): create a Client for a discovered host (cabling is decided by the caller). Returns the VM.
-        private async Task<NetworkObjectViewModel> AddDiscoveredClientAsync(Discovery.DiscoveredHost host)
+        //KI (prompt 25/26/27): create a device for a discovered host. Type is forced when the caller knows it (e.g.
+        // the router), otherwise guessed from the open ports. Fills name/OS/subnet mask/ports where nmap gave them.
+        private async Task<NetworkObjectViewModel> AddDiscoveredDeviceAsync(Discovery.DiscoveredHost host, NetworkObjectType? forcedType)
         {
             string name = string.IsNullOrWhiteSpace(host.Hostname) ? host.Ip : host.Hostname;
+            NetworkObjectType type = forcedType ?? DeviceClassifier.ClassifyByPorts(host.OpenPorts);
+
             NetworkObject model = new NetworkObject
             {
-                Type = NetworkObjectType.Client,
+                Type = type,
                 Name = name,
+                Os = host.Os, // KI (prompt 27): nmap OS guess (may be empty)
                 X = 200 + _networkObjects.Count * 30 % 600,
                 Y = 200 + _networkObjects.Count * 25 % 300
             };
@@ -337,13 +580,14 @@ namespace RAT_WPF.ViewModels
             {
                 Name = "eth0",
                 IsUp = true,
-                IP = new IP { IPv4 = host.Ip },
+                IP = new IP { IPv4 = host.Ip, IPv4SubnetMask = host.SubnetMask }, // KI (prompt 27): fill the mask
                 OpenPorts = new List<int>(host.OpenPorts) // KI (prompt 26): keep the scanned ports for the ShowPorts view
             });
             if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
 
             await PersistObjectWithInterfacesAsync(model);
 
+            RAT_WPF.Logging.AppLogger.Info($"Discovery: added {type} '{name}' ({host.Ip})"); // KI (prompt 28)
             NetworkObjectViewModel vm = new NetworkObjectViewModel(model);
             AddNetworkObjectViewModelToCanvas(vm);
             return vm;
@@ -359,8 +603,12 @@ namespace RAT_WPF.ViewModels
 
         private async Task CableAsync(NetworkObjectViewModel a, NetworkObjectViewModel b)
         {
-            NetworkObjectInterface? ifaceA = a.Model.NetworkInterfaces.FirstOrDefault();
-            NetworkObjectInterface? ifaceB = b.Model.NetworkInterfaces.FirstOrDefault();
+            //KI (prompt 27): prefer a free interface on each side so an already-cabled device (e.g. the router,
+            // wired to the switch) gets its NEXT interface used for this cable instead of overwriting the first one.
+            NetworkObjectInterface? ifaceA = a.Model.NetworkInterfaces.FirstOrDefault(i => i.Connection == null)
+                                             ?? a.Model.NetworkInterfaces.FirstOrDefault();
+            NetworkObjectInterface? ifaceB = b.Model.NetworkInterfaces.FirstOrDefault(i => i.Connection == null)
+                                             ?? b.Model.NetworkInterfaces.FirstOrDefault();
             if (ifaceA == null || ifaceB == null) { return; } // need an interface on each side
 
             NetworkConnection connection = new NetworkConnection(
@@ -401,8 +649,10 @@ namespace RAT_WPF.ViewModels
         // previously the tool only removed the node in memory so the deletion was lost on the next load.
         public async void DeleteNetworkObjectFromCanvasAndDatabase(NetworkObjectViewModel node)
         {
+            RAT_WPF.Logging.AppLogger.Info($"Delete device '{node.Model.Name}' ({node.Model.Type}, id {node.Model.ID})"); // KI (prompt 28)
             if (!node.Model.CanBeDeletedBy(Session.CurrentUser))
             {
+                RAT_WPF.Logging.AppLogger.Warn($"Delete device '{node.Model.Name}' denied (insufficient rights)"); // KI (prompt 28)
                 RatDialog.Show("Not allowed", "Only an owner of this device (or a global admin) can delete it.", "Icon.LoginFailed");
                 return;
             }
@@ -443,6 +693,7 @@ namespace RAT_WPF.ViewModels
         // remove it on the backend, clear it off both endpoint interfaces, then drop it from the canvas.
         public async void DeleteConnectionFromCanvasAndDatabase(NetworkConnectionViewModel connection)
         {
+            RAT_WPF.Logging.AppLogger.Info($"Delete cable '{connection.networkConnection.Name}' (id {connection.networkConnection.ID})"); // KI (prompt 28)
             if (DatabaseConnectionStore.Current != null && connection.networkConnection.ID > 0)
             {
                 try

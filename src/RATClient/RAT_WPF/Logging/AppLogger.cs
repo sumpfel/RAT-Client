@@ -16,6 +16,31 @@ namespace RAT_WPF.Logging
 
         public static string? LogFilePath => _logFile;
 
+        //KI start (Claude Opus 4.8, prompt 28): the logs directory (created on Start), used by the "Open log folder"
+        // button in Settings.
+        public static string LogDirectory => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+
+        /// <summary>Opens the logs folder in Explorer (best-effort). Returns false if it couldn't be opened.</summary>
+        public static bool OpenLogFolder()
+        {
+            try
+            {
+                Directory.CreateDirectory(LogDirectory);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = LogDirectory,
+                    UseShellExecute = true
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Error("Could not open the log folder", ex);
+                return false;
+            }
+        }
+        //KI end
+
         /// <summary>Creates this run's log file, prunes old ones to the newest 3, and writes a start line.</summary>
         public static void Start()
         {
@@ -46,6 +71,7 @@ namespace RAT_WPF.Logging
             }
         }
 
+        public static void Debug(string message) => Write("DEBUG", message); // KI (prompt 28)
         public static void Info(string message) => Write("INFO", message);
         public static void Warn(string message) => Write("WARN", message);
         public static void Error(string message) => Write("ERROR", message);

@@ -547,25 +547,38 @@ namespace RAT_WPF.NetworkObject_UI
             SnmpResults.ItemsSource = rows;
         }
 
-        private void SnmpGet_Click(object sender, RoutedEventArgs e)
+        //KI start (Claude Opus 4.8, prompt 28): the SNMP calls block for up to the agent timeout — run them OFF the
+        // UI thread (Task.Run) so the settings window doesn't freeze, and log each attempt + outcome.
+        private async void SnmpGet_Click(object sender, RoutedEventArgs e)
         {
+            SnmpSettings settings = BuildSnmpSettings();
+            string oid = SnmpOid.Text.Trim();
+            VersionCode version = SelectedSnmpVersion();
+            RAT_WPF.Logging.AppLogger.Info($"SNMP GET '{networkObject.Name}' oid={oid} port={settings.Port} v={version}");
             try
             {
-                var result = networkObject.GetSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SelectedSnmpVersion());
+                var result = await Task.Run(() => networkObject.GetSnmp(settings, oid, version));
                 ShowSnmpResults(result);
+                RAT_WPF.Logging.AppLogger.Info($"SNMP GET '{networkObject.Name}' returned {result.Count} variable(s)");
             }
             catch (Exception ex)
             {
+                RAT_WPF.Logging.AppLogger.Error($"SNMP GET '{networkObject.Name}' oid={oid} failed", ex);
                 RatDialog.Show("SNMP GET failed", ex.Message, "Icon.ConnectionLost");
             }
         }
 
-        private void SnmpWalk_Click(object sender, RoutedEventArgs e)
+        private async void SnmpWalk_Click(object sender, RoutedEventArgs e)
         {
+            SnmpSettings settings = BuildSnmpSettings();
+            string oid = SnmpOid.Text.Trim();
+            VersionCode version = SelectedSnmpVersion();
+            RAT_WPF.Logging.AppLogger.Info($"SNMP WALK '{networkObject.Name}' oid={oid} port={settings.Port} v={version}");
             try
             {
-                var result = networkObject.WalkSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SelectedSnmpVersion());
+                var result = await Task.Run(() => networkObject.WalkSnmp(settings, oid, version));
                 ShowSnmpResults(result);
+                RAT_WPF.Logging.AppLogger.Info($"SNMP WALK '{networkObject.Name}' returned {result.Count} variable(s)");
                 if (result.Count == 0)
                 {
                     RatDialog.Show("SNMP Walk", "Walk returned no variables.", "Icon.NoConnection");
@@ -573,19 +586,27 @@ namespace RAT_WPF.NetworkObject_UI
             }
             catch (Exception ex)
             {
+                RAT_WPF.Logging.AppLogger.Error($"SNMP WALK '{networkObject.Name}' oid={oid} failed", ex);
                 RatDialog.Show("SNMP WALK failed", ex.Message, "Icon.ConnectionLost");
             }
         }
 
-        private void SnmpSet_Click(object sender, RoutedEventArgs e)
+        private async void SnmpSet_Click(object sender, RoutedEventArgs e)
         {
+            SnmpSettings settings = BuildSnmpSettings();
+            string oid = SnmpOid.Text.Trim();
+            string value = SnmpSetValue.Text;
+            VersionCode version = SelectedSnmpVersion();
+            RAT_WPF.Logging.AppLogger.Info($"SNMP SET '{networkObject.Name}' oid={oid} value='{value}' port={settings.Port} v={version}");
             try
             {
-                networkObject.SetSnmp(BuildSnmpSettings(), SnmpOid.Text.Trim(), SnmpSetValue.Text, SelectedSnmpVersion());
+                await Task.Run(() => networkObject.SetSnmp(settings, oid, value, version));
+                RAT_WPF.Logging.AppLogger.Info($"SNMP SET '{networkObject.Name}' oid={oid} sent");
                 RatDialog.Show("SNMP", "SET sent. Use Get to confirm the new value.", "Icon.LoginSuccess");
             }
             catch (Exception ex)
             {
+                RAT_WPF.Logging.AppLogger.Error($"SNMP SET '{networkObject.Name}' oid={oid} failed", ex);
                 RatDialog.Show("SNMP SET failed", ex.Message, "Icon.ConnectionLost");
             }
         }

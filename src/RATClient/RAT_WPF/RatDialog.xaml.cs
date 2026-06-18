@@ -33,6 +33,32 @@ namespace RAT_WPF
             dialog.ShowDialog();
         }
 
+        //KI start (Claude Opus 4.8, prompt 27): a themed Yes/No confirm dialog (used by first-run setup instead of
+        // the plain WindowsXP-style MessageBox). Returns true when the user clicks Yes.
+        public static bool Confirm(string heading, string message, string iconKey = "Icon.AboutRat", Window? owner = null)
+        {
+            RatDialog dialog = new RatDialog
+            {
+                HeadingTextValue = heading,
+                MessageTextValue = message,
+            };
+            dialog.SetIcon(iconKey);
+            dialog.OkButton.Visibility = Visibility.Collapsed;
+            dialog.YesButton.Visibility = Visibility.Visible;
+            dialog.NoButton.Visibility = Visibility.Visible;
+            dialog.YesButton.IsDefault = true;
+
+            owner ??= Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
+            if (owner != null && owner != dialog) { dialog.Owner = owner; }
+            else { dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen; }
+
+            return dialog.ShowDialog() == true;
+        }
+
+        private void Yes_Click(object sender, RoutedEventArgs e) { DialogResult = true; Close(); }
+        private void No_Click(object sender, RoutedEventArgs e) { DialogResult = false; Close(); }
+        //KI end
+
         private string HeadingTextValue { set => HeadingText.Text = value; }
         private string MessageTextValue { set => MessageText.Text = value; }
 

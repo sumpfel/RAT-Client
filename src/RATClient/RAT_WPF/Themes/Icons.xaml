@@ -366,6 +366,78 @@
         </DrawingImage.Drawing>
     </DrawingImage>
 
+    <!--KI start (Claude Opus 4.8, prompt 27): the internet, drawn as a cloud with a little rat peeking out -->
+    <DrawingImage x:Key="Icon.Cloud">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- cloud puffs -->
+                <GeometryDrawing Brush="#FFD9B58A">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="34,52" RadiusX="20" RadiusY="18"/>
+                            <EllipseGeometry Center="58,46" RadiusX="24" RadiusY="22"/>
+                            <EllipseGeometry Center="74,58" RadiusX="16" RadiusY="14"/>
+                            <RectangleGeometry Rect="22,56,60,16" RadiusX="8" RadiusY="8"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- rat head peeking out the top -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="58,38" RadiusX="9" RadiusY="8"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- ears -->
+                <GeometryDrawing Brush="#FFC97A4A">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="51,31" RadiusX="4" RadiusY="4"/>
+                            <EllipseGeometry Center="65,31" RadiusX="4" RadiusY="4"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- eyes -->
+                <GeometryDrawing Brush="#FF2A1A10">
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <EllipseGeometry Center="54,38" RadiusX="1.4" RadiusY="1.4"/>
+                            <EllipseGeometry Center="62,38" RadiusX="1.4" RadiusY="1.4"/>
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <!--KI end-->
+
+    <!--KI start (Claude Opus 4.8, prompt 28): a Wi-Fi access point (a puck with radiating signal arcs) -->
+    <DrawingImage x:Key="Icon.AccessPoint">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- signal arcs -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFC97A4A" Thickness="4" StartLineCap="Round" EndLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M24,34 C38,18 62,18 76,34"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FF8A5A3C" Thickness="4" StartLineCap="Round" EndLineCap="Round"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><PathGeometry Figures="M34,44 C42,34 58,34 66,44"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- puck body -->
+                <GeometryDrawing Brush="#FF5A3A28">
+                    <GeometryDrawing.Geometry><RectangleGeometry Rect="26,56,48,22" RadiusX="8" RadiusY="8"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- status light -->
+                <GeometryDrawing Brush="#FF5A7A3C">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="36,67" RadiusX="3" RadiusY="3"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- centre emitter dot -->
+                <GeometryDrawing Brush="#FFB85C2A">
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="50,52" RadiusX="4" RadiusY="4"/></GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <!--KI end-->
+
     <!--KI start (Claude Opus 4.8, prompt 15): more rat-themed status icons -->
 
     <!-- ============================================================

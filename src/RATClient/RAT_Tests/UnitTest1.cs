@@ -129,4 +129,65 @@ namespace RAT_Tests
         }
     }
     //KI end
+
+    //KI start (Claude Opus 4.8, prompt 27): tests for the discovery device classifier (Cisco interface naming and
+    // the open-port -> device-type heuristic).
+    public class DeviceClassifierTests
+    {
+        // Cisco-style port naming is 1-based GigabitEthernet0/<n>
+        [Fact]
+        public void CiscoInterfaceName_IsOneBasedGigabitEthernet()
+        {
+            Assert.Equal("GigabitEthernet0/1", DeviceClassifier.CiscoInterfaceName(0));
+            Assert.Equal("GigabitEthernet0/5", DeviceClassifier.CiscoInterfaceName(4));
+        }
+
+        // SSH alone is a managed switch/appliance, NOT a server
+        [Fact]
+        public void ClassifyByPorts_SshOnly_IsSwitch()
+        {
+            Assert.Equal(NetworkObjectType.Switch, DeviceClassifier.ClassifyByPorts(new[] { 22 }));
+        }
+
+        // HTTP (or HTTPS) on its own might just be a device web UI -> switch
+        [Fact]
+        public void ClassifyByPorts_HttpOnly_IsSwitch()
+        {
+            Assert.Equal(NetworkObjectType.Switch, DeviceClassifier.ClassifyByPorts(new[] { 80 }));
+            Assert.Equal(NetworkObjectType.Switch, DeviceClassifier.ClassifyByPorts(new[] { 443 }));
+        }
+
+        // a database port is a strong server signal even on its own
+        [Fact]
+        public void ClassifyByPorts_Database_IsServer()
+        {
+            Assert.Equal(NetworkObjectType.Server, DeviceClassifier.ClassifyByPorts(new[] { 3306 }));
+        }
+
+        // several service ports together (web + https + mariadb) -> server
+        [Fact]
+        public void ClassifyByPorts_ManyServices_IsServer()
+        {
+            Assert.Equal(NetworkObjectType.Server, DeviceClassifier.ClassifyByPorts(new[] { 22, 80, 443, 3306 }));
+        }
+
+        // no open ports -> a plain client
+        [Fact]
+        public void ClassifyByPorts_NoPorts_IsClient()
+        {
+            Assert.Equal(NetworkObjectType.Client, DeviceClassifier.ClassifyByPorts(new int[0]));
+        }
+
+        //KI (prompt 28): the new Cloud + AccessPoint types resolve to their own descriptors/icons
+        [Fact]
+        public void DeviceDescriptor_CloudAndAccessPoint_HaveOwnDescriptors()
+        {
+            Assert.IsType<CloudDescriptor>(DeviceDescriptor.For(NetworkObjectType.Cloud));
+            Assert.Equal("Icon.Cloud", DeviceDescriptor.For(NetworkObjectType.Cloud).IconKey);
+            Assert.IsType<AccessPointDescriptor>(DeviceDescriptor.For(NetworkObjectType.AccessPoint));
+            Assert.Equal("Icon.AccessPoint", DeviceDescriptor.For(NetworkObjectType.AccessPoint).IconKey);
+        }
+    }
+
+    //KI end
 }

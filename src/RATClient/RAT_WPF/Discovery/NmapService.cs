@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -18,6 +19,10 @@ namespace RAT_WPF.Discovery
         public string Hostname = "";
         //KI (prompt 26): open TCP ports found (when scanWithPorts was used)
         public List<int> OpenPorts = new List<int>();
+        //KI start (Claude Opus 4.8, prompt 27): extra info nmap can sometimes give us (best-effort, may be empty).
+        public string Os = "";          // OS guess from "OS details:" / "Running:" (nmap -O)
+        public string SubnetMask = "";  // /24 by default for the local scan; refined from our own NIC where known
+        //KI end
     }
 
     public static class NmapService
@@ -88,21 +93,62 @@ namespace RAT_WPF.Discovery
         /// <summary>The host's primary IPv4 + its /24 base (e.g. 192.168.1.) for a local scan.</summary>
         public static (string ip, string subnetBase)? GetLocalSubnet()
         {
+            var info = GetLocalSubnetInfo();
+            return info == null ? null : (info.Value.ip, info.Value.subnetBase);
+        }
+
+        //KI start (Claude Opus 4.8, prompt 27): richer local-network info — also returns the real subnet mask and
+        // the default gateway (our router) from the active NIC. We still scan the /24, but we can now stamp the
+        // host's true subnet mask onto discovered devices and know which IP is the router.
+        public static (string ip, string subnetBase, string subnetMask, string gateway)? GetLocalSubnetInfo()
+        {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (nic.OperationalStatus != OperationalStatus.Up) { continue; }
                 if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback) { continue; }
-                foreach (var ua in nic.GetIPProperties().UnicastAddresses)
+
+                IPInterfaceProperties props = nic.GetIPProperties();
+                foreach (var ua in props.UnicastAddresses)
                 {
                     if (ua.Address.AddressFamily != AddressFamily.InterNetwork) { continue; }
                     string ip = ua.Address.ToString();
                     if (ip.StartsWith("169.254")) { continue; } // link-local, no real network
                     int lastDot = ip.LastIndexOf('.');
-                    if (lastDot > 0) { return (ip, ip.Substring(0, lastDot + 1)); }
+                    if (lastDot <= 0) { continue; }
+
+                    string mask = ua.IPv4Mask?.ToString() ?? "255.255.255.0";
+                    string gateway = props.GatewayAddresses
+                        .Select(g => g.Address)
+                        .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? "";
+
+                    return (ip, ip.Substring(0, lastDot + 1), mask, gateway);
                 }
             }
             return null;
         }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 28): is the active (IPv4, has-gateway) connection a Wi-Fi NIC? Used so
+        // discovery can model PC -(wifi)- AccessPoint - Switch - devices instead of a direct wired uplink.
+        public static bool IsActiveConnectionWireless()
+        {
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up) { continue; }
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback) { continue; }
+
+                IPInterfaceProperties props = nic.GetIPProperties();
+                bool hasIpv4 = props.UnicastAddresses.Any(ua =>
+                    ua.Address.AddressFamily == AddressFamily.InterNetwork &&
+                    !ua.Address.ToString().StartsWith("169.254"));
+                if (!hasIpv4) { continue; }
+
+                // this is the NIC GetLocalSubnetInfo would have picked; report whether it's wireless
+                return nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+            }
+            return false;
+        }
+        //KI end
 
         /// <summary>
         /// Runs an nmap ping scan over the host's local /24 and returns the live hosts (IP + hostname).
@@ -120,9 +166,11 @@ namespace RAT_WPF.Discovery
             if (subnet == null) { throw new InvalidOperationException("Could not determine the local network."); }
 
             string target = subnet.Value.subnetBase + "0/24";
+            //KI (prompt 27): when probing ports also attempt OS detection (-O) so we can fill the device OS.
+            // -O needs admin/raw sockets; if it isn't available nmap just omits the OS lines (harmless).
             // -sn = ping scan (hosts only); -F = fast scan of the ~100 most common ports (hosts + open ports)
-            string args = scanPorts ? $"-F {target}" : $"-sn {target}";
-            int timeoutMs = scanPorts ? 300000 : 120000;
+            string args = scanPorts ? $"-F -O {target}" : $"-sn {target}";
+            int timeoutMs = scanPorts ? 420000 : 120000;
 
             string output = await Task.Run(() =>
             {
@@ -140,8 +188,103 @@ namespace RAT_WPF.Discovery
                 return o;
             });
 
-            return ParseScan(output);
+            List<DiscoveredHost> hosts = ParseScan(output);
+
+            //KI start (Claude Opus 4.8, prompt 27): stamp the real local subnet mask onto every discovered host
+            // (they share our /24, so they share our mask).
+            string ourMask = GetLocalSubnetInfo()?.subnetMask ?? "255.255.255.0";
+            foreach (DiscoveredHost h in hosts) { h.SubnetMask = ourMask; }
+            //KI end
+
+            return hosts;
         }
+
+        //KI start (Claude Opus 4.8, prompt 29): scan ONE host's open ports (+ OS guess) — used to fill ports per
+        // device in the background AFTER the topology is drawn, so the initial discovery (a fast ping sweep) is quick
+        // and the slow port/OS probing happens device-by-device only when "Show ports" is on.
+        public static async Task<(List<int> openPorts, string os)> ScanHostPortsAsync(string ip)
+        {
+            string? nmap = FindNmap();
+            if (nmap == null) { throw new InvalidOperationException("nmap is not installed."); }
+            if (string.IsNullOrWhiteSpace(ip)) { return (new List<int>(), ""); }
+
+            // -F fast top-ports scan + -O OS detection, single host
+            string args = $"-F -O {ip}";
+            string output = await Task.Run(() =>
+            {
+                using Process p = new Process();
+                p.StartInfo = new ProcessStartInfo(nmap, args)
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                p.Start();
+                string o = p.StandardOutput.ReadToEnd();
+                p.WaitForExit(60000);
+                return o;
+            });
+
+            DiscoveredHost? host = ParseScan(output).FirstOrDefault(h => h.Ip == ip) ?? ParseScan(output).FirstOrDefault();
+            return host == null ? (new List<int>(), "") : (host.OpenPorts, host.Os);
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 27): run tracert to the internet and return the first hop (the local
+        // router/gateway). Falls back to the NIC's configured default gateway when tracert can't resolve a hop.
+        // The trailing reachability flag says whether the trace got past the first hop (i.e. the internet is up).
+        public static async Task<(string routerIp, bool reachedInternet)> FindRouterAsync(string probeTarget = "8.8.8.8")
+        {
+            string gateway = GetLocalSubnetInfo()?.gateway ?? "";
+
+            string output = await Task.Run(() =>
+            {
+                try
+                {
+                    using Process p = new Process();
+                    // -d skip DNS, -h 5 only the first few hops, -w 800ms per hop so we don't hang for ~30s
+                    p.StartInfo = new ProcessStartInfo("tracert", $"-d -h 5 -w 800 {probeTarget}")
+                    {
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+                    p.Start();
+                    string o = p.StandardOutput.ReadToEnd();
+                    p.WaitForExit(30000);
+                    return o;
+                }
+                catch { return ""; }
+            });
+
+            return ParseTracert(output, gateway);
+        }
+
+        // a tracert hop line carries one or more IPs; the first hop's last IP is the local router
+        private static readonly Regex HopIp = new(@"(?<ip>\d{1,3}(?:\.\d{1,3}){3})");
+
+        public static (string routerIp, bool reachedInternet) ParseTracert(string tracertOutput, string fallbackGateway)
+        {
+            string firstHop = "";
+            int hopsSeen = 0;
+            foreach (string raw in (tracertOutput ?? "").Split('\n'))
+            {
+                string line = raw.Trim();
+                // hop lines start with the hop number, e.g. "  1    1 ms    1 ms    1 ms  192.168.1.1"
+                if (line.Length == 0 || !char.IsDigit(line[0])) { continue; }
+                Match m = HopIp.Match(line);
+                if (!m.Success) { continue; } // "* * * Request timed out." -> still counts as a hop attempt below
+                hopsSeen++;
+                if (firstHop.Length == 0) { firstHop = m.Groups["ip"].Value; }
+            }
+
+            string router = firstHop.Length > 0 ? firstHop : fallbackGateway;
+            bool reachedInternet = hopsSeen >= 2; // got past the local router
+            return (router, reachedInternet);
+        }
+        //KI end
 
         // "Nmap scan report for hostname (192.168.1.10)" or "Nmap scan report for 192.168.1.10"
         private static readonly Regex ReportLine =
@@ -149,6 +292,10 @@ namespace RAT_WPF.Discovery
         // "22/tcp   open  ssh"
         private static readonly Regex PortLine =
             new(@"^(?<port>\d+)/tcp\s+open\b");
+        //KI (prompt 27): nmap -O OS lines, in order of preference. "OS details:" is the most specific.
+        private static readonly Regex OsDetails = new(@"^OS details:\s*(?<os>.+)$");
+        private static readonly Regex OsRunning = new(@"^Running:\s*(?<os>.+)$");
+        private static readonly Regex OsGuess = new(@"^Aggressive OS guesses:\s*(?<os>.+)$");
 
         public static List<DiscoveredHost> ParseScan(string nmapOutput)
         {
@@ -175,7 +322,19 @@ namespace RAT_WPF.Discovery
                 if (port.Success && current != null && int.TryParse(port.Groups["port"].Value, out int p))
                 {
                     current.OpenPorts.Add(p);
+                    continue;
                 }
+
+                //KI start (Claude Opus 4.8, prompt 27): capture nmap's OS guess (only set if not already set, so
+                // the more specific "OS details:" wins over "Running:"/"Aggressive OS guesses:").
+                if (current != null && string.IsNullOrEmpty(current.Os))
+                {
+                    Match os = OsDetails.Match(line);
+                    if (!os.Success) { os = OsRunning.Match(line); }
+                    if (!os.Success) { os = OsGuess.Match(line); }
+                    if (os.Success) { current.Os = os.Groups["os"].Value.Trim(); }
+                }
+                //KI end
             }
             return hosts;
         }

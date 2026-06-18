@@ -3,6 +3,7 @@ using RAT_WPF.Stores;
 using RAT_WPF.ViewModels;
 using System.Configuration;
 using System.Data;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -25,53 +26,56 @@ namespace RAT_WPF
             _navigationStore = new NavigationStore();
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        //KI start (Claude Opus 4.8, prompt 27): first-run setup now runs BEFORE the login window appears (was after),
+        // and uses themed RatDialog confirms instead of the WindowsXP-style MessageBox. OnStartup is async so it can
+        // await the setup (the nmap install awaits the installer process) and only then build + show the main window.
+        protected override async void OnStartup(StartupEventArgs e)
         {
-            //KI start (Claude Opus 4.8, prompt 22): start a fresh log file for this run (keeps the newest 3),
-            // and record any unhandled UI exception before the app dies.
+            //KI (prompt 22): start a fresh log file for this run (keeps the newest 3), and record any unhandled
+            // UI exception before the app dies.
             AppLogger.Start();
             DispatcherUnhandledException += OnUnhandledException;
-            //KI end
+
+            base.OnStartup(e);
+
+            // first-run setup first, with no main window behind it yet. Keep the app alive across the setup
+            // dialogs (otherwise OnLastWindowClose would shut us down when the last RatDialog closes before the
+            // main window exists); restore the normal shutdown behaviour once the main window is up.
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            AppLogger.Info($"Startup: first-run setup {(Setup.SetupService.HasRunSetup ? "already done" : "running")}; debugSkipLogin={_debugging_ignore_login}"); // KI (prompt 28)
+            await RunFirstRunSetup();
 
             // TODO: If already logged in, start topologyviewmodel instead
             if (_debugging_ignore_login)
             {
-                //KI start (Claude Opus 4.8, prompt 11): debug-login skips the login screen, so seed a dev user
-                // (CanCreate=true) — otherwise Session.CurrentUser is null and creation/ownership won't work.
+                //KI (prompt 11): debug-login skips the login screen, so seed a dev user (CanCreate=true) —
+                // otherwise Session.CurrentUser is null and creation/ownership won't work.
                 RAT_Logic.Session.CurrentUser ??= new RAT_Logic.NetworkUser("debug", 0, canCreate: true);
-                //KI end
                 _navigationStore.CurrentViewModel = new TopologyViewModel();
             }
             else
             {
                 _navigationStore.CurrentViewModel = new LoginViewModel(_navigationStore);
             }
-            
 
             MainWindow = new MainWindow()
             {
                 DataContext = new MainViewModel(_navigationStore)
             };
             MainWindow.Show();
+            ShutdownMode = ShutdownMode.OnLastWindowClose; // KI (prompt 27): restore normal shutdown
             AppLogger.Info("Main window shown."); // KI (prompt 22)
-
-            //KI start (Claude Opus 4.8, prompt 25): first-run setup — offer a desktop shortcut + nmap install once.
-            RunFirstRunSetup();
-            //KI end
-
-            base.OnStartup(e);
         }
+        //KI end
 
-        //KI start (Claude Opus 4.8, prompt 25): on the very first start, ask about a desktop shortcut and installing
-        // nmap (for the Discover feature). Choices are remembered; declining nmap greys out the Discover button.
-        private async void RunFirstRunSetup()
+        //KI start (Claude Opus 4.8, prompt 25/27): on the very first start, ask about a desktop shortcut and installing
+        // nmap (for the Discover feature). Choices are remembered; declining nmap greys out the Discover button. Now a
+        // Task (awaited from OnStartup) using themed RatDialog confirms.
+        private async Task RunFirstRunSetup()
         {
             if (Setup.SetupService.HasRunSetup) { return; }
 
-            MessageBoxResult shortcut = MessageBox.Show(
-                "Create a desktop shortcut for RAT?",
-                "RAT setup", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (shortcut == MessageBoxResult.Yes)
+            if (RatDialog.Confirm("Welcome to RAT", "Create a desktop shortcut for RAT?", "Icon.AboutRat"))
             {
                 bool ok = Setup.SetupService.CreateDesktopShortcut();
                 AppLogger.Info($"Desktop shortcut created: {ok}");
@@ -79,12 +83,12 @@ namespace RAT_WPF
 
             if (!Discovery.NmapService.IsInstalled())
             {
-                MessageBoxResult installNmap = MessageBox.Show(
+                bool installNmap = RatDialog.Confirm("Install nmap?",
                     "RAT can scan your network for devices using nmap, which isn't installed.\n\n" +
-                    "Install nmap now? (You can use RAT without it — the 'Discover devices' button will just stay disabled.)",
-                    "Install nmap?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    "Install nmap now? You can use RAT without it — the 'Discover devices' button will just stay disabled.",
+                    "Icon.AboutRat");
 
-                if (installNmap == MessageBoxResult.Yes)
+                if (installNmap)
                 {
                     try
                     {
