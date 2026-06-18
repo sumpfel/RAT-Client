@@ -430,21 +430,45 @@ namespace RAT_WPF.NetworkObject_UI
             //KI end
         }
 
+        //KI start (Claude Opus 4.8, prompt 25): guards against the infinite "add a connection first" trap.
+        // SelectionChanged is a bubbling routed event, so switching the OUTER settings tabs also fired this
+        // handler with the inner control's current selection (the "+" tab) -> auto-connect failed -> popup ->
+        // bounce -> popup ... forever. Now: ignore events not from the inner tab control, and use a re-entrancy
+        // flag so the bounce-back SelectedIndex change doesn't re-trigger the auto-connect.
+        private bool _openingShell;
+
         private void SshShellsTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // only react to the inner ssh-shell tab control, not the outer settings tabs bubbling through
+            if (e.OriginalSource != SshShellsTabControl) { return; }
+            if (_openingShell) { return; }
+
             if (SshShellsTabControl.SelectedIndex != SshShellsTabControl.Items.Count - 1)
             {
                 return;
             }
 
-            //KI start (Claude Opus 4.8, prompt 2/24): auto-connect SSH (cable + stored login) before opening a shell
-            if (!networkObject.IsSshConnected && !EnsureConnected(LoginType.SSH))
+            _openingShell = true;
+            try
             {
-                SshShellsTabControl.SelectedIndex = 0; // bounce back off the "+" tab
-                return;
-            }
-            //KI end
+                //KI start (Claude Opus 4.8, prompt 2/24): auto-connect SSH (cable + stored login) before opening a shell
+                if (!networkObject.IsSshConnected && !EnsureConnected(LoginType.SSH))
+                {
+                    SshShellsTabControl.SelectedIndex = 0; // bounce back off the "+" tab
+                    return;
+                }
+                //KI end
 
+                OpenNewShellTab();
+            }
+            finally
+            {
+                _openingShell = false;
+            }
+        }
+
+        private void OpenNewShellTab()
+        {
             //KI
             // open new shell stream
             int shellId = networkObject.OpenSSHstream();

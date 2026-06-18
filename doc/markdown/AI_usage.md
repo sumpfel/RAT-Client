@@ -702,3 +702,42 @@ DB (nothing saved — use the mock, every op succeeds) with a reminder popup.
   working offline no-op connection.
 
 **Verified:** solution builds (0 errors); 10/10 tests pass; the login screen shows the "Use locally only" button.
+
+---------
+
+## Prompt 25 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** cables clickable to edit type/name/speed/note (speed = standard-values dropdown) + deletable; a button
+that auto-adds the user PC + discovers devices via nmap (add a Client per host, cable to existing devices, install
+nmap on first run with a decline option that greys the button out); fix the infinite "add a connection first" trap on
+the shell tab that locked the settings window; global admin can delete users + edit their flags/password/name.
+
+**Bug fix (the trap)** — `NetworkObjectSettingsWindow.xaml.cs`: `SelectionChanged` bubbles, so switching the OUTER
+settings tabs re-fired the inner ssh-tab handler with the "+" tab selected → auto-connect failed → popup → bounce →
+loop forever. Fixed with `e.OriginalSource != SshShellsTabControl` guard + an `_openingShell` re-entrancy flag; shell
+opening moved into `OpenNewShellTab()`.
+
+**Cables (marked `prompt 25`)** — `RAT_Logic/ConnectionSpeed.cs` (new: Ethernet/Wi-Fi preset speeds);
+`NetworkObject_UI/EditConnectionWindow.xaml(.cs)` (new: edit name/type/speed-dropdown/note); clicking a cable with the
+Cursor tool edits it, with the Delete tool deletes it (`TopologyView.Connection_MouseLeftButtonUp`);
+`IDatabaseConnection.EditConnection` (+ DatabaseConnection PUT + mock); `TopologyViewModel.PersistEditedConnection`.
+
+**Discovery (marked `prompt 25`)** — `RAT_WPF/Discovery/NmapService.cs` (new: detect nmap, scan local /24, parse
+hosts, auto-install from nmap.org); `TopologyViewModel.DiscoverDevicesAsync` (ensures the own-PC node, adds a Client +
+interface per found IP not already modelled, cables existing-but-uncabled devices to the PC); "🔍 Discover devices"
+topbar button, greyed out when nmap is missing/declined.
+
+**First-run setup (marked `prompt 25`)** — `RAT_WPF/Setup/SetupService.cs` (new: desktop-shortcut via WScript.Shell,
+remembers choices + the nmap-declined flag in marker files); `App.OnStartup` runs it once (offer shortcut + nmap
+install; declining greys out Discover).
+
+**Admin user management** — backend `DELETE /user/{id}` (KI-14, admin-only, cleans up dependent rows); client
+`DatabaseConnection.DeleteUser` implemented; `ManageUsersWindow` got a per-row **Delete** button (with confirm,
+can't delete yourself). Edit (name/password/admin/can_create) was already there via EditUserWindow.
+
+**Verified:** solution builds (0 errors); 10/10 tests pass; app launches cleanly; backend `user.py` byte-compiles.
+
+**Notes / scope:** the nmap scan + auto-install need a real machine/network to exercise end-to-end (not run here);
+the logic compiles and the button correctly greys out when nmap is absent. Telnet has a session (Connect) but still no
+dedicated Telnet *shell* tab — the shell tab remains SSH-only. Turning the app exe itself into a standalone installer
+was done as in-app first-run setup (per the chosen option), not a separate installer executable.

@@ -120,6 +120,40 @@ namespace RAT_WPF
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 25): delete a user (admin only). Confirm first; the backend refuses
+        // deleting your own account. Refresh the list afterwards.
+        private async void DeleteUser_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe || fe.Tag is not UserRow row) { return; }
+            if (Db == null)
+            {
+                RatDialog.Show("Manage Users", "Not connected to a server.", "Icon.NoConnection");
+                return;
+            }
+            if (RAT_Logic.Session.CurrentUser != null && RAT_Logic.Session.CurrentUser.ID == row.Id)
+            {
+                RatDialog.Show("Manage Users", "You can't delete your own account.", "Icon.LoginFailed");
+                return;
+            }
+
+            MessageBoxResult confirm = MessageBox.Show(
+                $"Delete user \"{row.Username}\"? This also removes their permissions and saved logins. This cannot be undone.",
+                "Delete user", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes) { return; }
+
+            try
+            {
+                await Db.DeleteUser(new RAT_Data.User(row.Username, "", row.Id, row.IsAdmin ? 100 : 10, row.CanCreate));
+            }
+            catch (Exception ex)
+            {
+                RatDialog.Show("Database hiccup", $"The rat couldn't delete the user on the server.\n\n{ex.Message}", "Icon.DatabaseError");
+                return;
+            }
+            LoadUsers();
+        }
+        //KI end
+
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
     }
     //KI end

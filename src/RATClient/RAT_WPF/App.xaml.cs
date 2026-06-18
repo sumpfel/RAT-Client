@@ -55,8 +55,59 @@ namespace RAT_WPF
             MainWindow.Show();
             AppLogger.Info("Main window shown."); // KI (prompt 22)
 
+            //KI start (Claude Opus 4.8, prompt 25): first-run setup — offer a desktop shortcut + nmap install once.
+            RunFirstRunSetup();
+            //KI end
+
             base.OnStartup(e);
         }
+
+        //KI start (Claude Opus 4.8, prompt 25): on the very first start, ask about a desktop shortcut and installing
+        // nmap (for the Discover feature). Choices are remembered; declining nmap greys out the Discover button.
+        private async void RunFirstRunSetup()
+        {
+            if (Setup.SetupService.HasRunSetup) { return; }
+
+            MessageBoxResult shortcut = MessageBox.Show(
+                "Create a desktop shortcut for RAT?",
+                "RAT setup", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (shortcut == MessageBoxResult.Yes)
+            {
+                bool ok = Setup.SetupService.CreateDesktopShortcut();
+                AppLogger.Info($"Desktop shortcut created: {ok}");
+            }
+
+            if (!Discovery.NmapService.IsInstalled())
+            {
+                MessageBoxResult installNmap = MessageBox.Show(
+                    "RAT can scan your network for devices using nmap, which isn't installed.\n\n" +
+                    "Install nmap now? (You can use RAT without it — the 'Discover devices' button will just stay disabled.)",
+                    "Install nmap?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (installNmap == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        bool installed = await Discovery.NmapService.InstallAsync();
+                        Setup.SetupService.NmapDeclined = !installed;
+                        AppLogger.Info($"nmap install finished, installed={installed}");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Setup.SetupService.NmapDeclined = true;
+                        AppLogger.Error("nmap install failed", ex);
+                        RatDialog.Show("nmap", $"Couldn't install nmap automatically.\n\n{ex.Message}", "Icon.NoConnection");
+                    }
+                }
+                else
+                {
+                    Setup.SetupService.NmapDeclined = true; // user said no -> Discover stays greyed out
+                }
+            }
+
+            Setup.SetupService.MarkSetupDone();
+        }
+        //KI end
 
         //KI start (Claude Opus 4.8, prompt 22): log unhandled exceptions to the run's log file.
         private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

@@ -65,6 +65,7 @@ namespace RAT_Data
             if (networkConnection.ID <= 0) { networkConnection.ID = NextId(); }
             return Task.FromResult(networkConnection);
         }
+        public Task EditConnection(NetworkConnection networkConnection) => Task.CompletedTask; // KI (prompt 25)
         public Task DeleteConnection(NetworkConnection networkConnection) => Task.CompletedTask;
 
         //Permissions — in local mode the single local user owns everything

@@ -175,6 +175,134 @@ namespace RAT_WPF.ViewModels
             OnPropertyChanged(nameof(NetworkConnectionViewModels));
         }
 
+        //KI start (Claude Opus 4.8, prompt 25): nmap discovery.
+        // 1) make sure the user's own PC is on the canvas (with its real interfaces);
+        // 2) scan the local subnet; for each live host:
+        //      - if no device already has an interface with that IP -> add a Client with that interface;
+        //      - if such a device exists but isn't cabled to the PC -> draw a cable from the PC to it.
+        // Everything created is persisted through the active connection (mock = local-only).
+        public async Task DiscoverDevicesAsync()
+        {
+            // (1) ensure the own-PC node exists on the canvas
+            NetworkObjectViewModel pcVm = await EnsureOwnPcOnCanvasAsync();
+
+            // (2) scan
+            List<Discovery.DiscoveredHost> hosts = await Discovery.NmapService.ScanLocalSubnetAsync();
+
+            string? ownIp = Discovery.NmapService.GetLocalSubnet()?.ip;
+
+            foreach (Discovery.DiscoveredHost host in hosts)
+            {
+                if (string.IsNullOrWhiteSpace(host.Ip)) { continue; }
+                if (ownIp != null && host.Ip == ownIp) { continue; } // that's our own PC
+
+                NetworkObjectViewModel? existing = FindDeviceByIp(host.Ip);
+                if (existing == null)
+                {
+                    await AddDiscoveredClientAsync(host, pcVm);
+                }
+                else if (!IsCabledTo(pcVm, existing))
+                {
+                    await CableAsync(pcVm, existing);
+                }
+            }
+
+            OnPropertyChanged(nameof(NetworkConnectionViewModels));
+        }
+
+        private async Task<NetworkObjectViewModel> EnsureOwnPcOnCanvasAsync()
+        {
+            string machine = Environment.MachineName;
+            NetworkObjectViewModel? pc = _networkObjects.FirstOrDefault(
+                n => n.Model.Type == NetworkObjectType.PC &&
+                     string.Equals(n.Model.Name, machine, StringComparison.OrdinalIgnoreCase));
+            if (pc != null) { return pc; }
+
+            NetworkObject model = new NetworkObject { Type = NetworkObjectType.PC, Name = machine, X = 60, Y = 60 };
+            model.PopulateOwnDeviceInterfaces();
+            model.ApplyDefaultPcSpecsIfEmpty();
+            if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
+
+            await PersistObjectWithInterfacesAsync(model);
+
+            NetworkObjectViewModel vm = new NetworkObjectViewModel(model);
+            AddNetworkObjectViewModelToCanvas(vm);
+            return vm;
+        }
+
+        private async Task AddDiscoveredClientAsync(Discovery.DiscoveredHost host, NetworkObjectViewModel pcVm)
+        {
+            string name = string.IsNullOrWhiteSpace(host.Hostname) ? host.Ip : host.Hostname;
+            NetworkObject model = new NetworkObject
+            {
+                Type = NetworkObjectType.Client,
+                Name = name,
+                X = 200 + _networkObjects.Count * 30 % 600,
+                Y = 200 + _networkObjects.Count * 25 % 300
+            };
+            model.NetworkInterfaces.Add(new NetworkObjectInterface
+            {
+                Name = "eth0",
+                IsUp = true,
+                IP = new IP { IPv4 = host.Ip }
+            });
+            if (Session.CurrentUser != null) { model.ApplyRight(Session.CurrentUser, AccesRights.Owner); }
+
+            await PersistObjectWithInterfacesAsync(model);
+
+            NetworkObjectViewModel vm = new NetworkObjectViewModel(model);
+            AddNetworkObjectViewModelToCanvas(vm);
+
+            await CableAsync(pcVm, vm);
+        }
+
+        private NetworkObjectViewModel? FindDeviceByIp(string ip) =>
+            _networkObjects.FirstOrDefault(n => n.Model.NetworkInterfaces.Any(
+                i => i.IP != null && i.IP.IPv4 == ip));
+
+        private bool IsCabledTo(NetworkObjectViewModel a, NetworkObjectViewModel b) =>
+            _networkConnectionViewModels.Any(c =>
+                (c.Source == a && c.Target == b) || (c.Source == b && c.Target == a));
+
+        private async Task CableAsync(NetworkObjectViewModel a, NetworkObjectViewModel b)
+        {
+            NetworkObjectInterface? ifaceA = a.Model.NetworkInterfaces.FirstOrDefault();
+            NetworkObjectInterface? ifaceB = b.Model.NetworkInterfaces.FirstOrDefault();
+            if (ifaceA == null || ifaceB == null) { return; } // need an interface on each side
+
+            NetworkConnection connection = new NetworkConnection(
+                ifaceA, ifaceB, 1_000_000_000, NetworkConnectionType.Wired, "auto-discovered", "Kablex");
+            ifaceA.Connection = connection;
+            ifaceB.Connection = connection;
+            _networkConnectionViewModels.Add(new NetworkConnectionViewModel(connection, a, b));
+
+            if (DatabaseConnectionStore.Current != null && ifaceA.ID > 0 && ifaceB.ID > 0)
+            {
+                try { await DatabaseConnectionStore.Current.AddConnection(connection, ifaceA, ifaceB); }
+                catch (Exception ex) { RatDialog.Show("Database hiccup", $"The rat couldn't save a discovered cable.\n\n{ex.Message}", "Icon.DatabaseError"); }
+            }
+        }
+
+        // persist an object + its interfaces (assigns real ids); no-op without a connection
+        private async Task PersistObjectWithInterfacesAsync(NetworkObject model)
+        {
+            if (DatabaseConnectionStore.Current == null) { return; }
+            try
+            {
+                await DatabaseConnectionStore.Current.AddNetworkObject(model);
+                foreach (NetworkObjectInterface iface in model.NetworkInterfaces)
+                {
+                    if (iface.ID > 0) { continue; }
+                    await DatabaseConnectionStore.Current.AddInterface(iface, model);
+                }
+            }
+            catch (Exception ex)
+            {
+                RatDialog.Show("Database hiccup", $"The rat couldn't save a discovered device.\n\n{ex.Message}", "Icon.DatabaseError");
+            }
+        }
+        //KI end
+
         //KI start (Claude Opus 4.8, prompt 15): delete a device for real — check ownership, delete it on the
         // backend, then remove it (and its connections) from the canvas. This is what the Delete tool calls now;
         // previously the tool only removed the node in memory so the deletion was lost on the next load.
@@ -200,6 +328,21 @@ namespace RAT_WPF.ViewModels
             }
 
             RemoveNetworkObjectViewModelFromCanvas(node);
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 25): persist an edited cable to the backend (name/speed/type/note).
+        public async void PersistEditedConnection(NetworkConnectionViewModel connection)
+        {
+            if (DatabaseConnectionStore.Current == null || connection.networkConnection.ID <= 0) { return; }
+            try
+            {
+                await DatabaseConnectionStore.Current.EditConnection(connection.networkConnection);
+            }
+            catch (Exception ex)
+            {
+                RatDialog.Show("Database hiccup", $"The rat couldn't save the cable on the server.\n\n{ex.Message}", "Icon.DatabaseError");
+            }
         }
         //KI end
 

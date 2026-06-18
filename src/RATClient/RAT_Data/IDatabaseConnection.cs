@@ -43,6 +43,9 @@ namespace RAT_Data
 
         //NetworkConnection (the two endpoints are given by their interfaces)
         public Task<NetworkConnection> AddConnection(NetworkConnection networkConnection, NetworkObjectInterface interface1, NetworkObjectInterface interface2);
+        //KI start (Claude Opus 4.8, prompt 25): edit a connection's name/speed/type/note
+        public Task EditConnection(NetworkConnection networkConnection);
+        //KI end
         public Task DeleteConnection(NetworkConnection networkConnection);
 
         //AccessRights / permissions on a NetworkObject

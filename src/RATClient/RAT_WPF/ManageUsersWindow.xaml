@@ -78,6 +78,16 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <!--KI end-->
+                        <!--KI start (Claude Opus 4.8, prompt 25): per-row Delete button (admin only; not yourself)-->
+                        <DataGridTemplateColumn Header="" Width="Auto">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Delete" Style="{StaticResource DangerButton}" Padding="8,2"
+                                            Click="DeleteUser_Click" Tag="{Binding}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <!--KI end-->
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

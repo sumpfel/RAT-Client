@@ -118,7 +118,36 @@ namespace RAT_WPF.Views
             //KI start (Claude Opus 4.8, prompt 22): reflect the loaded showInterfaces setting in the toggle
             ShowInterfacesToggle.IsChecked = RAT_WPF.Themes.DisplaySettings.ShowInterfaces;
             //KI end
+
+            //KI start (Claude Opus 4.8, prompt 25): the Discover button needs nmap. Grey it out (with a hint) when
+            // nmap isn't installed or the user declined installing it during first-run setup.
+            bool canDiscover = !Setup.SetupService.NmapDeclined && Discovery.NmapService.IsInstalled();
+            DiscoverButton.IsEnabled = canDiscover;
+            DiscoverButton.ToolTip = canDiscover
+                ? "Scan the local network with nmap and add the devices it finds"
+                : "nmap is not installed — install it to enable network discovery";
+            //KI end
         }
+
+        //KI start (Claude Opus 4.8, prompt 25): run an nmap discovery and add/cable the found devices
+        private async void DiscoverButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext is not TopologyViewModel topologyViewModel) { return; }
+            DiscoverButton.IsEnabled = false;
+            try
+            {
+                await topologyViewModel.DiscoverDevicesAsync();
+            }
+            catch (Exception ex)
+            {
+                RatDialog.Show("Discovery failed", $"The rat couldn't scan the network.\n\n{ex.Message}", "Icon.NoConnection");
+            }
+            finally
+            {
+                DiscoverButton.IsEnabled = !Setup.SetupService.NmapDeclined && Discovery.NmapService.IsInstalled();
+            }
+        }
+        //KI end
 
         //KI start (Claude Opus 4.8, prompt 22): toggle the cable interface labels + persist the choice
         private async void ShowInterfacesToggle_Click(object sender, RoutedEventArgs e)
@@ -144,14 +173,25 @@ namespace RAT_WPF.Views
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 22): click a cable with the Delete tool active to delete it
+        //KI start (Claude Opus 4.8, prompt 22/25): click a cable — Delete tool removes it, Cursor tool edits it.
         private void Connection_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (this.DataContext is not TopologyViewModel topologyViewModel) { return; }
-            if (topologyViewModel.ToolEnum != EnumTool.Delete) { return; }
-            if (sender is FrameworkElement fe && fe.DataContext is NetworkConnectionViewModel connection)
+            if (sender is not FrameworkElement fe || fe.DataContext is not NetworkConnectionViewModel connection) { return; }
+
+            if (topologyViewModel.ToolEnum == EnumTool.Delete)
             {
                 topologyViewModel.NetworkObjectDeleteCommand.Execute(connection);
+                e.Handled = true;
+            }
+            else if (topologyViewModel.ToolEnum == EnumTool.Cursor)
+            {
+                NetworkObject_UI.EditConnectionWindow window =
+                    new NetworkObject_UI.EditConnectionWindow(connection.networkConnection) { Owner = Window.GetWindow(this) };
+                if (window.ShowDialog() == true)
+                {
+                    topologyViewModel.PersistEditedConnection(connection);
+                }
                 e.Handled = true;
             }
         }

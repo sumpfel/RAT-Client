@@ -50,6 +50,11 @@
                 <!--KI end-->
                 <Button DockPanel.Dock="Right" Content="⚙ Settings" Style="{StaticResource SubtleButton}"
                         HorizontalAlignment="Right" Click="SettingsButton_Click"/>
+                <!--KI start (Claude Opus 4.8, prompt 25): nmap discovery (disabled/greyed when nmap isn't available)-->
+                <Button DockPanel.Dock="Right" x:Name="DiscoverButton" Content="🔍 Discover devices"
+                        Style="{StaticResource SubtleButton}" HorizontalAlignment="Right" Margin="0,0,8,0"
+                        Click="DiscoverButton_Click"/>
+                <!--KI end-->
                 <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
                     <!--Tools (Cursor/Connection are enum-bound to ToolEnum) -->
                     <RadioButton Content="🖱 Cursor" Style="{StaticResource RadioButtonTool}"

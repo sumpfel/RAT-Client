@@ -367,8 +367,14 @@ namespace RAT_Data
         }
         //KI end
 
-        public Task DeleteUser(User user) =>
-            throw new NotSupportedException("The backend has no endpoint to delete a user.");
+        //KI start (Claude Opus 4.8, prompt 25): the backend now has DELETE /user/{id} (admin only). Deletes a user
+        // and the rows hanging off them (permissions/logins/snmp/settings) server-side.
+        public async Task DeleteUser(User user)
+        {
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Delete, $"{BaseUrl}/user/{user.ID}"));
+            await EnsureOk(response);
+        }
+        //KI end
 
         // ----- IDatabaseConnection: Graph ---------------------------------------
 
@@ -566,6 +572,21 @@ namespace RAT_Data
             networkConnection.ID = created.Id;
             return networkConnection;
         }
+
+        //KI start (Claude Opus 4.8, prompt 25): persist a connection's edited name/speed/type/note (PUT)
+        public async Task EditConnection(NetworkConnection networkConnection)
+        {
+            HttpResponseMessage response = await SendAsync(() => Req(HttpMethod.Put,
+                $"{BaseUrl}/networkObjectConnection/{networkConnection.ID}", new
+                {
+                    name = networkConnection.Name ?? "",
+                    speed = networkConnection.Speed,
+                    type = networkConnection.Type.ToString(),
+                    note = networkConnection.Note ?? ""
+                }));
+            await EnsureOk(response);
+        }
+        //KI end
 
         public async Task DeleteConnection(NetworkConnection networkConnection)
         {
