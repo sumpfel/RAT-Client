@@ -110,6 +110,16 @@ namespace RAT_WPF.ViewModels
 
         public System.Windows.Media.DoubleCollection? StrokeDashArray =>
             IsWireless ? new System.Windows.Media.DoubleCollection { 4, 3 } : null;
+
+        //KI start (ported to MVVM by AI, prompt 30): after the edit dialog changes the underlying connection
+        // (type/speed/name/note) re-raise the bound props so the cable redraws (solid <-> dashed) and labels update.
+        public void RefreshAfterEdit()
+        {
+            OnPropertyChanged(nameof(IsWireless));
+            OnPropertyChanged(nameof(StrokeDashArray));
+            OnPropertyChanged(nameof(SourceLabel));
+            OnPropertyChanged(nameof(TargetLabel));
+        }
         //KI end
 
 

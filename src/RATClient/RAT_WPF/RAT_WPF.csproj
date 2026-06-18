@@ -6,6 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!--KI start (Claude Opus 4.8, prompt 32): embed the RAT logo as the exe icon so the desktop shortcut +
+         taskbar show it (IconLocation in SetupService.CreateDesktopShortcut points at the exe icon).-->
+    <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
+    <!--KI end-->
   </PropertyGroup>
 
   <ItemGroup>

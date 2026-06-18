@@ -103,48 +103,13 @@
                       PreviewMouseMove="PanCanvas_MouseMove"
                       PreviewMouseLeftButtonUp="PanCanvas_MouseUp">
         <!--KI (prompt 28): size MUST match Views/CanvasLayout.Width/Height (used to clamp device positions) -->
-        <Grid ClipToBounds="True" Width="6000" Height="4000">
-            <ItemsControl ItemsSource="{Binding NetworkConnectionViewModels}">
-                <!--KI start (Claude Opus 4.8, prompt 22): cable + (optional) interface name/IP labels at each end-->
-                <ItemsControl.Resources>
-                    <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-                </ItemsControl.Resources>
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Canvas Background="{DynamicResource Brush.Canvas}"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Canvas>
-                            <!-- fat transparent line = easy-to-click delete hit area for the cable -->
-                            <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}"
-                                  StrokeThickness="12" Stroke="Transparent" Cursor="Hand"
-                                  MouseLeftButtonUp="Connection_MouseLeftButtonUp"/>
-                            <!--KI (prompt 28): wireless links are dashed via StrokeDashArray-->
-                            <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}"
-                                  StrokeThickness="2" Stroke="{DynamicResource Brush.Accent}" IsHitTestVisible="False"
-                                  StrokeDashArray="{Binding StrokeDashArray}"/>
-                            <Border Canvas.Left="{Binding SourceLabelX}" Canvas.Top="{Binding SourceLabelY}"
-                                    Background="{DynamicResource Brush.Surface}" CornerRadius="3" Padding="3,1"
-                                    Visibility="{Binding ShowInterfaceLabels, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontFamily="Consolas"
-                                           Foreground="{DynamicResource Brush.Text}"/>
-                            </Border>
-                            <Border Canvas.Left="{Binding TargetLabelX}" Canvas.Top="{Binding TargetLabelY}"
-                                    Background="{DynamicResource Brush.Surface}" CornerRadius="3" Padding="3,1"
-                                    Visibility="{Binding ShowInterfaceLabels, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="{Binding TargetLabel}" FontSize="10" FontFamily="Consolas"
-                                           Foreground="{DynamicResource Brush.Text}"/>
-                            </Border>
-                        </Canvas>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-                <!--KI end-->
-            </ItemsControl>
-            
+        <!--KI start (ported to MVVM by AI, prompt 30): layer order matters for hit-testing. The DEVICES layer is on
+             the BOTTOM (it owns drag + drop and needs a transparent background to receive drops); the CONNECTIONS
+             layer is on TOP so its clickable cable hit-lines actually receive clicks (previously the devices' full
+             transparent Canvas covered the cables, so cables couldn't be clicked / deleted / edited).-->
+        <Grid ClipToBounds="True" Width="6000" Height="4000" Background="{DynamicResource Brush.Canvas}">
+            <!-- DEVICES (bottom layer: drag + drop) -->
             <ItemsControl ItemsSource="{Binding NetworkObjects}">
-
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <views:NetworkObjectView
@@ -168,6 +133,51 @@
                         <Setter Property="Canvas.Top" Value="{Binding Y, Mode=TwoWay}"/>
                     </Style>
                 </ItemsControl.ItemContainerStyle>
+            </ItemsControl>
+
+            <!-- CONNECTIONS (top layer: clickable cable hit-lines) -->
+            <ItemsControl ItemsSource="{Binding NetworkConnectionViewModels}">
+                <!--KI start (Claude Opus 4.8, prompt 22): cable + (optional) interface name/IP labels at each end-->
+                <ItemsControl.Resources>
+                    <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+                </ItemsControl.Resources>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <!-- null background so empty areas pass clicks through to the devices/drop layer below -->
+                        <Canvas Background="{x:Null}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Canvas>
+                            <!-- fat transparent line = easy-to-click hit area: Delete tool deletes, Cursor double-click edits -->
+                            <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}"
+                                  StrokeThickness="14" Stroke="Transparent" Cursor="Hand"
+                                  MouseLeftButtonUp="Connection_MouseLeftButtonUp"
+                                  MouseRightButtonUp="Connection_MouseRightButtonUp"
+                                  ToolTip="Cursor tool: double-click to edit · Delete tool: click to delete · right-click to edit"/>
+                            <!--KI (prompt 28): wireless links are dashed via StrokeDashArray-->
+                            <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}"
+                                  StrokeThickness="2" Stroke="{DynamicResource Brush.Accent}" IsHitTestVisible="False"
+                                  StrokeDashArray="{Binding StrokeDashArray}"/>
+                            <Border Canvas.Left="{Binding SourceLabelX}" Canvas.Top="{Binding SourceLabelY}"
+                                    Background="{DynamicResource Brush.Surface}" CornerRadius="3" Padding="3,1"
+                                    IsHitTestVisible="False"
+                                    Visibility="{Binding ShowInterfaceLabels, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontFamily="Consolas"
+                                           Foreground="{DynamicResource Brush.Text}"/>
+                            </Border>
+                            <Border Canvas.Left="{Binding TargetLabelX}" Canvas.Top="{Binding TargetLabelY}"
+                                    Background="{DynamicResource Brush.Surface}" CornerRadius="3" Padding="3,1"
+                                    IsHitTestVisible="False"
+                                    Visibility="{Binding ShowInterfaceLabels, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding TargetLabel}" FontSize="10" FontFamily="Consolas"
+                                           Foreground="{DynamicResource Brush.Text}"/>
+                            </Border>
+                        </Canvas>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <!--KI end-->
             </ItemsControl>
         </Grid>
         </ScrollViewer>

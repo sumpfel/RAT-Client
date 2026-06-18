@@ -233,6 +233,10 @@ namespace RAT_WPF.Views
             bool on = ShowPortsToggle.IsChecked == true;
             RAT_WPF.Themes.DisplaySettings.ShowPorts = on;
 
+            //KI (prompt 30): turning ports ON should populate them for devices already on the canvas that have an IP
+            // but no scanned ports yet (otherwise the toggle showed nothing unless you re-ran discovery).
+            if (on && this.DataContext is TopologyViewModel vm) { vm.EnsurePortsScannedAsync(); }
+
             if (DatabaseConnectionStore.Current == null) { return; }
             try
             {
@@ -252,7 +256,10 @@ namespace RAT_WPF.Views
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 22/25): click a cable — Delete tool removes it, Cursor tool edits it.
+        //KI start (ported to MVVM by AI, prompt 30): click a cable — Delete tool removes it (single click);
+        // Cursor tool opens the editor on DOUBLE-click. Right-click always opens the editor (any tool). All actions
+        // route through the TopologyViewModel (delete = command; edit = OpenEditConnection which raises an event the
+        // view turns into the dialog, keeping the VM free of WPF window types).
         private void Connection_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (this.DataContext is not TopologyViewModel topologyViewModel) { return; }
@@ -263,15 +270,31 @@ namespace RAT_WPF.Views
                 topologyViewModel.NetworkObjectDeleteCommand.Execute(connection);
                 e.Handled = true;
             }
-            else if (topologyViewModel.ToolEnum == EnumTool.Cursor)
+            else if (topologyViewModel.ToolEnum == EnumTool.Cursor && e.ClickCount >= 2)
             {
-                NetworkObject_UI.EditConnectionWindow window =
-                    new NetworkObject_UI.EditConnectionWindow(connection.networkConnection) { Owner = Window.GetWindow(this) };
-                if (window.ShowDialog() == true)
-                {
-                    topologyViewModel.PersistEditedConnection(connection);
-                }
+                EditConnection(connection);
                 e.Handled = true;
+            }
+        }
+
+        private void Connection_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is NetworkConnectionViewModel connection)
+            {
+                EditConnection(connection);
+                e.Handled = true;
+            }
+        }
+
+        private void EditConnection(NetworkConnectionViewModel connection)
+        {
+            if (this.DataContext is not TopologyViewModel topologyViewModel) { return; }
+            NetworkObject_UI.EditConnectionWindow window =
+                new NetworkObject_UI.EditConnectionWindow(connection.networkConnection) { Owner = Window.GetWindow(this) };
+            if (window.ShowDialog() == true)
+            {
+                connection.RefreshAfterEdit();              // KI (prompt 30): re-render the cable (e.g. dashed <-> solid)
+                topologyViewModel.PersistEditedConnection(connection);
             }
         }
         //KI end

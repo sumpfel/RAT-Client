@@ -103,7 +103,14 @@ Alle Felder optional (leeres/fehlendes `password` = unverändert).
 - Neuer `username` muss eindeutig bleiben (`409`).
 
 ### `DELETE /user/{id}`
-**Nicht implementiert** — kein Backend-Endpunkt vorhanden.
+Löscht einen Benutzer. **Nur für globale Admins** (`is_admin`), sonst `403`.
+- Man kann das **eigene Konto nicht löschen** → `400`.
+- Unbekannte `id` → `404`.
+- Räumt abhängige Zeilen auf: zuerst **Logins** und **SNMP-Einstellungen** an den
+  Berechtigungs-Zeilen des Nutzers, dann dessen **Berechtigungen** und seine
+  **UserSettings**, danach der Benutzer selbst.
+
+**200** bei Erfolg (`{"detail": "User deleted"}`).
 
 ---
 
@@ -141,7 +148,7 @@ Ein Gerät auf der Arbeitsfläche. Sichtbarkeit ist rechtegesteuert (man bekommt
 ```
 **Feld-Grenzen**
 - `name` — Pflicht, **eindeutig** (`409`), max. **50** Zeichen.
-- `type` — Pflicht, max. **20** Zeichen. Client nutzt: `PC`, `Router`, `Switch`, `Server`, `Client`.
+- `type` — Pflicht, max. **20** Zeichen (Freitext). Client nutzt: `PC`, `Router`, `Switch`, `Server`, `Client`, `Hub`, `Cloud`, `AccessPoint`.
 - `x`, `y` — Pflicht-`int` (Koordinaten).
 - `os`, `cpu`, `gpu`, `ram` — Pflicht-Strings, je max. **100** Zeichen (`""` falls unbekannt).
 - `specs` — Pflicht-String (Freitext, keine Längengrenze).

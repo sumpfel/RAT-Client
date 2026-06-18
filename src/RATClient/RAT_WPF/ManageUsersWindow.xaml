@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Manage Users" Height="560" Width="640" MinHeight="420" MinWidth="520"
+        Title="Manage Users" Height="680" Width="780" MinHeight="480" MinWidth="600"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"
         TextElement.Foreground="{DynamicResource Brush.Text}"

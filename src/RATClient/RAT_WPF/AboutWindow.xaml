@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF"
         mc:Ignorable="d"
-        Title="About RAT" Width="480" SizeToContent="Height" MaxHeight="640"
+        Title="About RAT" Width="560" SizeToContent="Height" MaxHeight="900"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"
         TextElement.Foreground="{DynamicResource Brush.Text}"

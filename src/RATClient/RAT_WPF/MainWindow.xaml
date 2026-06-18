@@ -8,6 +8,7 @@
         xmlns:vms="clr-namespace:RAT_WPF.ViewModels"
         mc:Ignorable="d"
         Title="RAT" Height="720" Width="1180" MinHeight="500" MinWidth="900"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}">

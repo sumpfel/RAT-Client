@@ -366,40 +366,37 @@
         </DrawingImage.Drawing>
     </DrawingImage>
 
-    <!--KI start (Claude Opus 4.8, prompt 27): the internet, drawn as a cloud with a little rat peeking out -->
+    <!--KI start (Claude Opus 4.8, prompt 27; reworked prompt 30): the internet — a clean cloud with a small globe
+         (meridian + latitude lines) inside, so it reads clearly as "the internet" rather than a tan blob. -->
     <DrawingImage x:Key="Icon.Cloud">
         <DrawingImage.Drawing>
             <DrawingGroup>
-                <!-- cloud puffs -->
-                <GeometryDrawing Brush="#FFD9B58A">
+                <!-- cloud silhouette (outline) -->
+                <GeometryDrawing Brush="#FFE8D2B6">
+                    <GeometryDrawing.Pen><Pen Brush="#FF5A3A28" Thickness="3"/></GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
-                        <GeometryGroup>
-                            <EllipseGeometry Center="34,52" RadiusX="20" RadiusY="18"/>
-                            <EllipseGeometry Center="58,46" RadiusX="24" RadiusY="22"/>
-                            <EllipseGeometry Center="74,58" RadiusX="16" RadiusY="14"/>
-                            <RectangleGeometry Rect="22,56,60,16" RadiusX="8" RadiusY="8"/>
-                        </GeometryGroup>
+                        <PathGeometry Figures="M28,70
+                                               C14,70 12,54 24,50
+                                               C22,34 44,28 50,40
+                                               C56,28 80,32 76,48
+                                               C90,48 90,70 76,70 Z"/>
                     </GeometryDrawing.Geometry>
                 </GeometryDrawing>
-                <!-- rat head peeking out the top -->
-                <GeometryDrawing Brush="#FF5A3A28">
-                    <GeometryDrawing.Geometry><EllipseGeometry Center="58,38" RadiusX="9" RadiusY="8"/></GeometryDrawing.Geometry>
+                <!-- globe -->
+                <GeometryDrawing Brush="#FF6FA0C0">
+                    <GeometryDrawing.Pen><Pen Brush="#FF35506A" Thickness="1.5"/></GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry><EllipseGeometry Center="50,54" RadiusX="13" RadiusY="13"/></GeometryDrawing.Geometry>
                 </GeometryDrawing>
-                <!-- ears -->
-                <GeometryDrawing Brush="#FFC97A4A">
+                <!-- globe lines: equator + two latitudes + meridian -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen><Pen Brush="#FFEAF3FA" Thickness="1.2"/></GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <GeometryGroup>
-                            <EllipseGeometry Center="51,31" RadiusX="4" RadiusY="4"/>
-                            <EllipseGeometry Center="65,31" RadiusX="4" RadiusY="4"/>
-                        </GeometryGroup>
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <!-- eyes -->
-                <GeometryDrawing Brush="#FF2A1A10">
-                    <GeometryDrawing.Geometry>
-                        <GeometryGroup>
-                            <EllipseGeometry Center="54,38" RadiusX="1.4" RadiusY="1.4"/>
-                            <EllipseGeometry Center="62,38" RadiusX="1.4" RadiusY="1.4"/>
+                            <LineGeometry StartPoint="37,54" EndPoint="63,54"/>
+                            <PathGeometry Figures="M39,47 C46,49 54,49 61,47"/>
+                            <PathGeometry Figures="M39,61 C46,59 54,59 61,61"/>
+                            <PathGeometry Figures="M50,41 C44,47 44,61 50,67"/>
+                            <PathGeometry Figures="M50,41 C56,47 56,61 50,67"/>
                         </GeometryGroup>
                     </GeometryDrawing.Geometry>
                 </GeometryDrawing>

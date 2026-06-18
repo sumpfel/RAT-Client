@@ -883,3 +883,78 @@ use nmap if it's actually installed.
   addition to the Discover button already being greyed out when nmap is missing/declined.
 
 **Verified:** WPF project builds (0 errors); 17/17 tests pass. Committed, merged (if needed) and pushed per request.
+
+---------
+
+## Prompt 30 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** ports still don't show; the internet Cloud ends up outside the canvas on a fresh discovery (and rework
+its icon); Wi-Fi / cable connections can't be deleted and there's no double-click to edit their type/speed/settings
+(the earlier attempt didn't actually work); make the circle around the switch always big enough that nodes don't
+overlap and stay inside the canvas; and make sure the touched code is MVVM — comment such ports as "ported to MVVM
+by AI" rather than the usual KI style.
+
+**Changes made:**
+- **Cables clickable again (root cause)** — the devices' full transparent Canvas was layered ON TOP of the
+  connections layer, so every click (incl. over cables) hit the devices Canvas and the cable hit-lines never got
+  clicks. Reordered the canvas (`Views/TopologyView.xaml`): **devices on the bottom** (they own drag + drop, need a
+  transparent background for drops), **connections on top** with a `{x:Null}` panel background so empty areas still
+  pass clicks through to the devices/drop layer. Cable hit-line widened to 14px; labels made `IsHitTestVisible=False`.
+- **Cable delete + edit** — `Connection_MouseLeftButtonUp`: Delete tool deletes on a single click; Cursor tool opens
+  the editor on **double-click**; added `Connection_MouseRightButtonUp` so right-click edits with any tool. Edit
+  applies via the VM (`PersistEditedConnection`) and `NetworkConnectionViewModel.RefreshAfterEdit()` re-renders the
+  cable (solid ⇄ dashed) when the type changes. (`EditConnectionWindow` already had Name/Type/Speed/Note.)
+- **Ports show now** — per-host scan (`NmapService.ScanHostPortsAsync`) split into a `-F` ports pass (never needs
+  admin, so ports always populate) + a SEPARATE best-effort `-O --osscan-guess` OS pass that's ignored if it fails
+  (previously `-F -O` together could make nmap refuse the scan without admin → no ports). Turning the **Show ports**
+  toggle on now calls `TopologyViewModel.EnsurePortsScannedAsync()`, which scans every on-canvas device that has an
+  IP but no ports yet (so the toggle works even if discovery ran earlier with it off).
+- **Cloud inside canvas + circle sizing** — `PlaceAround` reworked: the circle **radius grows with the device count**
+  (≥150px arc per node) so nodes never overlap, and the centre is shifted so the whole circle stays on the canvas
+  (no clamp pile-ups). The switch now starts near a visible centre. `EnsureCloudBehindRouterAsync` clamps the Cloud
+  onto the canvas (it could go negative-Y before).
+- **Cloud icon reworked** — `Icon.Cloud` is now a clean cloud outline with a small globe (meridian + latitude lines)
+  instead of the tan blob with a rat head.
+- **MVVM** — the new cable-interaction + placement code is routed through VM commands/methods; those ports are
+  commented "ported to MVVM by AI" per request. (Opening the edit dialog stays in the view, which is the correct
+  MVVM boundary for a window.)
+
+**Verified:** WPF project builds (0 errors); 17/17 tests pass.
+
+---------
+
+## Prompt 32 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Anforderungstabelle in der Doku durch die vorgegebene Must-have/Nice-to-have-Liste
+ersetzen; Hauptfenster im Vollbild starten und alle Fenster größer machen (Settings soll nicht
+mehr scrollen müssen); ein lauffähiges `bin/` (exe + alle DLLs/Bilder) bereitstellen; der
+Desktop-Verknüpfung/exe ein RAT-Icon geben; in Doku **und** README alle User-/Admin-Features und
+das Vorgehen zum Starten (Installer) beschreiben; `API_documentation.md` gegen das Backend prüfen
+und aktualisieren; `requirements.txt` des Backends prüfen.
+
+**Changes made:**
+- **Doku:** `Dokumentation.md` — Abschnitt 2.2 durch die MH1–MH4 / NH1–NH6-Tabelle ersetzt
+  (alle implementiert); neue Abschnitte 6.6 (Funktionsübersicht Anwender/Admin) und 6.7
+  (Installation/Start/Auslieferung). `Dokumentation.pdf` neu erzeugt.
+- **README.md:** komplett überarbeitet — vollständige Feature-Liste (User + Admin), Installation
+  (fertiges `bin/`, selbst bauen, Backend), Voraussetzungen, Doku-Links.
+- **Fenster:** Hauptfenster `WindowState="Maximized"`; Settings/EditUser/About/ManageUsers/Device
+  Settings/EditConnection/UpdateLogin/UpdateInterface/SelectInterface vergrößert bzw. `MaxHeight`
+  erhöht, damit nicht standardmäßig gescrollt werden muss.
+- **Icon:** `Assets/logo.ico` (aus `logo.png` generiert, mehrere Größen) + `<ApplicationIcon>` im
+  `RAT_WPF.csproj`, damit exe/Taskbar/Desktop-Verknüpfung das RAT-Logo tragen.
+- **bin/:** self-contained `dotnet publish -r win-x64 --self-contained` nach `bin/` (exe + alle
+  DLLs + .NET-Laufzeit + eingebettete Bilder); per `git add -f` versioniert. `.gitattributes`
+  ergänzt, damit Binärdateien nicht zeilenende-normalisiert werden. Zusätzliches Release-ZIP unter
+  `dist/` (nicht im Git-Verlauf, dient als GitHub-Release-Asset).
+- **API-Doku:** `API_documentation.md` aktualisiert — `DELETE /user/{id}` ist jetzt implementiert
+  (war als „nicht implementiert“ markiert) inkl. Regeln/Aufräumen; `NetworkObject.type` um
+  `Hub`/`Cloud`/`AccessPoint` ergänzt. Restliche Endpunkte gegen die Backend-Router geprüft —
+  vollständig.
+- **Backend `requirements.txt`:** strukturiert in direkte/transitive Abhängigkeiten; unpinned
+  Pakete gepinnt (`python-jose==3.5.0`, `passlib==1.7.4`, `python-multipart==0.0.32`); ungenutzte
+  Einträge entfernt (`django`, direktes `psutil` — psutil kommt transitiv über fastapi-restful).
+  `pip install --dry-run` löst konfliktfrei auf.
+
+**Verified:** Solution baut (0 Fehler); 17/17 Tests bestanden; `bin/RAT_WPF.exe` trägt das
+RAT-Icon; PDF neu erzeugt.

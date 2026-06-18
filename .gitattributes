@@ -1,0 +1,11 @@
+# Treat compiled/binary artefacts as binary so Git never line-ending-normalizes them.
+*.exe   binary
+*.dll   binary
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.pdb   binary
+*.zip   binary
+*.so    binary
+*.dylib binary

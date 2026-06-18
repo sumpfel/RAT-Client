@@ -199,18 +199,45 @@ namespace RAT_WPF.Discovery
             return hosts;
         }
 
-        //KI start (Claude Opus 4.8, prompt 29): scan ONE host's open ports (+ OS guess) — used to fill ports per
-        // device in the background AFTER the topology is drawn, so the initial discovery (a fast ping sweep) is quick
-        // and the slow port/OS probing happens device-by-device only when "Show ports" is on.
-        public static async Task<(List<int> openPorts, string os)> ScanHostPortsAsync(string ip)
+        //KI start (Claude Opus 4.8, prompt 31): scan ONE host's open ports — FAST. -F (top ~100 ports) with -T4
+        // (aggressive timing), -n (no reverse DNS) and a hard --host-timeout so it can never hang for a minute.
+        // This is the pass whose result is shown on the node, so it must be quick and must NOT depend on -O.
+        public static async Task<List<int>> ScanHostPortsFastAsync(string ip)
         {
             string? nmap = FindNmap();
             if (nmap == null) { throw new InvalidOperationException("nmap is not installed."); }
-            if (string.IsNullOrWhiteSpace(ip)) { return (new List<int>(), ""); }
+            if (string.IsNullOrWhiteSpace(ip)) { return new List<int>(); }
 
-            // -F fast top-ports scan + -O OS detection, single host
-            string args = $"-F -O {ip}";
-            string output = await Task.Run(() =>
+            string output = await RunNmap(nmap, $"-F -T4 -n --host-timeout 20s {ip}", 25000);
+            return ParseScan(output).FirstOrDefault(h => h.Ip == ip)?.OpenPorts ?? new List<int>();
+        }
+
+        /// <summary>Best-effort OS guess for one host (needs admin; returns "" if unavailable). Slow — run last.</summary>
+        public static async Task<string> ScanHostOsAsync(string ip)
+        {
+            string? nmap = FindNmap();
+            if (nmap == null || string.IsNullOrWhiteSpace(ip)) { return ""; }
+            try
+            {
+                string output = await RunNmap(nmap, $"-O --osscan-guess -T4 -n --host-timeout 30s {ip}", 35000);
+                return ParseScan(output).FirstOrDefault(h => h.Ip == ip)?.Os ?? "";
+            }
+            catch { return ""; }
+        }
+
+        // kept for compatibility: fast ports + best-effort OS (ports first, OS does not gate them)
+        public static async Task<(List<int> openPorts, string os)> ScanHostPortsAsync(string ip)
+        {
+            List<int> ports = await ScanHostPortsFastAsync(ip);
+            string os = await ScanHostOsAsync(ip);
+            return (ports, os);
+        }
+
+        // run nmap with the given args and return stdout (helper for the single-host scans). KI (prompt 31): if the
+        // process overruns the timeout it is killed so it can never block the per-device scan queue indefinitely.
+        private static async Task<string> RunNmap(string nmap, string args, int timeoutMs)
+        {
+            return await Task.Run(() =>
             {
                 using Process p = new Process();
                 p.StartInfo = new ProcessStartInfo(nmap, args)
@@ -222,12 +249,12 @@ namespace RAT_WPF.Discovery
                 };
                 p.Start();
                 string o = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(60000);
+                if (!p.WaitForExit(timeoutMs))
+                {
+                    try { p.Kill(true); } catch { /* already gone */ }
+                }
                 return o;
             });
-
-            DiscoveredHost? host = ParseScan(output).FirstOrDefault(h => h.Ip == ip) ?? ParseScan(output).FirstOrDefault();
-            return host == null ? (new List<int>(), "") : (host.OpenPorts, host.Os);
         }
         //KI end
 

@@ -343,10 +343,35 @@ namespace RAT_WPF.ViewModels
             //KI end
         }
 
-        //KI start (Claude Opus 4.8, prompt 29): scan each device's ports/OS one at a time and annotate its node as
-        // results arrive. Best-effort: a failure on one host is logged and skipped, the rest continue.
+        //KI start (ported to MVVM by AI, prompt 30): called when "Show ports" is switched ON — scan every on-canvas
+        // device that has an IPv4 but no open ports yet, so toggling the option populates ports even when discovery
+        // ran earlier with the option off (previously toggling it on showed nothing). No-op if nmap isn't installed.
+        private bool _portScanRunning;
+        public async void EnsurePortsScannedAsync()
+        {
+            if (_portScanRunning) { return; }
+            if (!Discovery.NmapService.IsInstalled()) { return; }
+
+            List<NetworkObjectViewModel> targets = _networkObjects
+                .Where(vm => vm.Model.NetworkInterfaces.Any(i => !string.IsNullOrWhiteSpace(i.IP?.IPv4))
+                          && vm.Model.NetworkInterfaces.All(i => i.OpenPorts.Count == 0))
+                .ToList();
+            if (targets.Count == 0) { return; }
+
+            _portScanRunning = true;
+            try { await ScanPortsInBackgroundAsync(targets); }
+            finally { _portScanRunning = false; }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 29; reworked prompt 31): scan each device's ports one at a time and show
+        // them on its node AS SOON as the fast port pass returns — the slow OS (-O) pass is done AFTER all ports are
+        // in and never gates the port display (previously a device's ports only appeared once its slow OS scan also
+        // finished, so with several devices ports seemed to never show).
         private async Task ScanPortsInBackgroundAsync(IList<NetworkObjectViewModel> devices)
         {
+            // pass 1 — fast ports, refresh each node immediately
+            List<(NetworkObjectViewModel vm, string ip)> scanned = new();
             foreach (NetworkObjectViewModel vm in devices)
             {
                 string? ip = vm.Model.NetworkInterfaces.FirstOrDefault(i => !string.IsNullOrWhiteSpace(i.IP?.IPv4))?.IP?.IPv4;
@@ -354,37 +379,76 @@ namespace RAT_WPF.ViewModels
 
                 try
                 {
-                    RAT_WPF.Logging.AppLogger.Debug($"Discovery: background port scan of {ip} ('{vm.Model.Name}')");
-                    (List<int> openPorts, string os) = await Discovery.NmapService.ScanHostPortsAsync(ip);
+                    RAT_WPF.Logging.AppLogger.Debug($"Discovery: fast port scan of {ip} ('{vm.Model.Name}')");
+                    List<int> openPorts = await Discovery.NmapService.ScanHostPortsFastAsync(ip);
 
                     NetworkObjectInterface? iface = vm.Model.NetworkInterfaces.FirstOrDefault(i => i.IP?.IPv4 == ip);
                     if (iface != null && openPorts.Count > 0) { iface.OpenPorts = new List<int>(openPorts); }
-                    if (!string.IsNullOrEmpty(os) && string.IsNullOrEmpty(vm.Model.Os)) { vm.Model.Os = os; }
-                    vm.RefreshPorts();
-                    RAT_WPF.Logging.AppLogger.Info($"Discovery: {ip} open ports=[{string.Join(",", openPorts)}] os='{os}'");
+                    vm.RefreshPorts(); // node shows ports now, before the OS pass
+                    RAT_WPF.Logging.AppLogger.Info($"Discovery: {ip} open ports=[{string.Join(",", openPorts)}]");
+                    scanned.Add((vm, ip));
                 }
                 catch (Exception ex)
                 {
-                    RAT_WPF.Logging.AppLogger.Warn($"Discovery: background port scan of {ip} failed: {ex.Message}");
+                    RAT_WPF.Logging.AppLogger.Warn($"Discovery: port scan of {ip} failed: {ex.Message}");
+                }
+            }
+
+            // pass 2 — best-effort OS guess (slow, needs admin); ports are already shown so this is purely additive
+            foreach (var (vm, ip) in scanned)
+            {
+                try
+                {
+                    string os = await Discovery.NmapService.ScanHostOsAsync(ip);
+                    if (!string.IsNullOrEmpty(os) && string.IsNullOrEmpty(vm.Model.Os)) { vm.Model.Os = os; }
+                    if (!string.IsNullOrEmpty(os)) { RAT_WPF.Logging.AppLogger.Info($"Discovery: {ip} os='{os}'"); }
+                }
+                catch (Exception ex)
+                {
+                    RAT_WPF.Logging.AppLogger.Warn($"Discovery: OS scan of {ip} failed: {ex.Message}");
                 }
             }
         }
         //KI end
 
-        //KI start (Claude Opus 4.8, prompt 27): arrange devices evenly on a circle around a centre node.
+        //KI start (Claude Opus 4.8, prompt 27; reworked prompt 30): arrange devices evenly on a circle around a
+        // centre node. The radius grows with the device count so the nodes never overlap (each needs ~MinArcPerNode
+        // of arc), and the whole circle is shifted so it stays fully inside the canvas — no clamping pile-ups.
         private void PlaceAround(NetworkObjectViewModel center, IList<NetworkObjectViewModel> around)
         {
-            const int radius = 220;
-            int cx = center.X, cy = center.Y;
             int n = around.Count;
+            if (n == 0) { return; }
+
+            // spacing along the circumference per node (node is ~90 wide + a gap); radius from required circumference
+            const double minArcPerNode = 150.0;
+            const int minRadius = 220;
+            int radius = (int)Math.Max(minRadius, (n * minArcPerNode) / (2 * Math.PI));
+
+            // keep the whole circle (centre ± radius ± node size) inside the canvas by shifting the centre
+            int cx = ClampCenter(center.X, radius, Views.CanvasLayout.Width);
+            int cy = ClampCenter(center.Y, radius, Views.CanvasLayout.Height);
+            center.X = cx; center.Y = cy;
+            PersistMovedPosition(center);
+
             for (int i = 0; i < n; i++)
             {
-                double angle = (2 * Math.PI * i) / Math.Max(1, n) - Math.PI / 2; // start at the top
-                // KI (prompt 28): clamp onto the canvas so circle nodes never land in unreachable void
+                double angle = (2 * Math.PI * i) / n - Math.PI / 2; // start at the top
                 around[i].X = Views.CanvasLayout.ClampX(cx + radius * Math.Cos(angle));
                 around[i].Y = Views.CanvasLayout.ClampY(cy + radius * Math.Sin(angle));
                 PersistMovedPosition(around[i]);
             }
+        }
+
+        // shift a circle centre so centre ± (radius + node margin) fits within [0, extent]
+        private static int ClampCenter(int center, int radius, double extent)
+        {
+            const int margin = 130; // ~ node size, so a circle node never spills off the edge
+            int min = radius + margin;
+            int max = (int)extent - radius - margin;
+            if (max < min) { return (int)(extent / 2); } // circle bigger than canvas (shouldn't happen) -> centre it
+            if (center < min) { return min; }
+            if (center > max) { return max; }
+            return center;
         }
 
         // a position update for an already-saved device (fire-and-forget; no-op without a connection / unsaved)
@@ -399,12 +463,14 @@ namespace RAT_WPF.ViewModels
         // Cisco-style (GigabitEthernet0/1, 0/2, ...).
         private async Task<NetworkObjectViewModel> AddSwitchAsync(int interfaceCount)
         {
+            //KI (prompt 30): start the switch near the centre of a typical viewport; PlaceAround then re-centres it
+            // so the whole circle of devices stays on the canvas.
             NetworkObject model = new NetworkObject
             {
                 Type = NetworkObjectType.Switch,
                 Name = "Switch",
-                X = 360,
-                Y = 240
+                X = 700,
+                Y = 450
             };
             for (int i = 0; i < interfaceCount; i++)
             {
@@ -473,12 +539,14 @@ namespace RAT_WPF.ViewModels
         {
             if (_networkObjects.Any(n => n.Model.Type == NetworkObjectType.Cloud)) { return; }
 
+            //KI (prompt 30): place the cloud just beyond the router but ALWAYS clamp it onto the canvas (previously
+            // routerVm.Y - 200 could go negative on a fresh discovery, putting the cloud off-canvas).
             NetworkObject cloudModel = new NetworkObject
             {
                 Type = NetworkObjectType.Cloud,
                 Name = "Internet",
-                X = routerVm.X,
-                Y = routerVm.Y - 200
+                X = Views.CanvasLayout.ClampX(routerVm.X + 150),
+                Y = Views.CanvasLayout.ClampY(routerVm.Y - 150)
             };
             cloudModel.NetworkInterfaces.Add(new NetworkObjectInterface { Name = "wan", IsUp = true });
             if (Session.CurrentUser != null) { cloudModel.ApplyRight(Session.CurrentUser, AccesRights.Owner); }

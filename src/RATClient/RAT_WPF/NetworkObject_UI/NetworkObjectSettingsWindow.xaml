@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF"
         mc:Ignorable="d"
-        Title="Device Settings" Height="720" Width="900" MinHeight="480" MinWidth="640"
+        Title="Device Settings" Height="820" Width="1040" MinHeight="540" MinWidth="720"
         WindowStartupLocation="CenterScreen"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"

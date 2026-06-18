@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RAT_WPF.NetworkObject_UI"
         mc:Ignorable="d"
-        Title="Edit cable" Width="440" MinWidth="360" SizeToContent="Height" MaxHeight="600"
+        Title="Edit cable" Width="520" MinWidth="420" SizeToContent="Height" MaxHeight="860"
         Icon="{StaticResource AppLogo}"
         Background="{DynamicResource Brush.Background}"
         TextElement.Foreground="{DynamicResource Brush.Text}"
