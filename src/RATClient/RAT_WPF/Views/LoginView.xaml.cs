@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RAT_WPF.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,14 @@ namespace RAT_WPF.Views
         public LoginView()
         {
             InitializeComponent();
+        }
+
+        private void PasswordBoxLogin_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext is LoginViewModel loginViewModel)
+            {
+                loginViewModel.Password = PasswordBoxLogin.Password;
+            }
         }
     }
 }
