@@ -58,6 +58,11 @@
                                  IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Connector}}" />
                     <RadioButton Content="🗑 Delete" Style="{StaticResource RadioButtonTool}"
                                  IsChecked="{Binding Path=ToolEnum, Converter={StaticResource ComparisonConverter}, ConverterParameter={x:Static viewmodels:EnumTool.Delete}}" />
+                    <!--KI start (Claude Opus 4.8, prompt 22): toggle the interface name/IP labels on the cables-->
+                    <CheckBox x:Name="ShowInterfacesToggle" Content="Show interfaces" Margin="16,0,0,0"
+                              VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
+                              Click="ShowInterfacesToggle_Click"/>
+                    <!--KI end-->
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -80,6 +85,10 @@
         <!--Help from AI-->
         <Grid Grid.Row="1" Grid.Column="1" ClipToBounds="True">
             <ItemsControl ItemsSource="{Binding NetworkConnectionViewModels}">
+                <!--KI start (Claude Opus 4.8, prompt 22): cable + (optional) interface name/IP labels at each end-->
+                <ItemsControl.Resources>
+                    <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+                </ItemsControl.Resources>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas Background="{DynamicResource Brush.Canvas}"/>
@@ -87,9 +96,29 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}" StrokeThickness="2" Stroke="Black"/>
+                        <Canvas>
+                            <!-- fat transparent line = easy-to-click delete hit area for the cable -->
+                            <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}"
+                                  StrokeThickness="12" Stroke="Transparent" Cursor="Hand"
+                                  MouseLeftButtonUp="Connection_MouseLeftButtonUp"/>
+                            <Line X1="{Binding xSource}" Y1="{Binding ySource}" X2="{Binding xTarget}" Y2="{Binding yTarget}"
+                                  StrokeThickness="2" Stroke="{DynamicResource Brush.Accent}" IsHitTestVisible="False"/>
+                            <Border Canvas.Left="{Binding SourceLabelX}" Canvas.Top="{Binding SourceLabelY}"
+                                    Background="{DynamicResource Brush.Surface}" CornerRadius="3" Padding="3,1"
+                                    Visibility="{Binding ShowInterfaceLabels, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontFamily="Consolas"
+                                           Foreground="{DynamicResource Brush.Text}"/>
+                            </Border>
+                            <Border Canvas.Left="{Binding TargetLabelX}" Canvas.Top="{Binding TargetLabelY}"
+                                    Background="{DynamicResource Brush.Surface}" CornerRadius="3" Padding="3,1"
+                                    Visibility="{Binding ShowInterfaceLabels, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding TargetLabel}" FontSize="10" FontFamily="Consolas"
+                                           Foreground="{DynamicResource Brush.Text}"/>
+                            </Border>
+                        </Canvas>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
+                <!--KI end-->
             </ItemsControl>
             
             <ItemsControl ItemsSource="{Binding NetworkObjects}">

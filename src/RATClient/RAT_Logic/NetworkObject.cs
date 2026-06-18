@@ -27,6 +27,11 @@ namespace RAT_Logic
 
         public NetworkObjectType Type;
 
+        //KI start (Claude Opus 4.8, prompt 21): polymorphic descriptor for this object's Type (icon, label,
+        // whether it can mirror the host's specs). Uses the abstract DeviceDescriptor hierarchy.
+        public DeviceDescriptor Descriptor => DeviceDescriptor.For(Type);
+        //KI end
+
         public NetworkObjectSettings Settings = new NetworkObjectSettings();
 
         public string Name;
@@ -145,6 +150,10 @@ namespace RAT_Logic
         };
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 21): XML doc summaries on the public session/SNMP API
+        /// <summary>Opens an SSH connection to this device using the given login. No-op if one is already open.</summary>
+        /// <param name="login">SSH credentials (username/password/port).</param>
+        /// <exception cref="EntryPointNotFoundException">No interface of this device is reachable from the host.</exception>
         public void OpenSSH(Login login) // TODO: See if by id is better than by login
         {
             if (sshClient != null) { return; }
@@ -160,6 +169,9 @@ namespace RAT_Logic
 
             //this.OpenSSHstream();
         }
+        /// <summary>Opens a new interactive SSH shell stream and returns its id (index).</summary>
+        /// <returns>The shell-stream id to pass to <see cref="SendCommand"/> / <see cref="StartReadingAsync"/>.</returns>
+        /// <exception cref="EntryPointNotFoundException">No SSH connection is open yet.</exception>
         public int OpenSSHstream()
         {
             if (sshClient == null)
@@ -182,6 +194,9 @@ namespace RAT_Logic
         }
 
         //KI: ChatGPT prompt: how to change my executeSSH wpf input output textbox button setup to use my sshShellStreams for a real bash linux terminal feal
+        /// <summary>Continuously reads output from a shell stream and reports it via the callback until the SSH connection closes.</summary>
+        /// <param name="onDataReceived">Called with each chunk of received text.</param>
+        /// <param name="shellId">The shell-stream id returned by <see cref="OpenSSHstream"/>.</param>
         public async Task StartReadingAsync(Action<string> onDataReceived, int shellId)
         {
             if (shellId < 0 || shellId >= sshShellStreams.Count)
@@ -209,6 +224,9 @@ namespace RAT_Logic
         }
         
 
+        /// <summary>Writes a command line into the given interactive shell stream.</summary>
+        /// <param name="command">The command text (a newline is appended).</param>
+        /// <param name="shellId">The shell-stream id returned by <see cref="OpenSSHstream"/>.</param>
         public void SendCommand(string command, int shellId)
         {
             if (shellId < 0 || shellId >= sshShellStreams.Count)
@@ -218,6 +236,10 @@ namespace RAT_Logic
         }
         // KI END
 
+        /// <summary>Runs a single SSH command and returns its captured output.</summary>
+        /// <param name="command">The command to run.</param>
+        /// <returns>The command's stdout.</returns>
+        /// <exception cref="EntryPointNotFoundException">No SSH connection is open yet.</exception>
         public async Task<string> ExecuteSSH(string command)
         {
             if (sshClient == null) { throw new EntryPointNotFoundException("Open a ssh connection first!"); }
@@ -230,6 +252,8 @@ namespace RAT_Logic
             return result;
         }
 
+        /// <summary>Opens an SFTP connection to this device. No-op if one is already open.</summary>
+        /// <exception cref="EntryPointNotFoundException">No reachable interface for this device.</exception>
         public void OpenSFTP(Login login)
         {
             if (sftpClient != null) { return; }
@@ -244,6 +268,7 @@ namespace RAT_Logic
             sftpClient = sftpClient_;
         }
 
+        /// <summary>Uploads a local file to the device over SFTP. Requires an open SFTP connection.</summary>
         public void UploadSFTP(string localPath, string remotePath)
         {
             if (sftpClient == null) { throw new EntryPointNotFoundException("Open a sftp connection first!"); }
@@ -253,6 +278,7 @@ namespace RAT_Logic
             }
         }
 
+        /// <summary>Downloads a remote file from the device over SFTP. Requires an open SFTP connection.</summary>
         public void DownloadSFTP(string localPath, string remotePath)
         {
             if (sftpClient == null) { throw new EntryPointNotFoundException("Open a sftp connection first!"); }
@@ -262,6 +288,7 @@ namespace RAT_Logic
             }
         }
 
+        /// <summary>Lists the entries of a remote directory over SFTP. Requires an open SFTP connection.</summary>
         public List<string> ListDirSFTP(string remotePath)
         {
             List<string> files_ = new List<string>();
@@ -275,6 +302,8 @@ namespace RAT_Logic
             return files_;
         }
 
+        /// <summary>Opens an SCP connection to this device. No-op if one is already open.</summary>
+        /// <exception cref="EntryPointNotFoundException">No reachable interface for this device.</exception>
         public void OpenSCP(Login login)
         {
             if (scpClient != null) { return; }
@@ -289,24 +318,32 @@ namespace RAT_Logic
             scpClient = scpClient_;
         }
 
+        /// <summary>Uploads a local file to the device over SCP. Requires an open SCP connection.</summary>
         public void UploadSCP(string localPath, string remotePath)
         {
             if (scpClient == null) { throw new EntryPointNotFoundException("Open a scp connection first!"); }
             scpClient.Upload(new FileInfo(localPath), remotePath);
         }
 
+        /// <summary>Downloads a remote file from the device over SCP. Requires an open SCP connection.</summary>
         public void DownloadSCP(string localPath, string remotePath)
         {
             if (scpClient == null) { throw new EntryPointNotFoundException("Open a scp connection first!"); }
             scpClient.Download(remotePath, new FileInfo(localPath));
         }
 
+        /// <summary>Opens a Telnet session to this device. Not implemented yet.</summary>
         public void OpenTelnet(Login login)
         {
             // TODO
             throw new NotImplementedException();
         }
 
+        /// <summary>Writes a value to an SNMP OID on this device (SNMP SET) using the write community.</summary>
+        /// <param name="snmpSettings">Community strings + port.</param>
+        /// <param name="objectIdentifier">The numeric OID to set.</param>
+        /// <param name="newValue">The new value (sent as an OctetString).</param>
+        /// <param name="version">SNMP version (default v1).</param>
         public void SetSnmp(SnmpSettings snmpSettings, string objectIdentifier, string newValue, VersionCode version = VersionCode.V1)
         {
             NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
@@ -321,6 +358,8 @@ namespace RAT_Logic
                            60000);
         }
 
+        /// <summary>Reads a single SNMP OID from this device (SNMP GET) using the read community.</summary>
+        /// <returns>The variable(s) returned by the agent.</returns>
         public IList<Lextm.SharpSnmpLib.Variable> GetSnmp(SnmpSettings snmpSettings, string objectIdentifier, VersionCode version = VersionCode.V1)
         {
             NetworkObjectInterface? networkObjectInterface = GetInterfaceInSameNetworkAsHost();
@@ -361,6 +400,7 @@ namespace RAT_Logic
         }
         //KI end
 
+        /// <summary>Reads this host machine's specs (name, OS, RAM, CPU, GPU) via WMI. Keys: name/os/ram/cpu/gpu.</summary>
         public static Dictionary<string, string> GetOwnDeviceInfos()
         {
             Dictionary<string, string> stats = new Dictionary<string, string>();
@@ -405,6 +445,7 @@ namespace RAT_Logic
             return stats;
         }
 
+        /// <summary>Lists this host's network interfaces as name/status dictionaries (simple form).</summary>
         public static List<Dictionary<string,string>> GetOwnDeviceInterfaces()
         {
             List<Dictionary<string, string>> interfaces_list = new List<Dictionary<string, string>>();

@@ -55,13 +55,21 @@ namespace RAT_WPF.ViewModels
             return p == 0 ? ZoomManager.Default : p;
         }
 
+        //KI start (Claude Opus 4.8, prompt 20/22): read-modify-write so saving the zoom keeps the other settings
+        // (showPorts / showInterfaces) instead of resetting them.
         private static async System.Threading.Tasks.Task PersistZoomAsync(int percent)
         {
             IDatabaseConnection? db = DatabaseConnectionStore.Current;
             if (db == null) { return; } // not connected (debug-skip login) -> zoom still applies, just isn't saved
             try
             {
-                await db.EditUserSettings(new UserSettings { Zoom = percent });
+                UserSettings current;
+                try { current = await db.GetUserSettings(); }
+                catch { current = new UserSettings(); }
+
+                current.Zoom = percent;
+                current.ShowInterfaces = DisplaySettings.ShowInterfaces; // keep the live toggle in sync
+                await db.EditUserSettings(current);
             }
             catch
             {

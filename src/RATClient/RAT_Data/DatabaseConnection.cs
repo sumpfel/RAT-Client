@@ -729,6 +729,27 @@ namespace RAT_Data
             }));
             await EnsureOk(response);
         }
+
+        //KI start (Claude Opus 4.8, prompt 22): read the saved user settings (GET /user/settings/) so the app can
+        // restore the zoom / showInterfaces choices after login.
+        private class UserSettingsDto
+        {
+            [JsonPropertyName("zoom")] public int Zoom { get; set; } = 100;
+            [JsonPropertyName("show_ports")] public bool ShowPorts { get; set; }
+            [JsonPropertyName("show_interfaces")] public bool ShowInterfaces { get; set; }
+        }
+
+        public async Task<UserSettings> GetUserSettings()
+        {
+            UserSettingsDto dto = await GetJson<UserSettingsDto>("/user/settings/");
+            return new UserSettings
+            {
+                Zoom = dto.Zoom,
+                ShowPorts = dto.ShowPorts,
+                ShowInterfaces = dto.ShowInterfaces
+            };
+        }
+        //KI end
     }
 }
 //KI end

@@ -163,5 +163,12 @@ namespace RAT_Data
         {
             throw new NotImplementedException();
         }
+
+        //KI start (Claude Opus 4.8, prompt 22): mock stub for the new GetUserSettings interface member
+        public Task<UserSettings> GetUserSettings()
+        {
+            return Task.FromResult(new UserSettings());
+        }
+        //KI end
     }
 }

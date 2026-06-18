@@ -48,11 +48,14 @@ namespace RAT_WPF.Commands
             }
             catch (Exception ex)
             {
+                RAT_WPF.Logging.AppLogger.Warn($"Login failed for '{_loginViewModel.Username}': {ex.Message}"); // KI (prompt 22)
                 //KI start (Claude Opus 4.8, prompt 15): show the sad-rat status on the login screen instead of a popup
                 _loginViewModel.ShowStatus(false, $"Login failed: {ex.Message}");
                 //KI end
                 return;
             }
+
+            RAT_WPF.Logging.AppLogger.Info($"User '{loggedIn.UserName}' logged in (id {loggedIn.ID})."); // KI (prompt 22)
 
             //KI start (Claude Opus 4.8, prompt 15): happy-rat success status (briefly visible before navigation)
             _loginViewModel.ShowStatus(true, $"Welcome, {loggedIn.UserName}!");
@@ -65,6 +68,19 @@ namespace RAT_WPF.Commands
             //KI end
             RAT_Logic.Session.CurrentUser = new RAT_Logic.NetworkUser(
                 loggedIn.UserName, loggedIn.ID, canCreate: loggedIn.CanCreate, privileges: loggedIn.Privileges);
+
+            //KI start (Claude Opus 4.8, prompt 22): restore the saved zoom + showInterfaces from the backend.
+            try
+            {
+                UserSettings settings = await connection.GetUserSettings();
+                RAT_WPF.Themes.ZoomManager.Apply(settings.Zoom);
+                RAT_WPF.Themes.DisplaySettings.ShowInterfaces = settings.ShowInterfaces;
+            }
+            catch
+            {
+                // settings are a nice-to-have; a failure here must not block login
+            }
+            //KI end
 
             // navigation Part
             // KI (prompt 15): pass the navigation store so the topology can navigate back to login on logout

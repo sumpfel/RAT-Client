@@ -77,6 +77,33 @@ namespace RAT_WPF.ViewModels
             }
         }
 
+        //KI start (Claude Opus 4.8, prompt 22): cable end-labels (interface name + IP) shown when ShowInterfaces is on.
+        private NetworkObjectInterface? InterfaceFor(NetworkObjectViewModel device) =>
+            _networkConnection.networkObectInterfaces.FirstOrDefault(i => device.networkObjectInterfaces.Contains(i));
+
+        private static string Label(NetworkObjectInterface? iface)
+        {
+            if (iface == null) { return ""; }
+            string? ip = iface.IP?.IPv4;
+            return string.IsNullOrWhiteSpace(ip) ? iface.Name : $"{iface.Name}  {ip}";
+        }
+
+        /// <summary>"name  ipv4" of the source endpoint's interface (ip omitted if unset).</summary>
+        public string SourceLabel => Label(InterfaceFor(_networkObjectViewModelSource));
+
+        /// <summary>"name  ipv4" of the target endpoint's interface.</summary>
+        public string TargetLabel => Label(InterfaceFor(_networkObjectViewModelTarget));
+
+        // a label anchored a bit in from each device toward the other end (so it sits on the cable near the device)
+        public double SourceLabelX => xSource + (xTarget - xSource) * 0.25 + 20;
+        public double SourceLabelY => ySource + (yTarget - ySource) * 0.25 + 10;
+        public double TargetLabelX => xTarget + (xSource - xTarget) * 0.25 + 20;
+        public double TargetLabelY => yTarget + (ySource - yTarget) * 0.25 + 10;
+
+        /// <summary>Whether the cable labels are visible (follows the app-wide DisplaySettings toggle).</summary>
+        public bool ShowInterfaceLabels => RAT_WPF.Themes.DisplaySettings.ShowInterfaces;
+        //KI end
+
 
         // Making a viewmodel where currently only networkConnection and networkObjectViewModelSource are known, networkObjectViewModelTarget filled in later
         public NetworkConnectionViewModel(NetworkConnection networkConnection, NetworkObjectViewModel networkObjectViewModelSource)
@@ -101,7 +128,23 @@ namespace RAT_WPF.ViewModels
 
             _networkObjectViewModelSource.PropertyChanged += NetworkObjectViewModelSource_PropertyChanged;
             _networkObjectViewModelTarget.PropertyChanged += _networkObjectViewModelTarget_PropertyChanged;
+
+            //KI start (Claude Opus 4.8, prompt 22): refresh the cable labels when the global toggle flips
+            RAT_WPF.Themes.DisplaySettings.ShowInterfacesChanged += OnShowInterfacesChanged;
+            //KI end
         }
+
+        //KI start (Claude Opus 4.8, prompt 22): keep the label positions in sync with the endpoints
+        private void RaiseLabelPositions()
+        {
+            OnPropertyChanged(nameof(SourceLabelX));
+            OnPropertyChanged(nameof(SourceLabelY));
+            OnPropertyChanged(nameof(TargetLabelX));
+            OnPropertyChanged(nameof(TargetLabelY));
+        }
+
+        private void OnShowInterfacesChanged(bool _) => OnPropertyChanged(nameof(ShowInterfaceLabels));
+        //KI end
 
         private void _networkObjectViewModelTarget_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
@@ -109,6 +152,7 @@ namespace RAT_WPF.ViewModels
             {
                 OnPropertyChanged(nameof(xTarget));
                 OnPropertyChanged(nameof(yTarget));
+                RaiseLabelPositions(); // KI (prompt 22)
             }
         }
 
@@ -118,6 +162,7 @@ namespace RAT_WPF.ViewModels
             {
                 OnPropertyChanged(nameof(xSource));
                 OnPropertyChanged(nameof(ySource));
+                RaiseLabelPositions(); // KI (prompt 22)
             }
         }
     }

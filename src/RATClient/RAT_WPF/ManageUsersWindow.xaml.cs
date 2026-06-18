@@ -71,6 +71,14 @@ namespace RAT_WPF
                 return;
             }
 
+            //KI start (Claude Opus 4.8, prompt 22): enforce the password policy before hitting the backend
+            if (!RAT_Logic.PasswordPolicy.Validate(password, out string pwError))
+            {
+                RatDialog.Show("Weak password", pwError, "Icon.LoginFailed");
+                return;
+            }
+            //KI end
+
             // Privileges >= 100 marks an admin for AddUser(); CanCreate is the create-devices flag.
             RAT_Data.User newUser = new RAT_Data.User(
                 username, password, 0,

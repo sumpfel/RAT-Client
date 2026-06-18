@@ -1,8 +1,10 @@
-﻿using RAT_WPF.Stores;
+﻿using RAT_WPF.Logging;
+using RAT_WPF.Stores;
 using RAT_WPF.ViewModels;
 using System.Configuration;
 using System.Data;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace RAT_WPF
 {
@@ -25,6 +27,12 @@ namespace RAT_WPF
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            //KI start (Claude Opus 4.8, prompt 22): start a fresh log file for this run (keeps the newest 3),
+            // and record any unhandled UI exception before the app dies.
+            AppLogger.Start();
+            DispatcherUnhandledException += OnUnhandledException;
+            //KI end
+
             // TODO: If already logged in, start topologyviewmodel instead
             if (_debugging_ignore_login)
             {
@@ -45,9 +53,17 @@ namespace RAT_WPF
                 DataContext = new MainViewModel(_navigationStore)
             };
             MainWindow.Show();
+            AppLogger.Info("Main window shown."); // KI (prompt 22)
 
             base.OnStartup(e);
         }
+
+        //KI start (Claude Opus 4.8, prompt 22): log unhandled exceptions to the run's log file.
+        private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            AppLogger.Error("Unhandled UI exception", e.Exception);
+        }
+        //KI end
     }
 
 }

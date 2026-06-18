@@ -66,5 +66,8 @@ namespace RAT_Data
 
         //UserSettings
         public Task EditUserSettings(UserSettings userSettings);
+        //KI start (Claude Opus 4.8, prompt 22): load the saved settings (zoom / showPorts / showInterfaces) at login
+        public Task<UserSettings> GetUserSettings();
+        //KI end
     }
 }

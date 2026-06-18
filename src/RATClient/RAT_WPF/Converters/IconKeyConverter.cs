@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Windows.Data;
+using RAT_Logic;
 using RAT_WPF.Themes;
 
 namespace RAT_WPF.Converters
@@ -18,16 +19,13 @@ namespace RAT_WPF.Converters
             string? key = value?.ToString();
             if (string.IsNullOrWhiteSpace(key)) { return null; }
 
-            // map device-type names to icon keys
-            key = key switch
+            //KI start (Claude Opus 4.8, prompt 21): a device-type name is resolved to its icon via the abstract
+            // DeviceDescriptor hierarchy (polymorphism) instead of a local switch; raw "Icon.*" keys pass through.
+            if (!key.StartsWith("Icon.") && Enum.TryParse(key, out NetworkObjectType type))
             {
-                "PC" => IconProvider.Pc,
-                "Router" => IconProvider.Router,
-                "Switch" => IconProvider.Switch,
-                "Server" => IconProvider.Server,
-                "Client" => IconProvider.Client,
-                _ => key.StartsWith("Icon.") ? key : key
-            };
+                key = DeviceDescriptor.For(type).IconKey;
+            }
+            //KI end
 
             return IconProvider.Get(key);
         }

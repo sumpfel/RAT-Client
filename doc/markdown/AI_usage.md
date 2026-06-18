@@ -589,3 +589,89 @@ itself was verified in prompt 17.)
 **Notes / scope:** there is no client-side *load* of saved user settings yet (no GetUserSettings wiring), so zoom
 starts at 100% each run and changes are saved best-effort to the backend. `EditUserSettings` currently sends the whole
 UserSettings, so it also writes the (unused) show_ports/show_interfaces defaults.
+
+---------
+
+## Prompt 21 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Document the RAT-Backend API (endpoints, example data, value limits like ">= 1"); add XML
+`///` summaries describing the C# methods; create 10 xUnit tests; integrate abstract inheritance somewhere;
+and document how to auto-generate a class diagram.
+
+**Changes made (AI regions marked `prompt 21`):**
+
+- **API docs** — `doc/markdown/API_documentation.md`: every endpoint of the FastAPI backend
+  (`C:\Users\chris\PycharmProjects\RAT-Backend`) with method, auth, example JSON, per-field limits (DB
+  VARCHAR sizes, `permissions` 0–4, token lifetime, etc.), the permission model, and the common error codes.
+- **Abstract inheritance** — `RAT_Logic/DeviceDescriptor.cs` (new): an `abstract DeviceDescriptor` with
+  abstract `Type`/`IconKey`/`DisplayLabel`, a `virtual CanUseHostSpecs`, a `For(type)` factory, and five
+  concrete subclasses (`PcDescriptor`/`Router`/`Switch`/`Server`/`Client`). `NetworkObject.Descriptor`
+  exposes it, and `Converters/IconKeyConverter` now resolves a device's icon polymorphically through it
+  (instead of a local switch) — so the hierarchy is actually used, not dead code.
+- **XML doc summaries** — added `<summary>`/`<param>`/`<returns>`/`<exception>` comments to the public
+  session + SNMP + host-info methods on `NetworkObject` (OpenSSH/OpenSSHstream/SendCommand/ExecuteSSH/
+  SFTP+SCP open/upload/download/list/Telnet/SetSnmp/GetSnmp/GetOwnDeviceInfos/GetOwnDeviceInterfaces) and
+  on the new descriptor hierarchy. (Other public methods already had summaries from earlier prompts.)
+- **10 xUnit tests** — `RAT_Tests/UnitTest1.cs` (project referenced RAT_Logic + added to the solution):
+  IP/port validation, the abstract `DeviceDescriptor` factory + polymorphic `CanUseHostSpecs`,
+  `NetworkObject.Descriptor`, and the access-rights rules (`GetRight` default-Hidden, global-admin Owner,
+  `CanChangeRight` Admin-vs-Owner rules, `SetRight`/`ApplyRight`/`CanBeDeletedBy`). All 10 pass.
+- **Class-diagram howto** — `doc/markdown/ClassDiagram.md`: VS Class Designer, Mermaid `classDiagram`
+  (with a ready snapshot of the abstract hierarchy), PlantUML via `PlantUmlClassDiagramGenerator`, and a
+  Roslyn/CI-automated route.
+
+**Verified:** full solution builds (0 errors); `dotnet test` → 10/10 pass; app still launches.
+
+---------
+
+## Prompt 22 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request (TODOs):** password length/criteria check in front- and backend; user editing; persist & restore
+zoom; persist showInterfaces + a toolbar toggle that draws each cable's interface name + IP; rolling file
+logging (folder, new `rat_<date>.tail` per start, keep 3); rewrite the API docs in German + prettier; delete
+a cable (NetworkObjectConnection) with the Delete tool; make the device icon non-blocking for the
+delete/connection tools. Backend edits also marked `KI` + logged in the backend AI_usage.md.
+
+**Backend (`RAT-Backend`, marked `KI Claude <KI-13>`):**
+- `src/routers/user.py` — `validate_password()` (≥8 chars, ≥1 letter, ≥1 digit → HTTP 400); enforced in
+  `register()` and on password change in `edit_user()`. Documented in the backend `doc/markdown/AI_usage.md`.
+
+**Client (marked `KI start/end (Claude Opus 4.8, prompt 22)`):**
+- `RAT_Logic/PasswordPolicy.cs` (new) — shared client-side policy mirroring the backend; used by
+  `ManageUsersWindow` (create) and `EditUserWindow` (change). (User editing already existed — verified.)
+- Zoom/settings: added `IDatabaseConnection.GetUserSettings()` (+ `DatabaseConnection`/mock impl); `LoginCommand`
+  restores zoom + showInterfaces after login; `SettingsViewModel` read-modify-writes so saving zoom keeps the
+  other settings.
+- `RAT_WPF/Themes/DisplaySettings.cs` (new) — app-wide `ShowInterfaces` toggle + change event. Toolbar
+  checkbox in `TopologyView` flips it and persists it. `NetworkConnectionViewModel` exposes
+  `SourceLabel`/`TargetLabel` (name + IPv4) + label positions; the canvas draws them on each cable when on.
+- Logging: `RAT_WPF/Logging/AppLogger.cs` (new) — `logs/` folder, a new `rat_<yyyy-MM-dd_HH-mm-ss>.tail`
+  per start, keeps the newest 3; `App.OnStartup` starts it + logs unhandled UI exceptions; login logs
+  success/failure. (It already caught a real crash during a stress test.)
+- Cable delete: `TopologyViewModel.DeleteConnectionFromCanvasAndDatabase`, `NetworkObjectDeleteCommand` now
+  also handles a `NetworkConnectionViewModel`, and a fat transparent hit-line on each cable triggers it when
+  the Delete tool is active.
+- Tool clicks: `NetworkObjectView` — Cursor drags (MouseMove), Connection/Delete now act on a **click**
+  (`MouseLeftButtonUp`) of the whole node; the icon stays `IsHitTestVisible=False` so clicking it counts as
+  clicking the device.
+
+**Docs:** `doc/markdown/API_documentation.md` rewritten in German with a nicer layout (tables, emojis,
+per-endpoint method/right/response tables, quick-reference limits incl. the new password policy).
+
+**Verified:** full solution builds (0 errors); app launches; logging produces exactly 3 `rat_*.tail` files
+with the right naming.
+
+---------
+
+## Prompt 23 — Claude (model: Claude Opus 4.8, via Claude Code)
+
+**Request:** Bug — a PC's interfaces existed only on the frontend. When a PC auto-populates this machine's
+own interfaces, write them to the backend (together with the PC, which already saves its stats) on create.
+
+**Change (marked `KI start/end (Claude Opus 4.8, prompt 23)`):**
+- `RAT_WPF/Views/TopologyView.xaml.cs` — `PersistNewNetworkObject` now, right after `AddNetworkObject`
+  (which assigns the real backend id), loops the object's `NetworkInterfaces` and calls
+  `AddInterface(iface, model)` for each not-yet-saved one. So a dropped PC's auto-detected NICs (name + IPs)
+  are persisted server-side instead of living only in the client.
+
+**Verified:** solution builds (0 errors).

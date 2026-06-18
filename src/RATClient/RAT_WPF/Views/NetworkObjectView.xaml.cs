@@ -63,58 +63,42 @@ namespace RAT_WPF.Views
 
         private void Grid_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && DataContext is NetworkObjectViewModel networkObjectViewModel)
+            //KI start (Claude Opus 4.8, prompt 22): only the Cursor tool drags. The Connection/Delete tools act on a
+            // CLICK (MouseLeftButtonUp) instead of on move — see Grid_MouseLeftButtonUp — so a precise click on the
+            // device (icon included) reliably triggers them.
+            if (CurrentTool == EnumTool.Cursor
+                && e.LeftButton == MouseButtonState.Pressed
+                && DataContext is NetworkObjectViewModel)
             {
-                if (CurrentTool == EnumTool.Cursor)
-                {
-                    DragDrop.DoDragDrop(grid, new DataObject(DataFormats.Serializable, grid), DragDropEffects.Move);
-                }
-                else if (CurrentTool == EnumTool.Connector)
-                { 
-                    if (CommandLeftClickWithConnectionTool?.CanExecute(networkObjectViewModel) ?? false)
-                    {
-                        CommandLeftClickWithConnectionTool.Execute(networkObjectViewModel);
-                    }
-                }
-                else if (CurrentTool == EnumTool.Delete)
-                {
-                    if (CommandLeftClickWithDeleteTool?.CanExecute(networkObjectViewModel) ?? false)
-                    {
-                        CommandLeftClickWithDeleteTool.Execute(networkObjectViewModel);
-                    }
-                }
+                DragDrop.DoDragDrop(grid, new DataObject(DataFormats.Serializable, grid), DragDropEffects.Move);
             }
+            //KI end
         }
 
-        //KI start (Claude Opus 4.8, prompt 4): when the Delete tool is active, clicking this device removes it
-        /*
-        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        //KI start (Claude Opus 4.8, prompt 22): Connection/Delete tools fire on a click of the whole node (the icon
+        // is IsHitTestVisible=False and the node Grid is Transparent, so clicking anywhere on the device — including
+        // over the icon — counts).
+        private void Grid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            TopologyView? topology = FindTopologyView();
-            if (topology?.IsDeleteToolActive == true
-                && DataContext is ViewModels.NetworkObjectViewModel networkObjectViewModel)
-            {
-                topology.DeleteNode(networkObjectViewModel);
-                e.Handled = true;
-            }
-        }
+            if (DataContext is not NetworkObjectViewModel networkObjectViewModel) { return; }
 
-        private TopologyView? FindTopologyView()
-        {
-            DependencyObject? current = this;
-            while (current != null)
+            if (CurrentTool == EnumTool.Connector)
             {
-                if (current is TopologyView topologyView)
+                if (CommandLeftClickWithConnectionTool?.CanExecute(networkObjectViewModel) ?? false)
                 {
-                    return topologyView;
+                    CommandLeftClickWithConnectionTool.Execute(networkObjectViewModel);
+                    e.Handled = true;
                 }
-                current = VisualTreeHelper.GetParent(current);
             }
-            return null;
+            else if (CurrentTool == EnumTool.Delete)
+            {
+                if (CommandLeftClickWithDeleteTool?.CanExecute(networkObjectViewModel) ?? false)
+                {
+                    CommandLeftClickWithDeleteTool.Execute(networkObjectViewModel);
+                    e.Handled = true;
+                }
+            }
         }
         //KI end
-
-        *(
-        */
     }
 }

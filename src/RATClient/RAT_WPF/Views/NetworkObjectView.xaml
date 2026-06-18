@@ -10,7 +10,7 @@
          Background="Transparent" makes the WHOLE node area hit-testable, so dragging works even when the
          press starts on a transparent part of the device icon (previously transparent icon pixels let the
          click "fall through" and the drag MouseMove never fired).-->
-    <Grid Width="90" Height="96" Background="Transparent" MouseMove="Grid_MouseMove">
+    <Grid Width="90" Height="96" Background="Transparent" MouseMove="Grid_MouseMove" MouseLeftButtonUp="Grid_MouseLeftButtonUp">
         <Grid.RowDefinitions>
             <RowDefinition Height="56"/>
             <RowDefinition Height="Auto"/>

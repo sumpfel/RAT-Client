@@ -18,6 +18,12 @@ namespace RAT_WPF.Commands
                 topologyViewModel.DeleteNetworkObjectFromCanvasAndDatabase(networkObjectViewModel);
                 //KI end
             }
+            //KI start (Claude Opus 4.8, prompt 22): the Delete tool can also delete a cable (connection)
+            else if (parameter is NetworkConnectionViewModel networkConnectionViewModel)
+            {
+                topologyViewModel.DeleteConnectionFromCanvasAndDatabase(networkConnectionViewModel);
+            }
+            //KI end
         }
     }
 }

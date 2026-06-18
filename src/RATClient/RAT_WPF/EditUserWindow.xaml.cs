@@ -49,6 +49,16 @@ namespace RAT_WPF
                 return;
             }
 
+            //KI start (Claude Opus 4.8, prompt 22): a non-empty new password must satisfy the policy
+            // (empty means "leave unchanged", so it's only checked when one was typed).
+            if (!string.IsNullOrEmpty(PasswordBox.Password)
+                && !RAT_Logic.PasswordPolicy.Validate(PasswordBox.Password, out string pwError))
+            {
+                RatDialog.Show("Weak password", pwError, "Icon.LoginFailed");
+                return;
+            }
+            //KI end
+
             // empty password => keep the current one (EditUser treats "" as unchanged);
             // Privileges >= 100 encodes admin for the connection layer.
             User edited = new User(

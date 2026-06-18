@@ -114,7 +114,48 @@ namespace RAT_WPF.Views
                 UsersButton.Visibility = Visibility.Visible;
             }
             //KI end
+
+            //KI start (Claude Opus 4.8, prompt 22): reflect the loaded showInterfaces setting in the toggle
+            ShowInterfacesToggle.IsChecked = RAT_WPF.Themes.DisplaySettings.ShowInterfaces;
+            //KI end
         }
+
+        //KI start (Claude Opus 4.8, prompt 22): toggle the cable interface labels + persist the choice
+        private async void ShowInterfacesToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool on = ShowInterfacesToggle.IsChecked == true;
+            RAT_WPF.Themes.DisplaySettings.ShowInterfaces = on;
+
+            if (DatabaseConnectionStore.Current == null) { return; } // dev mode / not connected
+            try
+            {
+                RAT_Data.UserSettings settings;
+                try { settings = await DatabaseConnectionStore.Current.GetUserSettings(); }
+                catch { settings = new RAT_Data.UserSettings(); }
+
+                settings.ShowInterfaces = on;
+                settings.Zoom = RAT_WPF.Themes.ZoomManager.Current; // keep the zoom in sync
+                await DatabaseConnectionStore.Current.EditUserSettings(settings);
+            }
+            catch
+            {
+                // saving the preference is best-effort
+            }
+        }
+        //KI end
+
+        //KI start (Claude Opus 4.8, prompt 22): click a cable with the Delete tool active to delete it
+        private void Connection_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (this.DataContext is not TopologyViewModel topologyViewModel) { return; }
+            if (topologyViewModel.ToolEnum != EnumTool.Delete) { return; }
+            if (sender is FrameworkElement fe && fe.DataContext is NetworkConnectionViewModel connection)
+            {
+                topologyViewModel.NetworkObjectDeleteCommand.Execute(connection);
+                e.Handled = true;
+            }
+        }
+        //KI end
 
         //KI start (Claude Opus 4.8, prompt 2): open the MVVM settings window
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -146,6 +187,17 @@ namespace RAT_WPF.Views
             try
             {
                 await DatabaseConnectionStore.Current.AddNetworkObject(node.Model);
+
+                //KI start (Claude Opus 4.8, prompt 23): a PC auto-populates this machine's real interfaces, but
+                // those only lived on the client — persist them now that the object has a real backend id, so the
+                // interfaces (and their IPs/specs) exist on the server too. Each AddInterface fills the iface id.
+                foreach (RAT_Logic.NetworkObjectInterface iface in node.Model.NetworkInterfaces)
+                {
+                    if (iface.ID > 0) { continue; } // already saved
+                    await DatabaseConnectionStore.Current.AddInterface(iface, node.Model);
+                }
+                //KI end
+
                 return true;
             }
             catch (Exception ex)

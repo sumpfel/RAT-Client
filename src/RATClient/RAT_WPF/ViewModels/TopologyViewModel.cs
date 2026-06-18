@@ -203,6 +203,32 @@ namespace RAT_WPF.ViewModels
         }
         //KI end
 
+        //KI start (Claude Opus 4.8, prompt 22): delete a cable (NetworkObjectConnection) with the Delete tool —
+        // remove it on the backend, clear it off both endpoint interfaces, then drop it from the canvas.
+        public async void DeleteConnectionFromCanvasAndDatabase(NetworkConnectionViewModel connection)
+        {
+            if (DatabaseConnectionStore.Current != null && connection.networkConnection.ID > 0)
+            {
+                try
+                {
+                    await DatabaseConnectionStore.Current.DeleteConnection(connection.networkConnection);
+                }
+                catch (Exception ex)
+                {
+                    RatDialog.Show("Database hiccup", $"The rat couldn't delete the connection on the server.\n\n{ex.Message}", "Icon.DatabaseError");
+                    return; // keep the cable if the server refused
+                }
+            }
+
+            foreach (NetworkObjectInterface interf in connection.networkConnection.networkObectInterfaces)
+            {
+                interf.Connection = null;
+            }
+            _networkConnectionViewModels.Remove(connection);
+            OnPropertyChanged(nameof(NetworkConnectionViewModels));
+        }
+        //KI end
+
         //KI start (Claude Opus 4.8, prompt 4): remove a device from the canvas (used by the Delete tool)
         public void RemoveNetworkObjectViewModelFromCanvas(NetworkObjectViewModel networkObject)
         {
